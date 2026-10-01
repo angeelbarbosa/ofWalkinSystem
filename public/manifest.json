@@ -1,0 +1,16 @@
+{
+  "name": "OF Barber & Supply Check-In System",
+  "short_name": "OF CheckIn",
+  "description": "Smart Walk-in & Client Notification System for OF Barber Supply",
+  "start_url": "/?portal=barber",
+  "display": "standalone",
+  "background_color": "#09090B",
+  "theme_color": "#09090B",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png"
+    }
+  ]
+}
