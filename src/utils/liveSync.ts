@@ -1,13 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { ConvexReactClient } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Barber, CheckInRecord, ShopConfig } from '../types';
 import { storage } from './storage';
 import { notificationManager } from './notifications';
+import { convexClient } from './convexClient';
 
-const CONVEX_URL = import.meta.env.VITE_CONVEX_URL as string | undefined;
-
-export const convexClient = CONVEX_URL ? new ConvexReactClient(CONVEX_URL) : null;
+export { convexClient };
 
 export function useLiveSystem() {
   const [barbers, setBarbers] = useState<Barber[]>(() => storage.getBarbers());
@@ -84,7 +82,7 @@ export function useLiveSystem() {
             }));
             setBarbers(mapped);
             storage.saveBarbers(mapped);
-          } else if (Array.isArray(cloudBarbers) && cloudBarbers.length === 0) {
+          } else if (Array.isArray(cloudBarbers) && cloudBarbers.length === 0 && convexClient) {
             convexClient.mutation(api.barbers.seed, {}).catch(() => {});
           }
         });

@@ -1,4 +1,4 @@
-import { convexClient } from './liveSync';
+import { convexClient } from './convexClient';
 import { api } from '../../convex/_generated/api';
 
 const DEVICE_BARBER_KEY = 'of_device_barber_id';
@@ -89,14 +89,19 @@ export class NotificationManager {
           }
 
           const subJson = sub.toJSON();
-          if (subJson.endpoint && subJson.keys?.auth && subJson.keys?.p256dh && convexClient) {
+          const endpoint = subJson.endpoint || sub.endpoint;
+          const auth = subJson.keys?.auth || (sub.getKey('auth') ? btoa(String.fromCharCode(...new Uint8Array(sub.getKey('auth')!))) : '');
+          const p256dh = subJson.keys?.p256dh || (sub.getKey('p256dh') ? btoa(String.fromCharCode(...new Uint8Array(sub.getKey('p256dh')!))) : '');
+
+          if (endpoint && auth && p256dh && convexClient) {
             await convexClient.mutation(api.notifications.saveSubscription, {
               barberId,
               barberName,
-              endpoint: subJson.endpoint,
-              auth: subJson.keys.auth,
-              p256dh: subJson.keys.p256dh
+              endpoint,
+              auth,
+              p256dh
             });
+            console.log('✅ Web Push Subscription successfully synced to Convex cloud for:', barberName);
           }
         } catch (pushErr) {
           console.warn('PushManager background subscription error:', pushErr);

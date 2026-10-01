@@ -20,10 +20,6 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
   });
   const [tested, setTested] = useState(false);
 
-  useEffect(() => {
-    setPermission(notificationManager.getPermissionStatus());
-  }, []);
-
   const assignedBarber = barbers.find(
     b => b.id === deviceBarberId || b.name.toLowerCase() === deviceBarberId.toLowerCase()
   );
@@ -31,6 +27,16 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
   const displayName = assignedBarber
     ? assignedBarber.name
     : (deviceBarberId === 'all' ? 'All Barbers (Shop Manager)' : deviceBarberId);
+
+  useEffect(() => {
+    const status = notificationManager.getPermissionStatus();
+    setPermission(status);
+    if (status === 'granted') {
+      const targetId = assignedBarber?.id || deviceBarberId || 'all';
+      const targetName = assignedBarber?.name || (deviceBarberId === 'all' ? 'All Barbers' : deviceBarberId);
+      notificationManager.requestPermissionAndSubscribe(targetId, targetName);
+    }
+  }, [assignedBarber, deviceBarberId]);
 
   const handleSelectDeviceBarber = (barber: Barber | 'all') => {
     const id = barber === 'all' ? 'all' : barber.id;
@@ -48,7 +54,7 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
 
   const handleEnablePush = async () => {
     const targetId = assignedBarber?.id || deviceBarberId || 'all';
-    const targetName = assignedBarber?.name || deviceBarberId || 'All Barbers';
+    const targetName = assignedBarber?.name || (deviceBarberId === 'all' ? 'All Barbers' : deviceBarberId);
     const granted = await notificationManager.requestPermissionAndSubscribe(targetId, targetName);
     setPermission(granted ? 'granted' : 'denied');
     if (granted) {
@@ -59,6 +65,9 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
   };
 
   const handleTestAlert = () => {
+    const targetId = assignedBarber?.id || deviceBarberId || 'all';
+    const targetName = assignedBarber?.name || (deviceBarberId === 'all' ? 'All Barbers' : deviceBarberId);
+    notificationManager.requestPermissionAndSubscribe(targetId, targetName);
     const currentBarberName = assignedBarber?.name || 'Your Station';
     notificationManager.sendBarberArrivalAlert('Test Client', currentBarberName, '2:30 PM', assignedBarber?.id);
     setTested(true);
