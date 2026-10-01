@@ -81,43 +81,56 @@ export function App() {
         
         {/* STAFF VIEWS HEADER (Only shown when inside Barber Portal or Admin) */}
         {currentTab !== 'kiosk' && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', background: '#FFFFFF', padding: '12px 20px', borderRadius: 9999, border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <header style={{ marginBottom: '20px' }}>
+            {/* Center Top OF Logo */}
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '14px' }}>
+              <img
+                src="/logo.png"
+                alt="OF Barber & Supply"
+                style={{ height: '38px', width: 'auto', objectFit: 'contain' }}
+              />
+            </div>
+
+            {/* Navigation Controls Bar */}
+            <div className="staff-nav-bar">
               <button
                 onClick={() => {
                   setCurrentTab('kiosk');
                   handleResetKiosk();
                 }}
                 className="back-pill-btn"
+                style={{ padding: '8px 14px', fontSize: '0.82rem', whiteSpace: 'nowrap' }}
+                title="Exit to Customer Kiosk"
               >
-                <ArrowLeft size={16} />
-                <span>Back to Customer Kiosk</span>
-              </button>
-              <img src="/logo.png" alt="OF Logo" style={{ height: '28px', width: 'auto', objectFit: 'contain' }} />
-            </div>
-
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                onClick={() => {
-                  setCurrentTab('barber_portal');
-                }}
-                className={`nav-pill-btn ${currentTab === 'barber_portal' ? 'active' : ''}`}
-              >
-                <Bell size={16} />
-                <span>Barber Hub</span>
+                <ArrowLeft size={15} />
+                <span>Kiosk</span>
               </button>
 
-              <button
-                onClick={() => {
-                  setCurrentTab('admin');
-                }}
-                className={`nav-pill-btn ${currentTab === 'admin' ? 'active' : ''}`}
-              >
-                <Sliders size={16} />
-                <span>Admin</span>
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <button
+                  onClick={() => {
+                    setCurrentTab('barber_portal');
+                  }}
+                  className={`nav-pill-btn ${currentTab === 'barber_portal' ? 'active' : ''}`}
+                  style={{ padding: '8px 14px', fontSize: '0.82rem', whiteSpace: 'nowrap' }}
+                >
+                  <Bell size={15} />
+                  <span>Barber Hub</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setCurrentTab('admin');
+                  }}
+                  className={`nav-pill-btn ${currentTab === 'admin' ? 'active' : ''}`}
+                  style={{ padding: '8px 14px', fontSize: '0.82rem', whiteSpace: 'nowrap' }}
+                >
+                  <Sliders size={15} />
+                  <span>Admin</span>
+                </button>
+              </div>
             </div>
-          </div>
+          </header>
         )}
 
         {/* Tab 1: KIOSK FRONT ENTRANCE VIEW (Zero clutter, NO top bar for customers) */}

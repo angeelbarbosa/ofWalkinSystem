@@ -78,8 +78,20 @@
   justify-content: center;
 }
 
+.staff-nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #FFFFFF;
+  padding: 6px 10px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+  gap: 8px;
+}
+
 .nav-pill-btn {
-  padding: 8px 18px;
+  padding: 8px 16px;
   border-radius: var(--radius-full);
   font-size: 0.85rem;
   font-weight: 700;
@@ -87,7 +99,7 @@
   transition: all 0.25s ease;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .nav-pill-btn.active {
