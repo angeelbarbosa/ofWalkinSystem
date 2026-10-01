@@ -8,7 +8,13 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('push', (event) => {
-  let data = { title: 'New Client Check-In', body: 'A client has arrived for your appointment!', icon: '/favicon.svg' };
+  let data = {
+    title: '🔔 Client Check-In',
+    body: 'A client has arrived for your appointment!',
+    icon: '/logo.png',
+    badge: '/logo.png'
+  };
+
   try {
     if (event.data) {
       data = event.data.json();
@@ -21,15 +27,11 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body,
-    icon: data.icon || '/favicon.svg',
-    badge: '/favicon.svg',
-    vibrate: [200, 100, 200, 100, 400],
-    data: data.data || { url: '/' },
-    actions: [
-      { action: 'open', title: 'Open Dashboard' },
-      { action: 'ack', title: 'Acknowledge' }
-    ],
-    tag: 'client-arrival-' + Date.now(),
+    icon: data.icon || '/logo.png',
+    badge: data.badge || '/logo.png',
+    vibrate: [300, 150, 300, 150, 500],
+    data: data.data || { url: '/?portal=barber' },
+    tag: `arrival-${Date.now()}`,
     renotify: true,
     requireInteraction: true
   };

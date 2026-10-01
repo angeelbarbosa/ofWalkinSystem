@@ -1,4 +1,5 @@
 import { query, mutation } from "./_generated/server";
+import { api } from "./_generated/api";
 import { v } from "convex/values";
 
 export const get = query({
@@ -21,11 +22,25 @@ export const add = mutation({
   },
   handler: async (ctx, args) => {
     const checkInTime = new Date().toISOString();
-    return await ctx.db.insert("checkIns", {
+    const id = await ctx.db.insert("checkIns", {
       ...args,
       checkInTime,
       status: "waiting"
     });
+
+    // Schedule real-time Web Push alert to target barber's mobile lockscreen
+    try {
+      await ctx.scheduler.runAfter(0, api.pushActions.sendPushNotification, {
+        clientName: args.clientName,
+        barberName: args.barberName,
+        appointmentTime: args.appointmentTime,
+        barberId: args.barberId
+      });
+    } catch (e) {
+      console.warn("Could not schedule push notification:", e);
+    }
+
+    return id;
   }
 });
 

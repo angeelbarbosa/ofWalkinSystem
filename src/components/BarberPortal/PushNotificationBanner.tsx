@@ -39,10 +39,17 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
     notificationManager.setMyBarberPreference(name);
     onSelectBarberFilter(id);
     setIsEditingIdentity(false);
+
+    // Auto-update push subscription in background if permission already granted
+    if (permission === 'granted') {
+      notificationManager.requestPermissionAndSubscribe(id, name);
+    }
   };
 
   const handleEnablePush = async () => {
-    const granted = await notificationManager.requestPermission();
+    const targetId = assignedBarber?.id || deviceBarberId || 'all';
+    const targetName = assignedBarber?.name || deviceBarberId || 'All Barbers';
+    const granted = await notificationManager.requestPermissionAndSubscribe(targetId, targetName);
     setPermission(granted ? 'granted' : 'denied');
     if (granted) {
       const currentBarberName = assignedBarber?.name || 'Your Station';
@@ -256,8 +263,17 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
             </div>
           </div>
         )}
+
+        {/* Helpful iOS PWA Tip for Lockscreen Alerts */}
+        <div style={{ marginTop: 12, padding: '10px 14px', background: '#F4F4F5', borderRadius: 14, fontSize: '0.8rem', color: '#52525B', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Smartphone size={16} color="#09090B" style={{ flexShrink: 0 }} />
+          <span>
+            <strong>Lockscreen alerts while phone is locked/closed:</strong> On iPhone, tap the Safari Share button (bottom of screen) ➔ <strong>"Add to Home Screen"</strong> and open it from your Home Screen.
+          </span>
+        </div>
       </div>
     </div>
   );
 };
+
 

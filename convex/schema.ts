@@ -31,5 +31,15 @@ export default defineSchema({
     autoResetAppointmentSec: v.number(),
     soundAlertsEnabled: v.boolean(),
     pinCode: v.string()
-  })
+  }),
+
+  pushSubscriptions: defineTable({
+    barberId: v.string(),
+    barberName: v.string(),
+    endpoint: v.string(),
+    auth: v.string(),
+    p256dh: v.string(),
+    updatedAt: v.string()
+  }).index("by_endpoint", ["endpoint"])
 });
+

@@ -1,6 +1,19 @@
-// Notification & Device Vibration System for Barber Alerts
+import { convexClient } from './liveSync';
+import { api } from '../../convex/_generated/api';
 
 const DEVICE_BARBER_KEY = 'of_device_barber_id';
+export const VAPID_PUBLIC_KEY = 'BEKSIJuQidDwTEYEn8V8FTi6SBYq_aVMbmd58ZTp35FVPqtUlNAkxfOUrAz2QpE59Vf4uxCsLylD9-l79G76C40';
+
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
 
 export interface ArrivalToastEventData {
   clientName: string;
@@ -53,21 +66,54 @@ export class NotificationManager {
     return Notification.permission;
   }
 
-  async requestPermission(): Promise<boolean> {
+  async requestPermissionAndSubscribe(barberId: string = 'all', barberName: string = 'All Barbers'): Promise<boolean> {
     if (typeof window === 'undefined' || !('Notification' in window)) {
       alert('This browser does not support Web Push notifications.');
       return false;
     }
 
     try {
-      // Ensure SW is initialized before requesting permission
-      await this.initServiceWorker();
+      const reg = await this.initServiceWorker();
       const perm = await Notification.requestPermission();
-      return perm === 'granted';
+      if (perm !== 'granted') return false;
+
+      // Register true background Web Push with Convex
+      if (reg && 'pushManager' in reg) {
+        try {
+          let sub = await reg.pushManager.getSubscription();
+          if (!sub) {
+            sub = await reg.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+            });
+          }
+
+          const subJson = sub.toJSON();
+          if (subJson.endpoint && subJson.keys?.auth && subJson.keys?.p256dh && convexClient) {
+            await convexClient.mutation(api.notifications.saveSubscription, {
+              barberId,
+              barberName,
+              endpoint: subJson.endpoint,
+              auth: subJson.keys.auth,
+              p256dh: subJson.keys.p256dh
+            });
+          }
+        } catch (pushErr) {
+          console.warn('PushManager background subscription error:', pushErr);
+        }
+      }
+
+      return true;
     } catch {
       return false;
     }
   }
+
+  async requestPermission(): Promise<boolean> {
+    const pref = this.getMyBarberPreference();
+    return this.requestPermissionAndSubscribe(pref, pref);
+  }
+
 
   // Device Barber Association (e.g. Angel's phone vs All Barbers)
   getMyBarberPreference(): string {
