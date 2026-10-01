@@ -20,9 +20,13 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
     setPermission(notificationManager.getPermissionStatus());
   }, []);
 
-  const handleSelectDeviceBarber = (id: string) => {
+  const assignedBarber = barbers.find(b => b.id === deviceBarberId || b.name.toLowerCase() === deviceBarberId.toLowerCase());
+
+  const handleSelectDeviceBarber = (barber: Barber | 'all') => {
+    const id = barber === 'all' ? 'all' : barber.id;
+    const name = barber === 'all' ? 'all' : barber.name;
     setDeviceBarberId(id);
-    notificationManager.setMyBarberPreference(id);
+    notificationManager.setMyBarberPreference(name);
     onSelectBarberFilter(id);
   };
 
@@ -30,19 +34,17 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
     const granted = await notificationManager.requestPermission();
     setPermission(granted ? 'granted' : 'denied');
     if (granted) {
-      const currentBarberName = barbers.find(b => b.id === deviceBarberId)?.name || 'Your Station';
-      notificationManager.sendBarberArrivalAlert('Test Client', currentBarberName, '2:30 PM', deviceBarberId);
+      const currentBarberName = assignedBarber?.name || 'Your Station';
+      notificationManager.sendBarberArrivalAlert('Test Client', currentBarberName, '2:30 PM', assignedBarber?.id);
       setTested(true);
     }
   };
 
   const handleTestAlert = () => {
-    const currentBarberName = barbers.find(b => b.id === deviceBarberId)?.name || 'Your Station';
-    notificationManager.sendBarberArrivalAlert('Test Client', currentBarberName, '2:30 PM', deviceBarberId);
+    const currentBarberName = assignedBarber?.name || 'Your Station';
+    notificationManager.sendBarberArrivalAlert('Test Client', currentBarberName, '2:30 PM', assignedBarber?.id);
     setTested(true);
   };
-
-  const assignedBarber = barbers.find(b => b.id === deviceBarberId);
 
   return (
     <div
@@ -139,11 +141,11 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
         </button>
 
         {barbers.map((b) => {
-          const isSelected = deviceBarberId === b.id;
+          const isSelected = deviceBarberId === b.id || deviceBarberId.toLowerCase() === b.name.toLowerCase();
           return (
             <button
               key={b.id}
-              onClick={() => handleSelectDeviceBarber(b.id)}
+              onClick={() => handleSelectDeviceBarber(b)}
               style={{
                 padding: '6px 14px',
                 borderRadius: 9999,

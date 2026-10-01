@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ConvexReactClient } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Barber, CheckInRecord, ShopConfig } from '../types';
@@ -14,6 +14,9 @@ export function useLiveSystem() {
   const [config, setConfig] = useState<ShopConfig>(() => storage.getConfig());
   const [checkIns, setCheckIns] = useState<CheckInRecord[]>(() => storage.getCheckIns());
   const [isCloudConnected, setIsCloudConnected] = useState<boolean>(!!convexClient);
+
+  const knownCheckInIdsRef = useRef<Set<string>>(new Set());
+  const isInitialCheckInsLoadRef = useRef<boolean>(true);
 
   useEffect(() => {
     // 1. If Convex Client is available, set up live cloud watch queries
@@ -36,6 +39,27 @@ export function useLiveSystem() {
               status: c.status as any,
               notes: c.notes
             }));
+
+            // Check for newly arrived clients in real time from cloud
+            if (isInitialCheckInsLoadRef.current) {
+              mapped.forEach((c) => knownCheckInIdsRef.current.add(c.id));
+              isInitialCheckInsLoadRef.current = false;
+            } else {
+              mapped.forEach((c) => {
+                if (!knownCheckInIdsRef.current.has(c.id)) {
+                  knownCheckInIdsRef.current.add(c.id);
+                  if (c.status === 'waiting' || c.status === 'called') {
+                    notificationManager.sendBarberArrivalAlert(
+                      c.clientName,
+                      c.barberName || '',
+                      c.appointmentTime,
+                      c.barberId
+                    );
+                  }
+                }
+              });
+            }
+
             setCheckIns(mapped);
             storage.saveCheckIns(mapped);
           }

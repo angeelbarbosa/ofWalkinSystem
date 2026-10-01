@@ -73,8 +73,16 @@ export class NotificationManager {
 
   // Send push notification to the barber's phone screen / lockscreen
   async sendBarberArrivalAlert(clientName: string, barberName: string, appointmentTime?: string, barberId?: string) {
-    const myBarberId = this.getMyBarberPreference();
-    const isTargetedToThisDevice = myBarberId === 'all' || myBarberId === barberId || myBarberId === barberName;
+    const myBarberPref = (this.getMyBarberPreference() || 'all').trim().toLowerCase();
+    const targetName = (barberName || '').trim().toLowerCase();
+    const targetId = (barberId || '').trim().toLowerCase();
+
+    const isTargetedToThisDevice =
+      myBarberPref === 'all' ||
+      myBarberPref === '' ||
+      myBarberPref === targetName ||
+      myBarberPref === targetId ||
+      (targetName && targetName.includes(myBarberPref));
 
     // 1. Broadcast to other tabs/windows in real time
     if (this.channel) {
@@ -98,7 +106,7 @@ export class NotificationManager {
 
     // 3. Trigger Web Notification
     if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-      const title = `🔔 ${clientName} is here for you!`;
+      const title = `🔔 ${clientName} is here for ${barberName || 'you'}!`;
       const body = appointmentTime 
         ? `Appointment at ${appointmentTime} • Waiting in lobby.` 
         : `Arrival • Waiting in lobby.`;
