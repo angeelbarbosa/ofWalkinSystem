@@ -210,28 +210,16 @@ export function App() {
           />
         )}
 
-        {/* Discreet Hidden Staff Unlock Button at Bottom Corner */}
+        {/* Staff / Barber Hub Quick Access Button */}
         {currentTab === 'kiosk' && (
-          <div style={{ position: 'fixed', bottom: 12, right: 12, opacity: 0.25, transition: 'opacity 0.2s' }}
-               onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-               onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.25')}>
+          <div className="staff-lock-container">
             <button
               onClick={() => handleOpenStaffModal('barber_portal')}
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: '50%',
-                background: '#FFFFFF',
-                border: '1px solid #E2E8F0',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#64748B',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
-              }}
-              title="Staff Access (PIN Required)"
+              className="staff-hub-trigger-btn"
+              title="Barber Hub & Staff Access (PIN Required)"
             >
-              <Lock size={16} />
+              <Lock size={14} />
+              <span>Barber Hub</span>
             </button>
           </div>
         )}

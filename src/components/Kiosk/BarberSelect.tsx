@@ -22,22 +22,20 @@ export const BarberSelect: React.FC<BarberSelectProps> = ({
   return (
     <div className="barber-selection-container pop-in" style={{ maxWidth: '880px' }}>
       {/* Header */}
-      <div className="step-header" style={{ marginBottom: '32px' }}>
+      <div className="step-header">
         <button className="back-pill-btn" onClick={onBack}>
-          <ArrowLeft size={18} />
+          <ArrowLeft size={16} />
           <span>Back</span>
         </button>
 
-        <div style={{ textAlign: 'center' }}>
-          <h2 style={{ fontSize: '2.2rem', fontWeight: 850, color: '#09090B' }}>
+        <div className="step-header-text">
+          <h2 className="step-title">
             Who is Your Appointment With?
           </h2>
-          <p style={{ fontSize: '1rem', color: '#52525B', fontWeight: 600 }}>
+          <p className="step-subtitle">
             Tap your barber to check in
           </p>
         </div>
-
-        <div style={{ width: 80 }} /> {/* Spacer */}
       </div>
 
       {/* Barbers Grid */}

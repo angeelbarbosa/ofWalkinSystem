@@ -22,6 +22,14 @@ export function getCurrentFormattedTime(): string {
   return `${h}:${m} ${p}`;
 }
 
+const triggerHaptic = () => {
+  if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+    try {
+      navigator.vibrate(8);
+    } catch (_) {}
+  }
+};
+
 export const IosTimePicker: React.FC<IosTimePickerProps> = ({ value, onChange }) => {
   const parseTime = useCallback(() => {
     if (value) {
@@ -50,7 +58,14 @@ export const IosTimePicker: React.FC<IosTimePickerProps> = ({ value, onChange })
   const hourRef = useRef<HTMLDivElement>(null);
   const minuteRef = useRef<HTMLDivElement>(null);
   const periodRef = useRef<HTMLDivElement>(null);
-  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const lastIndicesRef = useRef({
+    hour: HOURS.indexOf(currentHour),
+    minute: MINUTES.indexOf(currentMinute),
+    period: PERIODS.indexOf(currentPeriod)
+  });
+
+  const scrollDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Scroll wheels to current position
   const scrollToCurrent = useCallback((smooth = false) => {
@@ -61,12 +76,15 @@ export const IosTimePicker: React.FC<IosTimePickerProps> = ({ value, onChange })
 
     if (hIndex !== -1 && hourRef.current) {
       hourRef.current.scrollTo({ top: hIndex * ITEM_HEIGHT, behavior });
+      lastIndicesRef.current.hour = hIndex;
     }
     if (mIndex !== -1 && minuteRef.current) {
       minuteRef.current.scrollTo({ top: mIndex * ITEM_HEIGHT, behavior });
+      lastIndicesRef.current.minute = mIndex;
     }
     if (pIndex !== -1 && periodRef.current) {
       periodRef.current.scrollTo({ top: pIndex * ITEM_HEIGHT, behavior });
+      lastIndicesRef.current.period = pIndex;
     }
   }, [currentHour, currentMinute, currentPeriod]);
 
@@ -74,25 +92,31 @@ export const IosTimePicker: React.FC<IosTimePickerProps> = ({ value, onChange })
   useEffect(() => {
     const timer = setTimeout(() => {
       scrollToCurrent(false);
-    }, 20);
+    }, 30);
     return () => clearTimeout(timer);
   }, []);
 
-  const handleScrollWheel = (
+  const handleScroll = (
     ref: React.RefObject<HTMLDivElement | null>,
     list: string[],
     type: 'hour' | 'minute' | 'period'
   ) => {
     if (!ref.current) return;
-    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
 
-    scrollTimeoutRef.current = setTimeout(() => {
-      if (!ref.current) return;
-      const scrollTop = ref.current.scrollTop;
-      const index = Math.round(scrollTop / ITEM_HEIGHT);
-      const clampedIndex = Math.max(0, Math.min(index, list.length - 1));
+    const scrollTop = ref.current.scrollTop;
+    const rawIndex = Math.round(scrollTop / ITEM_HEIGHT);
+    const clampedIndex = Math.max(0, Math.min(rawIndex, list.length - 1));
+
+    // Check if index changed to trigger haptic feedback immediately
+    if (clampedIndex !== lastIndicesRef.current[type]) {
+      lastIndicesRef.current[type] = clampedIndex;
+      triggerHaptic();
+    }
+
+    // Debounce the state update to prevent re-render thrashing during scroll
+    if (scrollDebounceRef.current) clearTimeout(scrollDebounceRef.current);
+    scrollDebounceRef.current = setTimeout(() => {
       const selectedVal = list[clampedIndex];
-
       let newH = currentHour;
       let newM = currentMinute;
       let newP = currentPeriod;
@@ -105,10 +129,11 @@ export const IosTimePicker: React.FC<IosTimePickerProps> = ({ value, onChange })
       if (newTimeStr !== value) {
         onChange(newTimeStr);
       }
-    }, 60);
+    }, 80);
   };
 
   const handleSelectExact = (h: string, m: string, p: string) => {
+    triggerHaptic();
     const newTimeStr = `${h}:${m} ${p}`;
     onChange(newTimeStr);
 
@@ -118,17 +143,20 @@ export const IosTimePicker: React.FC<IosTimePickerProps> = ({ value, onChange })
 
     if (hIndex !== -1 && hourRef.current) {
       hourRef.current.scrollTo({ top: hIndex * ITEM_HEIGHT, behavior: 'smooth' });
+      lastIndicesRef.current.hour = hIndex;
     }
     if (mIndex !== -1 && minuteRef.current) {
       minuteRef.current.scrollTo({ top: mIndex * ITEM_HEIGHT, behavior: 'smooth' });
+      lastIndicesRef.current.minute = mIndex;
     }
     if (pIndex !== -1 && periodRef.current) {
       periodRef.current.scrollTo({ top: pIndex * ITEM_HEIGHT, behavior: 'smooth' });
+      lastIndicesRef.current.period = pIndex;
     }
   };
 
   return (
-    <div style={{ width: '100%' }}>
+    <div style={{ width: '100%', touchAction: 'pan-y' }}>
       {/* iOS Apple Cylinder Scroll Wheel Picker */}
       <div
         style={{
@@ -139,7 +167,9 @@ export const IosTimePicker: React.FC<IosTimePickerProps> = ({ value, onChange })
           border: '1px solid var(--border-subtle)',
           overflow: 'hidden',
           display: 'flex',
-          userSelect: 'none'
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          touchAction: 'pan-y'
         }}
       >
         {/* Centered Selection Lens / Glass Bar */}
@@ -188,11 +218,14 @@ export const IosTimePicker: React.FC<IosTimePickerProps> = ({ value, onChange })
         {/* Column 1: HOURS (1 to 12) */}
         <div
           ref={hourRef}
-          onScroll={() => handleScrollWheel(hourRef, HOURS, 'hour')}
+          onScroll={() => handleScroll(hourRef, HOURS, 'hour')}
           style={{
             flex: 1,
             height: '100%',
             overflowY: 'auto',
+            overflowX: 'hidden',
+            touchAction: 'pan-y',
+            overscrollBehaviorY: 'contain',
             scrollSnapType: 'y mandatory',
             WebkitOverflowScrolling: 'touch',
             scrollbarWidth: 'none',
@@ -218,7 +251,8 @@ export const IosTimePicker: React.FC<IosTimePickerProps> = ({ value, onChange })
                   color: isSelected ? '#09090B' : '#A1A1AA',
                   transform: isSelected ? 'scale(1.08)' : 'scale(0.95)',
                   transition: 'color 0.15s, transform 0.15s',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  touchAction: 'pan-y'
                 }}
               >
                 {h}
@@ -237,7 +271,8 @@ export const IosTimePicker: React.FC<IosTimePickerProps> = ({ value, onChange })
             fontWeight: 800,
             color: '#09090B',
             zIndex: 3,
-            width: 16
+            width: 16,
+            userSelect: 'none'
           }}
         >
           :
@@ -246,11 +281,14 @@ export const IosTimePicker: React.FC<IosTimePickerProps> = ({ value, onChange })
         {/* Column 2: MINUTES (00 to 59) */}
         <div
           ref={minuteRef}
-          onScroll={() => handleScrollWheel(minuteRef, MINUTES, 'minute')}
+          onScroll={() => handleScroll(minuteRef, MINUTES, 'minute')}
           style={{
             flex: 1,
             height: '100%',
             overflowY: 'auto',
+            overflowX: 'hidden',
+            touchAction: 'pan-y',
+            overscrollBehaviorY: 'contain',
             scrollSnapType: 'y mandatory',
             WebkitOverflowScrolling: 'touch',
             scrollbarWidth: 'none',
@@ -276,7 +314,8 @@ export const IosTimePicker: React.FC<IosTimePickerProps> = ({ value, onChange })
                   color: isSelected ? '#09090B' : '#A1A1AA',
                   transform: isSelected ? 'scale(1.08)' : 'scale(0.95)',
                   transition: 'color 0.15s, transform 0.15s',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  touchAction: 'pan-y'
                 }}
               >
                 {m}
@@ -288,11 +327,14 @@ export const IosTimePicker: React.FC<IosTimePickerProps> = ({ value, onChange })
         {/* Column 3: AM / PM */}
         <div
           ref={periodRef}
-          onScroll={() => handleScrollWheel(periodRef, PERIODS, 'period')}
+          onScroll={() => handleScroll(periodRef, PERIODS, 'period')}
           style={{
             flex: 1,
             height: '100%',
             overflowY: 'auto',
+            overflowX: 'hidden',
+            touchAction: 'pan-y',
+            overscrollBehaviorY: 'contain',
             scrollSnapType: 'y mandatory',
             WebkitOverflowScrolling: 'touch',
             scrollbarWidth: 'none',
@@ -318,7 +360,8 @@ export const IosTimePicker: React.FC<IosTimePickerProps> = ({ value, onChange })
                   color: isSelected ? '#09090B' : '#A1A1AA',
                   transform: isSelected ? 'scale(1.08)' : 'scale(0.95)',
                   transition: 'color 0.15s, transform 0.15s',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  touchAction: 'pan-y'
                 }}
               >
                 {p}

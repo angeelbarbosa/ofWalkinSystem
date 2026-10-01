@@ -602,12 +602,171 @@
   color: #09090B;
 }
 
-/* Mobile Responsiveness */
+/* Kiosk Home Layout */
+.kiosk-home-container {
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.kiosk-logo-wrapper {
+  margin-bottom: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.kiosk-brand-logo {
+  height: 84px;
+  width: auto;
+  object-fit: contain;
+  margin-bottom: 14px;
+  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.08));
+}
+
+.kiosk-welcome-subtitle {
+  font-size: 1.25rem;
+  color: #52525B;
+  font-weight: 600;
+}
+
+/* Staff Access Floating Pill */
+.staff-lock-container {
+  position: fixed;
+  bottom: max(16px, env(safe-area-inset-bottom, 16px));
+  right: 16px;
+  z-index: 100;
+}
+
+.staff-hub-trigger-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #09090B;
+  border: 1px solid #E4E4E7;
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  font-size: 0.82rem;
+  font-weight: 750;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.staff-hub-trigger-btn:hover {
+  background: #09090B;
+  color: #FFFFFF;
+  border-color: #09090B;
+  transform: translateY(-2px);
+}
+
+/* Step Header Layout */
+.step-header-text {
+  text-align: center;
+}
+
+.step-title {
+  font-size: 2.2rem;
+  font-weight: 850;
+  color: #09090B;
+  margin-bottom: 4px;
+}
+
+.step-subtitle {
+  font-size: 1rem;
+  color: #52525B;
+  font-weight: 600;
+}
+
+/* Mobile Responsiveness & Perfect Centering */
 @media (max-width: 768px) {
+  .content-wrapper {
+    padding: 16px 14px !important;
+  }
+
+  .kiosk-home-container {
+    padding: 10px 0;
+  }
+
+  .kiosk-logo-wrapper {
+    margin-bottom: 18px;
+  }
+
+  .kiosk-brand-logo {
+    height: 58px;
+    margin-bottom: 8px;
+  }
+
+  .kiosk-welcome-subtitle {
+    font-size: 1.05rem;
+  }
+
   .choice-cards-grid {
     grid-template-columns: 1fr !important;
+    gap: 14px;
+    max-width: 400px;
+    width: 100%;
   }
+
   .bubbly-choice-card {
-    padding: 32px 20px;
+    padding: 22px 20px;
+    border-radius: 24px;
+  }
+
+  .card-icon-bubble {
+    width: 68px;
+    height: 68px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+  }
+
+  .card-icon-bubble svg {
+    width: 36px;
+    height: 36px;
+  }
+
+  .choice-card-title {
+    font-size: 1.5rem;
+    margin-bottom: 4px;
+  }
+
+  .choice-card-desc {
+    font-size: 0.92rem;
+    margin-bottom: 14px;
+  }
+
+  .choice-card-action-btn {
+    padding: 12px 18px;
+    font-size: 0.95rem;
+  }
+
+  .step-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .step-title {
+    font-size: 1.6rem;
+  }
+
+  .step-subtitle {
+    font-size: 0.9rem;
+  }
+
+  .bubbly-modal-card {
+    padding: 24px 18px !important;
+    border-radius: 24px !important;
   }
 }

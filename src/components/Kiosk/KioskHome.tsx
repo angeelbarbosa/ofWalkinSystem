@@ -21,27 +21,21 @@ export const KioskHome: React.FC<KioskHomeProps> = ({
   };
 
   return (
-    <div className="pop-in" style={{ width: '100%', maxWidth: '880px', margin: '0 auto', textAlign: 'center' }}>
-      {/* Brand Logo (No store name text) */}
-      <div style={{ marginBottom: '36px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+    <div className="kiosk-home-container pop-in">
+      {/* Brand Logo */}
+      <div className="kiosk-logo-wrapper">
         <img
           src="/logo.png"
           alt="Brand Logo"
-          style={{
-            height: '92px',
-            width: 'auto',
-            objectFit: 'contain',
-            marginBottom: '16px',
-            filter: 'drop-shadow(0 4px 14px rgba(0, 0, 0, 0.08))'
-          }}
+          className="kiosk-brand-logo"
         />
-        <p style={{ fontSize: '1.25rem', color: '#52525B', fontWeight: 600 }}>
+        <p className="kiosk-welcome-subtitle">
           Welcome in! Please select an option:
         </p>
       </div>
 
       {/* Exactly 2 Clean, Bubbly Choice Cards */}
-      <div className="choice-cards-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px' }}>
+      <div className="choice-cards-grid">
         {/* Shopping Card */}
         <div
           className="bubbly-choice-card"
@@ -50,7 +44,7 @@ export const KioskHome: React.FC<KioskHomeProps> = ({
           tabIndex={0}
         >
           <div className="card-icon-bubble">
-            <ShoppingBag size={54} strokeWidth={2.2} />
+            <ShoppingBag size={48} strokeWidth={2.2} />
           </div>
 
           <h2 className="choice-card-title">
@@ -63,7 +57,7 @@ export const KioskHome: React.FC<KioskHomeProps> = ({
 
           <button className="choice-card-action-btn">
             <span>I'm Shopping</span>
-            <ChevronRight size={22} />
+            <ChevronRight size={20} />
           </button>
         </div>
 
@@ -75,7 +69,7 @@ export const KioskHome: React.FC<KioskHomeProps> = ({
           tabIndex={0}
         >
           <div className="card-icon-bubble">
-            <Scissors size={54} strokeWidth={2.2} />
+            <Scissors size={48} strokeWidth={2.2} />
           </div>
 
           <h2 className="choice-card-title">
@@ -88,7 +82,7 @@ export const KioskHome: React.FC<KioskHomeProps> = ({
 
           <button className="choice-card-action-btn">
             <span>Check In</span>
-            <ChevronRight size={22} />
+            <ChevronRight size={20} />
           </button>
         </div>
       </div>
