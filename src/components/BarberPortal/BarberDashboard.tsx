@@ -7,11 +7,14 @@ import {
   Trash2, 
   Armchair,
   Scissors,
-  Check
+  Check,
+  Bell,
+  X
 } from 'lucide-react';
 import type { Barber, CheckInRecord, ShopConfig } from '../../types';
 import { storage } from '../../utils/storage';
 import { PushNotificationBanner } from './PushNotificationBanner';
+import type { ArrivalToastEventData } from '../../utils/notifications';
 
 interface BarberDashboardProps {
   barbers: Barber[];
@@ -29,12 +32,34 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
 }) => {
   const [selectedBarberId, setSelectedBarberId] = useState<string>('all');
   const [currentTime, setCurrentTime] = useState(Date.now());
+  const [activeToast, setActiveToast] = useState<ArrivalToastEventData | null>(null);
 
   // Tick every second to update elapsed wait times live
   useEffect(() => {
     const interval = setInterval(() => setCurrentTime(Date.now()), 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Listen for real-time in-app arrival toast events
+  useEffect(() => {
+    const handleArrivalToast = (e: Event) => {
+      const customEvent = e as CustomEvent<ArrivalToastEventData>;
+      if (customEvent.detail) {
+        setActiveToast(customEvent.detail);
+      }
+    };
+
+    window.addEventListener('barber_arrival_toast', handleArrivalToast);
+    return () => window.removeEventListener('barber_arrival_toast', handleArrivalToast);
+  }, []);
+
+  // Auto-dismiss toast after 10 seconds
+  useEffect(() => {
+    if (activeToast) {
+      const timer = setTimeout(() => setActiveToast(null), 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [activeToast]);
 
   const filteredCheckIns = checkIns.filter(record => {
     if (selectedBarberId === 'all') return true;
@@ -72,7 +97,101 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
   };
 
   return (
-    <div className="pop-in">
+    <div className="pop-in" style={{ position: 'relative' }}>
+      {/* Floating In-App Arrival Toast Banner */}
+      {activeToast && (
+        <div
+          className="slide-down"
+          style={{
+            position: 'fixed',
+            top: 24,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 9999,
+            width: 'calc(100% - 32px)',
+            maxWidth: 520,
+            background: '#09090B',
+            color: '#FFFFFF',
+            borderRadius: 20,
+            padding: '16px 20px',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 14,
+            animation: 'slideDown 0.3s ease-out'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 14,
+                background: '#FFFFFF',
+                color: '#09090B',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}
+            >
+              <Bell size={22} />
+            </div>
+            <div>
+              <div style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#A1A1AA', fontWeight: 700 }}>
+                🔔 Client Checked In
+              </div>
+              <div style={{ fontSize: '1.05rem', fontWeight: 850, color: '#FFFFFF', marginTop: 1 }}>
+                {activeToast.clientName} is here for {activeToast.barberName}!
+              </div>
+              {activeToast.appointmentTime && (
+                <div style={{ fontSize: '0.8rem', color: '#D4D4D8', marginTop: 2 }}>
+                  Appointment: <strong>{activeToast.appointmentTime}</strong> • Waiting in lobby
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button
+              onClick={() => setActiveToast(null)}
+              style={{
+                background: 'rgba(255,255,255,0.15)',
+                color: '#FFFFFF',
+                border: 'none',
+                padding: '8px 14px',
+                borderRadius: 9999,
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6
+              }}
+            >
+              <Check size={14} />
+              <span>Got it</span>
+            </button>
+            <button
+              onClick={() => setActiveToast(null)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#A1A1AA',
+                cursor: 'pointer',
+                padding: 4,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Push Notification Banner */}
       <PushNotificationBanner
         barbers={barbers}

@@ -49,7 +49,7 @@ export function useLiveSystem() {
                 if (!knownCheckInIdsRef.current.has(c.id)) {
                   knownCheckInIdsRef.current.add(c.id);
                   if (c.status === 'waiting' || c.status === 'called') {
-                    notificationManager.sendBarberArrivalAlert(
+                    notificationManager.triggerLocalAlert(
                       c.clientName,
                       c.barberName || '',
                       c.appointmentTime,
@@ -127,6 +127,14 @@ export function useLiveSystem() {
     notificationManager.onMessage((data: any) => {
       if (data?.type === 'NEW_CHECKIN') {
         handleCheckInsUpdate();
+        if (data.clientName) {
+          notificationManager.triggerLocalAlert(
+            data.clientName,
+            data.barberName || '',
+            data.appointmentTime,
+            data.barberId
+          );
+        }
       }
     });
 
@@ -173,7 +181,7 @@ export function useLiveSystem() {
     }
 
     // Trigger phone buzz & push
-    notificationManager.sendBarberArrivalAlert(clientName, barberName, appointmentTime);
+    notificationManager.sendBarberArrivalAlert(clientName, barberName, appointmentTime, barberId);
 
     const newRecord: CheckInRecord = {
       id: 'chk-' + Date.now(),

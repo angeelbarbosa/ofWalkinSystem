@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Vibrate, CheckCircle, Smartphone, UserCheck } from 'lucide-react';
+import { Bell, Vibrate, CheckCircle, Smartphone, UserCheck, RefreshCw, X } from 'lucide-react';
 import type { Barber } from '../../types';
 import { notificationManager } from '../../utils/notifications';
 
@@ -14,13 +14,23 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
 }) => {
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [deviceBarberId, setDeviceBarberId] = useState<string>(() => notificationManager.getMyBarberPreference());
+  const [isEditingIdentity, setIsEditingIdentity] = useState<boolean>(() => {
+    const pref = notificationManager.getMyBarberPreference();
+    return !pref || pref === 'all';
+  });
   const [tested, setTested] = useState(false);
 
   useEffect(() => {
     setPermission(notificationManager.getPermissionStatus());
   }, []);
 
-  const assignedBarber = barbers.find(b => b.id === deviceBarberId || b.name.toLowerCase() === deviceBarberId.toLowerCase());
+  const assignedBarber = barbers.find(
+    b => b.id === deviceBarberId || b.name.toLowerCase() === deviceBarberId.toLowerCase()
+  );
+
+  const displayName = assignedBarber
+    ? assignedBarber.name
+    : (deviceBarberId === 'all' ? 'All Barbers (Shop Manager)' : deviceBarberId);
 
   const handleSelectDeviceBarber = (barber: Barber | 'all') => {
     const id = barber === 'all' ? 'all' : barber.id;
@@ -28,6 +38,7 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
     setDeviceBarberId(id);
     notificationManager.setMyBarberPreference(name);
     onSelectBarberFilter(id);
+    setIsEditingIdentity(false);
   };
 
   const handleEnablePush = async () => {
@@ -117,52 +128,136 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
         </div>
       </div>
 
-      {/* Choose Device Identity */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', paddingTop: 10, borderTop: '1px solid #F4F4F5' }}>
-        <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#71717A', display: 'flex', alignItems: 'center', gap: 4 }}>
-          <UserCheck size={14} />
-          This Phone Belongs To:
-        </span>
+      {/* Device Identity Selection / Confirmation */}
+      <div style={{ paddingTop: 10, borderTop: '1px solid #F4F4F5' }}>
+        {!isEditingIdentity && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#71717A', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <UserCheck size={14} />
+                This Phone Belongs To:
+              </span>
+              <span
+                style={{
+                  background: '#09090B',
+                  color: '#FFFFFF',
+                  padding: '5px 14px',
+                  borderRadius: 9999,
+                  fontSize: '0.85rem',
+                  fontWeight: 800,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
+                }}
+              >
+                <CheckCircle size={14} color="#FFFFFF" />
+                <span>{displayName}</span>
+              </span>
+            </div>
 
-        <button
-          onClick={() => handleSelectDeviceBarber('all')}
-          style={{
-            padding: '6px 12px',
-            borderRadius: 9999,
-            fontSize: '0.8rem',
-            fontWeight: 700,
-            background: deviceBarberId === 'all' ? '#09090B' : '#F4F4F5',
-            color: deviceBarberId === 'all' ? '#FFFFFF' : '#52525B',
-            cursor: 'pointer',
-            border: 'none'
-          }}
-        >
-          All Barbers (Shop Manager)
-        </button>
-
-        {barbers.map((b) => {
-          const isSelected = deviceBarberId === b.id || deviceBarberId.toLowerCase() === b.name.toLowerCase();
-          return (
             <button
-              key={b.id}
-              onClick={() => handleSelectDeviceBarber(b)}
+              onClick={() => setIsEditingIdentity(true)}
               style={{
+                background: '#F4F4F5',
+                color: '#09090B',
+                border: '1px solid #E4E4E7',
                 padding: '6px 14px',
                 borderRadius: 9999,
                 fontSize: '0.8rem',
                 fontWeight: 700,
-                background: isSelected ? '#09090B' : '#F4F4F5',
-                color: isSelected ? '#FFFFFF' : '#52525B',
                 cursor: 'pointer',
-                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
                 transition: 'all 0.15s'
               }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#E4E4E7';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#F4F4F5';
+              }}
             >
-              {b.name}
+              <RefreshCw size={12} />
+              <span>Switch Barber / Misclicked?</span>
             </button>
-          );
-        })}
+          </div>
+        )}
+
+        {isEditingIdentity && (
+          <div className="slide-down" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#09090B', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <UserCheck size={14} />
+                Select who uses this phone (notifications will only buzz this device):
+              </span>
+              {deviceBarberId && deviceBarberId !== 'all' && (
+                <button
+                  onClick={() => setIsEditingIdentity(false)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#71717A',
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4
+                  }}
+                >
+                  <X size={12} />
+                  <span>Cancel</span>
+                </button>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <button
+                onClick={() => handleSelectDeviceBarber('all')}
+                style={{
+                  padding: '7px 14px',
+                  borderRadius: 9999,
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  background: deviceBarberId === 'all' ? '#09090B' : '#F4F4F5',
+                  color: deviceBarberId === 'all' ? '#FFFFFF' : '#52525B',
+                  cursor: 'pointer',
+                  border: 'none',
+                  transition: 'all 0.15s'
+                }}
+              >
+                All Barbers (Shop Manager)
+              </button>
+
+              {barbers.map((b) => {
+                const isSelected = deviceBarberId === b.id || deviceBarberId.toLowerCase() === b.name.toLowerCase();
+                return (
+                  <button
+                    key={b.id}
+                    onClick={() => handleSelectDeviceBarber(b)}
+                    style={{
+                      padding: '7px 16px',
+                      borderRadius: 9999,
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      background: isSelected ? '#09090B' : '#F4F4F5',
+                      color: isSelected ? '#FFFFFF' : '#52525B',
+                      cursor: 'pointer',
+                      border: 'none',
+                      transition: 'all 0.15s'
+                    }}
+                  >
+                    {b.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 };
+
