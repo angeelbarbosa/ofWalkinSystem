@@ -14,7 +14,7 @@ import {
 import type { Barber, CheckInRecord, ShopConfig } from '../../types';
 import { storage } from '../../utils/storage';
 import { PushNotificationBanner } from './PushNotificationBanner';
-import type { ArrivalToastEventData } from '../../utils/notifications';
+import { notificationManager, type ArrivalToastEventData } from '../../utils/notifications';
 
 interface BarberDashboardProps {
   barbers: Barber[];
@@ -30,9 +30,15 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
   config: _config,
   onUpdateStatus
 }) => {
-  const [selectedBarberId, setSelectedBarberId] = useState<string>('all');
+  const [selectedBarberId, setSelectedBarberId] = useState<string>(() => notificationManager.getMyBarberPreference());
   const [currentTime, setCurrentTime] = useState(Date.now());
   const [activeToast, setActiveToast] = useState<ArrivalToastEventData | null>(null);
+
+  const assignedBarber = barbers.find(
+    b => b.id === selectedBarberId || b.name.toLowerCase() === selectedBarberId.toLowerCase()
+  );
+  const isSingleBarberMode = selectedBarberId !== 'all' && selectedBarberId !== '';
+  const barberDisplayName = assignedBarber ? assignedBarber.name : (selectedBarberId === 'all' ? 'All Barbers' : selectedBarberId);
 
   // Tick every second to update elapsed wait times live
   useEffect(() => {
@@ -62,8 +68,13 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
   }, [activeToast]);
 
   const filteredCheckIns = checkIns.filter(record => {
-    if (selectedBarberId === 'all') return true;
-    return record.barberId === selectedBarberId || !record.barberId;
+    if (selectedBarberId === 'all' || !selectedBarberId) return true;
+    const target = selectedBarberId.toLowerCase();
+    return (
+      record.barberId === selectedBarberId ||
+      (record.barberName && record.barberName.toLowerCase() === target) ||
+      (assignedBarber && record.barberName && record.barberName.toLowerCase() === assignedBarber.name.toLowerCase())
+    );
   });
 
   const waitingList = filteredCheckIns.filter(r => r.status === 'waiting' || r.status === 'called');
@@ -91,7 +102,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
   };
 
   const handleClearHistory = () => {
-    if (confirm('Clear completed clients from today\'s live queue?')) {
+    if (confirm(`Clear completed cuts from ${isSingleBarberMode ? `${barberDisplayName}'s history` : 'today\'s queue'}?`)) {
       storage.clearCompletedCheckIns();
     }
   };
@@ -109,12 +120,12 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
             transform: 'translateX(-50%)',
             zIndex: 9999,
             width: 'calc(100% - 32px)',
-            maxWidth: 520,
+            maxWidth: 500,
             background: '#09090B',
             color: '#FFFFFF',
             borderRadius: 20,
             padding: '16px 20px',
-            boxShadow: '0 20px 40px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.1)',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -125,9 +136,9 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             <div
               style={{
-                width: 44,
-                height: 44,
-                borderRadius: 14,
+                width: 42,
+                height: 42,
+                borderRadius: 12,
                 background: '#FFFFFF',
                 color: '#09090B',
                 display: 'flex',
@@ -136,14 +147,14 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                 flexShrink: 0
               }}
             >
-              <Bell size={22} />
+              <Bell size={20} />
             </div>
             <div>
-              <div style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#A1A1AA', fontWeight: 700 }}>
-                🔔 Client Checked In
+              <div style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#A1A1AA', fontWeight: 700 }}>
+                🔔 Client Arrived
               </div>
               <div style={{ fontSize: '1.05rem', fontWeight: 850, color: '#FFFFFF', marginTop: 1 }}>
-                {activeToast.clientName} is here for {activeToast.barberName}!
+                {activeToast.clientName} is here for you!
               </div>
               {activeToast.appointmentTime && (
                 <div style={{ fontSize: '0.8rem', color: '#D4D4D8', marginTop: 2 }}>
@@ -192,121 +203,129 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
         </div>
       )}
 
-      {/* Push Notification Banner */}
+      {/* Minimal Header & Barber Identity */}
       <PushNotificationBanner
         barbers={barbers}
+        selectedBarberId={selectedBarberId}
         onSelectBarberFilter={setSelectedBarberId}
       />
 
-      {/* Top Controls & Station Filter Banner */}
-      <div className="portal-header-banner">
-        <div>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 850, color: '#09090B', marginBottom: 4 }}>
-            Barber Station & Lobby Queue
-          </h2>
-          <p style={{ fontSize: '0.85rem', color: '#71717A' }}>
-            Real-time client arrivals, live wait timers & station updates
-          </p>
+      {/* Multi-Station Filter Banner (Only shown if Shop Manager / All Barbers mode) */}
+      {!isSingleBarberMode && (
+        <div className="portal-header-banner" style={{ marginBottom: 20 }}>
+          <div>
+            <h2 style={{ fontSize: '1.3rem', fontWeight: 850, color: '#09090B', marginBottom: 2 }}>
+              Shop Manager Queue
+            </h2>
+            <p style={{ fontSize: '0.82rem', color: '#71717A' }}>
+              All stations live overview
+            </p>
+          </div>
+
+          <div className="portal-barber-filter">
+            <button
+              onClick={() => setSelectedBarberId('all')}
+              className={`barber-tab-chip ${selectedBarberId === 'all' ? 'active' : ''}`}
+            >
+              <Users size={15} />
+              <span>All Stations ({checkIns.filter(r => r.status !== 'completed').length})</span>
+            </button>
+
+            {barbers.map((barber) => {
+              const count = checkIns.filter(
+                r => r.barberId === barber.id && (r.status === 'waiting' || r.status === 'called' || r.status === 'in_chair')
+              ).length;
+
+              return (
+                <button
+                  key={barber.id}
+                  onClick={() => setSelectedBarberId(barber.id)}
+                  className={`barber-tab-chip ${selectedBarberId === barber.id ? 'active' : ''}`}
+                >
+                  <span>{barber.name}</span>
+                  {count > 0 && (
+                    <span
+                      style={{
+                        background: selectedBarberId === barber.id ? '#FFFFFF' : '#09090B',
+                        color: selectedBarberId === barber.id ? '#09090B' : '#FFFFFF',
+                        fontSize: '0.72rem',
+                        padding: '1px 6px',
+                        borderRadius: 9999,
+                        fontWeight: 850
+                      }}
+                    >
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
+      )}
 
-        {/* Station Filter Tabs */}
-        <div className="portal-barber-filter">
-          <button
-            onClick={() => {
-              setSelectedBarberId('all');
-            }}
-            className={`barber-tab-chip ${selectedBarberId === 'all' ? 'active' : ''}`}
-          >
-            <Users size={16} />
-            <span>All Stations ({checkIns.filter(r => r.status !== 'completed').length})</span>
-          </button>
-
-          {barbers.map((barber) => {
-            const count = checkIns.filter(
-              r => r.barberId === barber.id && (r.status === 'waiting' || r.status === 'called' || r.status === 'in_chair')
-            ).length;
-
-            return (
-              <button
-                key={barber.id}
-                onClick={() => {
-                  setSelectedBarberId(barber.id);
-                }}
-                className={`barber-tab-chip ${selectedBarberId === barber.id ? 'active' : ''}`}
-              >
-                <span>{barber.name}</span>
-                {count > 0 && (
-                  <span
-                    style={{
-                      background: selectedBarberId === barber.id ? '#FFFFFF' : '#09090B',
-                      color: selectedBarberId === barber.id ? '#09090B' : '#FFFFFF',
-                      fontSize: '0.75rem',
-                      padding: '1px 7px',
-                      borderRadius: 9999,
-                      fontWeight: 850
-                    }}
-                  >
-                    {count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Stats Overview Pill Strip */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 24 }}>
-        <div style={{ background: '#FFFFFF', padding: '16px 20px', borderRadius: 20, border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)', display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 44, height: 44, borderRadius: 14, background: '#F4F4F5', color: '#09090B', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Clock size={22} />
+      {/* Personal Stats Overview */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 24 }}>
+        <div style={{ background: '#FFFFFF', padding: '16px 18px', borderRadius: 20, border: '1px solid var(--border-subtle)', boxShadow: '0 2px 6px rgba(0,0,0,0.02)', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 42, height: 42, borderRadius: 12, background: '#F4F4F5', color: '#09090B', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Clock size={20} />
           </div>
           <div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 850, color: '#09090B' }}>{waitingList.length}</div>
-            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#71717A' }}>Waiting in Lobby</div>
+            <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#09090B' }}>{waitingList.length}</div>
+            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#71717A' }}>
+              {isSingleBarberMode ? 'Waiting for You' : 'Waiting in Lobby'}
+            </div>
           </div>
         </div>
 
-        <div style={{ background: '#FFFFFF', padding: '16px 20px', borderRadius: 20, border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)', display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 44, height: 44, borderRadius: 14, background: '#F4F4F5', color: '#09090B', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Scissors size={22} />
+        <div style={{ background: '#FFFFFF', padding: '16px 18px', borderRadius: 20, border: '1px solid var(--border-subtle)', boxShadow: '0 2px 6px rgba(0,0,0,0.02)', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 42, height: 42, borderRadius: 12, background: '#F4F4F5', color: '#09090B', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Scissors size={20} />
           </div>
           <div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 850, color: '#09090B' }}>{inChairList.length}</div>
-            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#71717A' }}>Currently In Chair</div>
+            <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#09090B' }}>{inChairList.length}</div>
+            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#71717A' }}>
+              {isSingleBarberMode ? 'In Your Chair' : 'Currently in Chair'}
+            </div>
           </div>
         </div>
 
-        <div style={{ background: '#FFFFFF', padding: '16px 20px', borderRadius: 20, border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)', display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 44, height: 44, borderRadius: 14, background: '#F4F4F5', color: '#71717A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <CheckCircle size={22} />
+        <div style={{ background: '#FFFFFF', padding: '16px 18px', borderRadius: 20, border: '1px solid var(--border-subtle)', boxShadow: '0 2px 6px rgba(0,0,0,0.02)', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 42, height: 42, borderRadius: 12, background: '#F4F4F5', color: '#71717A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <CheckCircle size={20} />
           </div>
           <div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 850, color: '#09090B' }}>{completedList.length}</div>
-            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#71717A' }}>Completed Today</div>
+            <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#09090B' }}>{completedList.length}</div>
+            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#71717A' }}>
+              {isSingleBarberMode ? 'Your Cuts Today' : 'Completed Today'}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Main Queue Section */}
       <div style={{ marginBottom: 32 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-          <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#09090B', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span>Waiting Clients</span>
-            <span style={{ fontSize: '0.85rem', background: '#F4F4F5', color: '#09090B', padding: '2px 10px', borderRadius: 9999, fontWeight: 700 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <h3 style={{ fontSize: '1.15rem', fontWeight: 850, color: '#09090B', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span>{isSingleBarberMode ? 'Your Waiting Clients' : 'Waiting Clients'}</span>
+            <span style={{ fontSize: '0.8rem', background: '#09090B', color: '#FFFFFF', padding: '2px 9px', borderRadius: 9999, fontWeight: 700 }}>
               {waitingList.length}
             </span>
           </h3>
         </div>
 
         {waitingList.length === 0 ? (
-          <div style={{ background: '#FFFFFF', borderRadius: 24, padding: '48px 24px', textAlign: 'center', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
-            <div style={{ width: 64, height: 64, borderRadius: 22, background: '#F4F4F5', color: '#71717A', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-              <Armchair size={32} />
+          <div style={{ background: '#FFFFFF', borderRadius: 20, padding: '40px 20px', textAlign: 'center', border: '1px solid var(--border-subtle)', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }}>
+            <div style={{ width: 56, height: 56, borderRadius: 18, background: '#F4F4F5', color: '#71717A', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+              <Armchair size={26} />
             </div>
-            <h4 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#09090B', marginBottom: 4 }}>No Clients Currently Waiting</h4>
-            <p style={{ fontSize: '0.88rem', color: '#71717A', maxWidth: 400, margin: '0 auto' }}>
-              When a client walks in and checks in at the front kiosk, their card will appear here instantly.
+            <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#09090B', marginBottom: 4 }}>
+              {isSingleBarberMode ? `No clients waiting for ${barberDisplayName}` : 'No Clients Currently Waiting'}
+            </h4>
+            <p style={{ fontSize: '0.85rem', color: '#71717A', maxWidth: 360, margin: '0 auto' }}>
+              {isSingleBarberMode
+                ? 'When a customer checks in for your station, they will appear here.'
+                : 'When a walk-in or appointment checks in, their card will appear here.'}
             </p>
           </div>
         ) : (
@@ -319,17 +338,19 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                       {record.appointmentTime || 'Appointment'}
                     </span>
                     <h4 className="client-name-bold">{record.clientName}</h4>
-                    <div style={{ fontSize: '0.85rem', color: '#71717A', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                      <Clock size={13} />
+                    <div style={{ fontSize: '0.82rem', color: '#71717A', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                      <Clock size={12} />
                       <span>Arrived {getElapsedTime(record.checkInTime)}</span>
                     </div>
                   </div>
 
-                  <div style={{ textAlign: 'right' }}>
-                    <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#09090B', background: '#F4F4F5', padding: '4px 10px', borderRadius: 9999 }}>
-                      For: {record.barberName}
-                    </span>
-                  </div>
+                  {!isSingleBarberMode && (
+                    <div style={{ textAlign: 'right' }}>
+                      <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#09090B', background: '#F4F4F5', padding: '4px 10px', borderRadius: 9999 }}>
+                        For: {record.barberName}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {record.status === 'called' && (
@@ -343,9 +364,8 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                   <button
                     onClick={() => handleCallClient(record)}
                     className="btn-action-pill"
-                    title="Call client & play audio announcement"
                   >
-                    <Megaphone size={16} />
+                    <Megaphone size={15} />
                     <span>Call In</span>
                   </button>
 
@@ -354,7 +374,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                     className="btn-action-pill"
                     style={{ background: '#09090B', color: '#FFFFFF' }}
                   >
-                    <Scissors size={16} />
+                    <Scissors size={15} />
                     <span>In Chair</span>
                   </button>
                 </div>
@@ -367,9 +387,9 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
       {/* In Chair Section */}
       {inChairList.length > 0 && (
         <div style={{ marginBottom: 32 }}>
-          <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#09090B', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span>Currently In Chair</span>
-            <span style={{ fontSize: '0.85rem', background: '#F4F4F5', color: '#09090B', padding: '2px 10px', borderRadius: 9999, fontWeight: 700 }}>
+          <h3 style={{ fontSize: '1.15rem', fontWeight: 850, color: '#09090B', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span>{isSingleBarberMode ? 'Currently in Your Chair' : 'Currently in Chair'}</span>
+            <span style={{ fontSize: '0.8rem', background: '#09090B', color: '#FFFFFF', padding: '2px 9px', borderRadius: 9999, fontWeight: 700 }}>
               {inChairList.length}
             </span>
           </h3>
@@ -383,8 +403,8 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                       ✂️ In Chair
                     </span>
                     <h4 className="client-name-bold">{record.clientName}</h4>
-                    <div style={{ fontSize: '0.85rem', color: '#71717A', marginTop: 2 }}>
-                      Barber: <strong>{record.barberName}</strong>
+                    <div style={{ fontSize: '0.82rem', color: '#71717A', marginTop: 2 }}>
+                      {record.appointmentTime ? `Appointment: ${record.appointmentTime}` : 'Walk-In'}
                     </div>
                   </div>
                 </div>
@@ -393,9 +413,9 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                   <button
                     onClick={() => handleSetCompleted(record)}
                     className="choice-card-action-btn"
-                    style={{ padding: '10px 16px', fontSize: '0.9rem' }}
+                    style={{ padding: '10px 16px', fontSize: '0.88rem' }}
                   >
-                    <Check size={18} />
+                    <Check size={16} />
                     <span>Mark Cut Finished</span>
                   </button>
                 </div>
@@ -408,39 +428,39 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
       {/* Completed Today Section */}
       {completedList.length > 0 && (
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#71717A' }}>
-              Completed Today ({completedList.length})
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#71717A' }}>
+              {isSingleBarberMode ? `Your Finished Cuts Today (${completedList.length})` : `Completed Today (${completedList.length})`}
             </h3>
             <button
               onClick={handleClearHistory}
               className="back-pill-btn"
-              style={{ fontSize: '0.8rem', padding: '4px 10px' }}
+              style={{ fontSize: '0.78rem', padding: '4px 10px' }}
             >
-              <Trash2 size={13} />
-              <span>Clear Completed</span>
+              <Trash2 size={12} />
+              <span>Clear</span>
             </button>
           </div>
 
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {completedList.map((record) => (
               <div
                 key={record.id}
                 style={{
                   background: '#FFFFFF',
                   border: '1px solid var(--border-subtle)',
-                  borderRadius: 16,
-                  padding: '8px 16px',
+                  borderRadius: 14,
+                  padding: '7px 14px',
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,
-                  fontSize: '0.88rem',
+                  fontSize: '0.85rem',
                   color: '#71717A'
                 }}
               >
-                <CheckCircle size={15} color="#09090B" />
+                <CheckCircle size={14} color="#09090B" />
                 <span style={{ fontWeight: 700, color: '#09090B' }}>{record.clientName}</span>
-                <span>({record.barberName})</span>
+                {!isSingleBarberMode && <span>({record.barberName})</span>}
               </div>
             ))}
           </div>
@@ -449,3 +469,4 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
     </div>
   );
 };
+

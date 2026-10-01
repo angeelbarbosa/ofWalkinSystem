@@ -1,72 +1,61 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Vibrate, CheckCircle, Smartphone, UserCheck, RefreshCw, X } from 'lucide-react';
+import { Vibrate, Smartphone, RefreshCw, X, ShieldCheck } from 'lucide-react';
 import type { Barber } from '../../types';
 import { notificationManager } from '../../utils/notifications';
 
 interface PushNotificationBannerProps {
   barbers: Barber[];
+  selectedBarberId: string;
   onSelectBarberFilter: (barberId: string) => void;
 }
 
 export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
   barbers,
+  selectedBarberId,
   onSelectBarberFilter
 }) => {
   const [permission, setPermission] = useState<NotificationPermission>('default');
-  const [deviceBarberId, setDeviceBarberId] = useState<string>(() => notificationManager.getMyBarberPreference());
   const [isEditingIdentity, setIsEditingIdentity] = useState<boolean>(() => {
     const pref = notificationManager.getMyBarberPreference();
     return !pref || pref === 'all';
   });
   const [tested, setTested] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<{ text: string; isError: boolean } | null>(null);
 
   const assignedBarber = barbers.find(
-    b => b.id === deviceBarberId || b.name.toLowerCase() === deviceBarberId.toLowerCase()
+    b => b.id === selectedBarberId || b.name.toLowerCase() === selectedBarberId.toLowerCase()
   );
 
   const displayName = assignedBarber
     ? assignedBarber.name
-    : (deviceBarberId === 'all' ? 'All Barbers (Shop Manager)' : deviceBarberId);
+    : (selectedBarberId === 'all' ? 'All Barbers (Shop Manager)' : selectedBarberId);
 
   useEffect(() => {
     const status = notificationManager.getPermissionStatus();
     setPermission(status);
     if (status === 'granted') {
-      const targetId = assignedBarber?.id || deviceBarberId || 'all';
-      const targetName = assignedBarber?.name || (deviceBarberId === 'all' ? 'All Barbers' : deviceBarberId);
-      notificationManager.requestPermissionAndSubscribe(targetId, targetName).then((res) => {
-        if (!res.success && res.message) {
-          setStatusMessage({ text: res.message, isError: true });
-        } else if (res.success) {
-          setStatusMessage({ text: res.message, isError: false });
-        }
-      });
+      const targetId = assignedBarber?.id || selectedBarberId || 'all';
+      const targetName = assignedBarber?.name || (selectedBarberId === 'all' ? 'All Barbers' : selectedBarberId);
+      notificationManager.requestPermissionAndSubscribe(targetId, targetName);
     }
-  }, [assignedBarber, deviceBarberId]);
+  }, [assignedBarber, selectedBarberId]);
 
   const handleSelectDeviceBarber = (barber: Barber | 'all') => {
     const id = barber === 'all' ? 'all' : barber.id;
     const name = barber === 'all' ? 'all' : barber.name;
-    setDeviceBarberId(id);
     notificationManager.setMyBarberPreference(name);
     onSelectBarberFilter(id);
     setIsEditingIdentity(false);
 
-    // Auto-update push subscription in background if permission already granted
     if (permission === 'granted') {
-      notificationManager.requestPermissionAndSubscribe(id, name).then((res) => {
-        setStatusMessage({ text: res.message, isError: !res.success });
-      });
+      notificationManager.requestPermissionAndSubscribe(id, name);
     }
   };
 
   const handleEnablePush = async () => {
-    const targetId = assignedBarber?.id || deviceBarberId || 'all';
-    const targetName = assignedBarber?.name || (deviceBarberId === 'all' ? 'All Barbers' : deviceBarberId);
+    const targetId = assignedBarber?.id || selectedBarberId || 'all';
+    const targetName = assignedBarber?.name || (selectedBarberId === 'all' ? 'All Barbers' : selectedBarberId);
     const result = await notificationManager.requestPermissionAndSubscribe(targetId, targetName);
     setPermission(result.success ? 'granted' : 'denied');
-    setStatusMessage({ text: result.message, isError: !result.success });
     if (result.success) {
       const currentBarberName = assignedBarber?.name || 'Your Station';
       notificationManager.sendBarberArrivalAlert('Test Client', currentBarberName, '2:30 PM', assignedBarber?.id);
@@ -75,253 +64,190 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
   };
 
   const handleTestAlert = async () => {
-    const targetId = assignedBarber?.id || deviceBarberId || 'all';
-    const targetName = assignedBarber?.name || (deviceBarberId === 'all' ? 'All Barbers' : deviceBarberId);
-    const result = await notificationManager.requestPermissionAndSubscribe(targetId, targetName);
-    setStatusMessage({ text: result.message, isError: !result.success });
+    const targetId = assignedBarber?.id || selectedBarberId || 'all';
+    const targetName = assignedBarber?.name || (selectedBarberId === 'all' ? 'All Barbers' : selectedBarberId);
+    await notificationManager.requestPermissionAndSubscribe(targetId, targetName);
     const currentBarberName = assignedBarber?.name || 'Your Station';
     notificationManager.sendBarberArrivalAlert('Test Client', currentBarberName, '2:30 PM', assignedBarber?.id);
     setTested(true);
   };
 
   return (
-    <div
-      className="slide-up"
-      style={{
-        background: '#FFFFFF',
-        border: '1px solid #E4E4E7',
-        borderRadius: 20,
-        padding: '18px 22px',
-        marginBottom: 20,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 14
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div
-            style={{
-              width: 42,
-              height: 42,
-              borderRadius: 14,
-              background: permission === 'granted' ? '#09090B' : '#F4F4F5',
-              color: permission === 'granted' ? '#FFFFFF' : '#09090B',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            {permission === 'granted' ? <CheckCircle size={22} /> : <Bell size={22} />}
-          </div>
-          <div>
-            <div style={{ fontWeight: 850, color: '#09090B', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span>{permission === 'granted' ? 'Lockscreen & Buzz Alerts Active' : 'Setup Phone Lockscreen Alerts'}</span>
-              {assignedBarber && (
-                <span style={{ fontSize: '0.75rem', background: '#09090B', color: '#FFFFFF', padding: '2px 8px', borderRadius: 9999, fontWeight: 700 }}>
-                  For {assignedBarber.name}
-                </span>
-              )}
-            </div>
-            <div style={{ fontSize: '0.83rem', color: '#71717A' }}>
-              {permission === 'granted'
-                ? `Only ${assignedBarber ? assignedBarber.name : 'your chosen barber'} will receive vibration and lockscreen banners on this device.`
-                : 'Select who uses this phone and enable alerts so your phone buzzes when your clients arrive.'}
-            </div>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {permission !== 'granted' ? (
-            <button
-              onClick={handleEnablePush}
-              className="choice-card-action-btn"
-              style={{ padding: '10px 20px', fontSize: '0.9rem', width: 'auto' }}
-            >
-              <Smartphone size={16} />
-              <span>Enable Phone Alerts</span>
-            </button>
-          ) : (
-            <button
-              onClick={handleTestAlert}
-              className="back-pill-btn"
-              style={{ background: '#F4F4F5', color: '#09090B', padding: '8px 16px', fontSize: '0.85rem' }}
-            >
-              <Vibrate size={16} />
-              <span>{tested ? 'Test Again' : 'Test Phone Buzz'}</span>
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Cloud Registration Feedback Status Banner */}
-      {statusMessage && (
+    <div style={{ marginBottom: 20 }}>
+      {/* 1. Collapsed Minimal View: Clean Barber Header */}
+      {!isEditingIdentity && (
         <div
-          className="slide-down"
+          className="slide-up"
           style={{
-            padding: '10px 14px',
-            borderRadius: 12,
-            fontSize: '0.82rem',
-            fontWeight: 700,
-            background: statusMessage.isError ? '#FFF1F2' : '#F4F4F5',
-            color: statusMessage.isError ? '#9F1239' : '#09090B',
-            border: statusMessage.isError ? '1px solid #FFE4E6' : '1px solid #E4E4E7',
+            background: '#FFFFFF',
+            border: '1px solid #E4E4E7',
+            borderRadius: 20,
+            padding: '16px 20px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: 10
+            flexWrap: 'wrap',
+            gap: 12
           }}
         >
-          <span>{statusMessage.text}</span>
-          <button
-            onClick={() => setStatusMessage(null)}
-            style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 800 }}
-          >
-            ✕
-          </button>
-        </div>
-      )}
-
-      {/* Device Identity Selection / Confirmation */}
-      <div style={{ paddingTop: 10, borderTop: '1px solid #F4F4F5' }}>
-        {!isEditingIdentity && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#71717A', display: 'flex', alignItems: 'center', gap: 4 }}>
-                <UserCheck size={14} />
-                This Phone Belongs To:
-              </span>
-              <span
-                style={{
-                  background: '#09090B',
-                  color: '#FFFFFF',
-                  padding: '5px 14px',
-                  borderRadius: 9999,
-                  fontSize: '0.85rem',
-                  fontWeight: 800,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
-                }}
-              >
-                <CheckCircle size={14} color="#FFFFFF" />
-                <span>{displayName}</span>
-              </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 14,
+                background: '#09090B',
+                color: '#FFFFFF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.2rem',
+                fontWeight: 900
+              }}
+            >
+              {displayName === 'All Barbers (Shop Manager)' ? 'OF' : displayName.charAt(0)}
             </div>
+            <div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 850, color: '#09090B', lineHeight: 1.2 }}>
+                {displayName === 'All Barbers (Shop Manager)' ? 'All Stations (Shop Manager)' : `${displayName}'s Station`}
+              </div>
+              <div style={{ fontSize: '0.8rem', color: '#71717A', display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
+                <span
+                  style={{
+                    width: 7,
+                    height: 7,
+                    borderRadius: '50%',
+                    background: permission === 'granted' ? '#22C55E' : '#EAB308',
+                    display: 'inline-block'
+                  }}
+                />
+                <span>{permission === 'granted' ? 'Phone Alerts Active' : 'Tap to enable lockscreen alerts'}</span>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {permission !== 'granted' ? (
+              <button
+                onClick={handleEnablePush}
+                className="choice-card-action-btn"
+                style={{ padding: '8px 16px', fontSize: '0.85rem', width: 'auto' }}
+              >
+                <Smartphone size={15} />
+                <span>Enable Alerts</span>
+              </button>
+            ) : (
+              <button
+                onClick={handleTestAlert}
+                className="back-pill-btn"
+                style={{ background: '#F4F4F5', color: '#09090B', padding: '8px 14px', fontSize: '0.82rem' }}
+                title="Send a quick test notification to this phone"
+              >
+                <Vibrate size={14} />
+                <span>{tested ? 'Buzzed!' : 'Test Buzz'}</span>
+              </button>
+            )}
 
             <button
               onClick={() => setIsEditingIdentity(true)}
-              style={{
-                background: '#F4F4F5',
-                color: '#09090B',
-                border: '1px solid #E4E4E7',
-                padding: '6px 14px',
-                borderRadius: 9999,
-                fontSize: '0.8rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                transition: 'all 0.15s'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#E4E4E7';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = '#F4F4F5';
-              }}
+              className="back-pill-btn"
+              style={{ background: '#F4F4F5', color: '#52525B', padding: '8px 14px', fontSize: '0.82rem' }}
             >
-              <RefreshCw size={12} />
-              <span>Switch Barber / Misclicked?</span>
+              <RefreshCw size={13} />
+              <span>Switch Barber</span>
             </button>
           </div>
-        )}
+        </div>
+      )}
 
-        {isEditingIdentity && (
-          <div className="slide-down" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#09090B', display: 'flex', alignItems: 'center', gap: 4 }}>
-                <UserCheck size={14} />
-                Select who uses this phone (notifications will only buzz this device):
-              </span>
-              {deviceBarberId && deviceBarberId !== 'all' && (
-                <button
-                  onClick={() => setIsEditingIdentity(false)}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: '#71717A',
-                    fontSize: '0.78rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 4
-                  }}
-                >
-                  <X size={12} />
-                  <span>Cancel</span>
-                </button>
-              )}
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+      {/* 2. Expanded Selector: When picking or switching a barber */}
+      {isEditingIdentity && (
+        <div
+          className="slide-down"
+          style={{
+            background: '#FFFFFF',
+            border: '1px solid #E4E4E7',
+            borderRadius: 20,
+            padding: '18px 22px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 12
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: '0.92rem', fontWeight: 800, color: '#09090B', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <ShieldCheck size={16} />
+              Who is using this device?
+            </span>
+            {selectedBarberId && selectedBarberId !== '' && (
               <button
-                onClick={() => handleSelectDeviceBarber('all')}
+                onClick={() => setIsEditingIdentity(false)}
                 style={{
-                  padding: '7px 14px',
-                  borderRadius: 9999,
-                  fontSize: '0.82rem',
-                  fontWeight: 700,
-                  background: deviceBarberId === 'all' ? '#09090B' : '#F4F4F5',
-                  color: deviceBarberId === 'all' ? '#FFFFFF' : '#52525B',
-                  cursor: 'pointer',
+                  background: 'transparent',
                   border: 'none',
-                  transition: 'all 0.15s'
+                  color: '#71717A',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4
                 }}
               >
-                All Barbers (Shop Manager)
+                <X size={14} />
+                <span>Cancel</span>
               </button>
-
-              {barbers.map((b) => {
-                const isSelected = deviceBarberId === b.id || deviceBarberId.toLowerCase() === b.name.toLowerCase();
-                return (
-                  <button
-                    key={b.id}
-                    onClick={() => handleSelectDeviceBarber(b)}
-                    style={{
-                      padding: '7px 16px',
-                      borderRadius: 9999,
-                      fontSize: '0.82rem',
-                      fontWeight: 700,
-                      background: isSelected ? '#09090B' : '#F4F4F5',
-                      color: isSelected ? '#FFFFFF' : '#52525B',
-                      cursor: 'pointer',
-                      border: 'none',
-                      transition: 'all 0.15s'
-                    }}
-                  >
-                    {b.name}
-                  </button>
-                );
-              })}
-            </div>
+            )}
           </div>
-        )}
 
-        {/* Helpful iOS PWA Tip for Lockscreen Alerts */}
-        <div style={{ marginTop: 12, padding: '10px 14px', background: '#F4F4F5', borderRadius: 14, fontSize: '0.8rem', color: '#52525B', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Smartphone size={16} color="#09090B" style={{ flexShrink: 0 }} />
-          <span>
-            <strong>Lockscreen alerts while phone is locked/closed:</strong> On iPhone, tap the Safari Share button (bottom of screen) ➔ <strong>"Add to Home Screen"</strong> and open it from your Home Screen.
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            {barbers.map((b) => {
+              const isSelected = selectedBarberId === b.id || selectedBarberId.toLowerCase() === b.name.toLowerCase();
+              return (
+                <button
+                  key={b.id}
+                  onClick={() => handleSelectDeviceBarber(b)}
+                  style={{
+                    padding: '8px 18px',
+                    borderRadius: 9999,
+                    fontSize: '0.85rem',
+                    fontWeight: 800,
+                    background: isSelected ? '#09090B' : '#F4F4F5',
+                    color: isSelected ? '#FFFFFF' : '#09090B',
+                    cursor: 'pointer',
+                    border: 'none',
+                    transition: 'all 0.15s'
+                  }}
+                >
+                  {b.name}
+                </button>
+              );
+            })}
+
+            <button
+              onClick={() => handleSelectDeviceBarber('all')}
+              style={{
+                padding: '8px 16px',
+                borderRadius: 9999,
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                background: selectedBarberId === 'all' ? '#09090B' : '#F4F4F5',
+                color: selectedBarberId === 'all' ? '#FFFFFF' : '#71717A',
+                cursor: 'pointer',
+                border: 'none',
+                transition: 'all 0.15s'
+              }}
+            >
+              All Barbers (Shop Manager)
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
+
 
 
