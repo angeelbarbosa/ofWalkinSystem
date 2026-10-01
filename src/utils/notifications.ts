@@ -23,6 +23,12 @@ export interface ArrivalToastEventData {
   timestamp: string;
 }
 
+export interface PushSubscriptionResult {
+  success: boolean;
+  message: string;
+  isStandalone?: boolean;
+}
+
 export class NotificationManager {
   private swRegistration: ServiceWorkerRegistration | null = null;
   private channel: BroadcastChannel | null = null;
@@ -66,57 +72,85 @@ export class NotificationManager {
     return Notification.permission;
   }
 
-  async requestPermissionAndSubscribe(barberId: string = 'all', barberName: string = 'All Barbers'): Promise<boolean> {
+  async requestPermissionAndSubscribe(barberId: string = 'all', barberName: string = 'All Barbers'): Promise<PushSubscriptionResult> {
     if (typeof window === 'undefined' || !('Notification' in window)) {
-      alert('This browser does not support Web Push notifications.');
-      return false;
+      return { success: false, message: 'This browser does not support Web Push.' };
     }
+
+    const isStandalone = typeof window !== 'undefined' && 
+      (window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true);
+
+    const isIos = typeof window !== 'undefined' && /iPhone|iPad|iPod/.test(navigator.userAgent);
 
     try {
       const reg = await this.initServiceWorker();
       const perm = await Notification.requestPermission();
-      if (perm !== 'granted') return false;
-
-      // Register true background Web Push with Convex
-      if (reg && 'pushManager' in reg) {
-        try {
-          let sub = await reg.pushManager.getSubscription();
-          if (!sub) {
-            sub = await reg.pushManager.subscribe({
-              userVisibleOnly: true,
-              applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-            });
-          }
-
-          const subJson = sub.toJSON();
-          const endpoint = subJson.endpoint || sub.endpoint;
-          const auth = subJson.keys?.auth || (sub.getKey('auth') ? btoa(String.fromCharCode(...new Uint8Array(sub.getKey('auth')!))) : '');
-          const p256dh = subJson.keys?.p256dh || (sub.getKey('p256dh') ? btoa(String.fromCharCode(...new Uint8Array(sub.getKey('p256dh')!))) : '');
-
-          if (endpoint && auth && p256dh && convexClient) {
-            await convexClient.mutation(api.notifications.saveSubscription, {
-              barberId,
-              barberName,
-              endpoint,
-              auth,
-              p256dh
-            });
-            console.log('✅ Web Push Subscription successfully synced to Convex cloud for:', barberName);
-          }
-        } catch (pushErr) {
-          console.warn('PushManager background subscription error:', pushErr);
-        }
+      if (perm !== 'granted') {
+        return { success: false, message: 'Notification permission was denied.' };
       }
 
-      return true;
-    } catch {
-      return false;
+      if (!reg) {
+        return { success: false, message: 'Service worker is not ready.' };
+      }
+
+      if (!('pushManager' in reg)) {
+        if (isIos && !isStandalone) {
+          return {
+            success: false,
+            message: 'On iPhone, push alerts require "Add to Home Screen". Tap Safari Share ➔ Add to Home Screen.',
+            isStandalone: false
+          };
+        }
+        return { success: false, message: 'PushManager is not available in this browser tab.' };
+      }
+
+      try {
+        let sub = await reg.pushManager.getSubscription();
+        if (!sub) {
+          sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+          });
+        }
+
+        const subJson = sub.toJSON();
+        const endpoint = subJson.endpoint || sub.endpoint;
+        const auth = subJson.keys?.auth || (sub.getKey ? btoa(String.fromCharCode(...new Uint8Array(sub.getKey('auth')!))) : '');
+        const p256dh = subJson.keys?.p256dh || (sub.getKey ? btoa(String.fromCharCode(...new Uint8Array(sub.getKey('p256dh')!))) : '');
+
+        if (endpoint && auth && p256dh && convexClient) {
+          await convexClient.mutation(api.notifications.saveSubscription, {
+            barberId,
+            barberName,
+            endpoint,
+            auth,
+            p256dh
+          });
+          console.log('✅ Web Push Subscription successfully synced to Convex cloud for:', barberName);
+          return { success: true, message: `Phone active for ${barberName} lockscreen alerts!` };
+        } else {
+          return { success: false, message: 'Could not extract push credentials.' };
+        }
+      } catch (pushErr: any) {
+        console.warn('PushManager error:', pushErr);
+        if (isIos && !isStandalone) {
+          return {
+            success: false,
+            message: 'iPhone requires opening from the Home Screen app icon to receive background alerts.',
+            isStandalone: false
+          };
+        }
+        return { success: false, message: `Push registration failed: ${pushErr?.message || pushErr}` };
+      }
+    } catch (e: any) {
+      return { success: false, message: `Error: ${e?.message || e}` };
     }
   }
 
   async requestPermission(): Promise<boolean> {
     const pref = this.getMyBarberPreference();
-    return this.requestPermissionAndSubscribe(pref, pref);
+    const res = await this.requestPermissionAndSubscribe(pref, pref);
+    return res.success;
   }
 
 

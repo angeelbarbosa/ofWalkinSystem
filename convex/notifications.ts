@@ -64,3 +64,15 @@ export const getVapidPublicKey = query({
     return VAPID_PUBLIC_KEY;
   }
 });
+
+export const getActiveSubscribers = query({
+  handler: async (ctx) => {
+    const list = await ctx.db.query("pushSubscriptions").collect();
+    return list.map(s => ({
+      barberId: s.barberId,
+      barberName: s.barberName,
+      updatedAt: s.updatedAt
+    }));
+  }
+});
+

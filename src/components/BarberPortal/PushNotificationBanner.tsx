@@ -19,6 +19,7 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
     return !pref || pref === 'all';
   });
   const [tested, setTested] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<{ text: string; isError: boolean } | null>(null);
 
   const assignedBarber = barbers.find(
     b => b.id === deviceBarberId || b.name.toLowerCase() === deviceBarberId.toLowerCase()
@@ -34,7 +35,13 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
     if (status === 'granted') {
       const targetId = assignedBarber?.id || deviceBarberId || 'all';
       const targetName = assignedBarber?.name || (deviceBarberId === 'all' ? 'All Barbers' : deviceBarberId);
-      notificationManager.requestPermissionAndSubscribe(targetId, targetName);
+      notificationManager.requestPermissionAndSubscribe(targetId, targetName).then((res) => {
+        if (!res.success && res.message) {
+          setStatusMessage({ text: res.message, isError: true });
+        } else if (res.success) {
+          setStatusMessage({ text: res.message, isError: false });
+        }
+      });
     }
   }, [assignedBarber, deviceBarberId]);
 
@@ -48,26 +55,30 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
 
     // Auto-update push subscription in background if permission already granted
     if (permission === 'granted') {
-      notificationManager.requestPermissionAndSubscribe(id, name);
+      notificationManager.requestPermissionAndSubscribe(id, name).then((res) => {
+        setStatusMessage({ text: res.message, isError: !res.success });
+      });
     }
   };
 
   const handleEnablePush = async () => {
     const targetId = assignedBarber?.id || deviceBarberId || 'all';
     const targetName = assignedBarber?.name || (deviceBarberId === 'all' ? 'All Barbers' : deviceBarberId);
-    const granted = await notificationManager.requestPermissionAndSubscribe(targetId, targetName);
-    setPermission(granted ? 'granted' : 'denied');
-    if (granted) {
+    const result = await notificationManager.requestPermissionAndSubscribe(targetId, targetName);
+    setPermission(result.success ? 'granted' : 'denied');
+    setStatusMessage({ text: result.message, isError: !result.success });
+    if (result.success) {
       const currentBarberName = assignedBarber?.name || 'Your Station';
       notificationManager.sendBarberArrivalAlert('Test Client', currentBarberName, '2:30 PM', assignedBarber?.id);
       setTested(true);
     }
   };
 
-  const handleTestAlert = () => {
+  const handleTestAlert = async () => {
     const targetId = assignedBarber?.id || deviceBarberId || 'all';
     const targetName = assignedBarber?.name || (deviceBarberId === 'all' ? 'All Barbers' : deviceBarberId);
-    notificationManager.requestPermissionAndSubscribe(targetId, targetName);
+    const result = await notificationManager.requestPermissionAndSubscribe(targetId, targetName);
+    setStatusMessage({ text: result.message, isError: !result.success });
     const currentBarberName = assignedBarber?.name || 'Your Station';
     notificationManager.sendBarberArrivalAlert('Test Client', currentBarberName, '2:30 PM', assignedBarber?.id);
     setTested(true);
@@ -143,6 +154,34 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
           )}
         </div>
       </div>
+
+      {/* Cloud Registration Feedback Status Banner */}
+      {statusMessage && (
+        <div
+          className="slide-down"
+          style={{
+            padding: '10px 14px',
+            borderRadius: 12,
+            fontSize: '0.82rem',
+            fontWeight: 700,
+            background: statusMessage.isError ? '#FFF1F2' : '#F4F4F5',
+            color: statusMessage.isError ? '#9F1239' : '#09090B',
+            border: statusMessage.isError ? '1px solid #FFE4E6' : '1px solid #E4E4E7',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 10
+          }}
+        >
+          <span>{statusMessage.text}</span>
+          <button
+            onClick={() => setStatusMessage(null)}
+            style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 800 }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Device Identity Selection / Confirmation */}
       <div style={{ paddingTop: 10, borderTop: '1px solid #F4F4F5' }}>
