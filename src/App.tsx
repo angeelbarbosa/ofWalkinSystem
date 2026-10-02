@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Lock, ArrowLeft, Sliders, Bell } from 'lucide-react';
 import type { Barber, CheckInRecord, MainNavTab } from './types';
 import { useLiveSystem } from './utils/liveSync';
+import { notificationManager } from './utils/notifications';
 
 import { KioskHome } from './components/Kiosk/KioskHome';
 import { ShoppingScreen } from './components/Kiosk/ShoppingScreen';
@@ -28,7 +29,7 @@ export function App() {
 
   // Navigation State
   const [currentTab, setCurrentTab] = useState<MainNavTab>(getInitialTab);
-  const [kioskStep, setKioskStep] = useState<'home' | 'shopping' | 'barber_select' | 'confirmed'>('home');
+  const [kioskStep, setKioskStep] = useState<'home' | 'shopping_browsing' | 'shopping_checkout' | 'barber_select' | 'confirmed'>('home');
   const [isCheckInModalOpen, setIsCheckInModalOpen] = useState(false);
   const [selectedBarber, setSelectedBarber] = useState<Barber | null>(null);
   const [latestConfirmedRecord, setLatestConfirmedRecord] = useState<CheckInRecord | null>(null);
@@ -57,6 +58,28 @@ export function App() {
     setLatestConfirmedRecord(record);
     setIsCheckInModalOpen(false);
     setKioskStep('confirmed');
+  };
+
+  // Handle Shopper Ready to Checkout at Register
+  const handleShoppingCheckout = async () => {
+    // 1. Alert staff & barbers immediately via push & sound & vibration
+    notificationManager.sendBarberArrivalAlert('Store Shopper', 'Register / Counter', 'Ready to Checkout');
+
+    // 2. Add check-in record so staff can see on their dashboard
+    const shopBarber: Barber = {
+      id: 'store_counter',
+      name: 'Front Register',
+      specialty: 'Supply Store Checkout',
+      avatar: 'store',
+      avatarColor: '#09090B',
+      phone: '',
+      stationNumber: 0,
+      isWorking: true
+    };
+    await addCheckIn('Store Shopper', shopBarber, 'Ready to Checkout');
+
+    // 3. Display confirmation screen
+    setKioskStep('shopping_checkout');
   };
 
   const handleResetKiosk = () => {
@@ -140,15 +163,26 @@ export function App() {
             {kioskStep === 'home' && (
               <KioskHome
                 config={config}
-                onSelectShopping={() => setKioskStep('shopping')}
+                onSelectBrowsing={() => setKioskStep('shopping_browsing')}
+                onSelectCheckout={handleShoppingCheckout}
                 onSelectAppointment={() => setKioskStep('barber_select')}
               />
             )}
 
-            {/* Step 2A: Shopping Welcome Screen */}
-            {kioskStep === 'shopping' && (
+            {/* Step 2A: Shopping Browsing Welcome Screen */}
+            {kioskStep === 'shopping_browsing' && (
               <ShoppingScreen
                 config={config}
+                mode="browsing"
+                onBack={handleResetKiosk}
+              />
+            )}
+
+            {/* Step 2B: Shopping Checkout Alert Screen */}
+            {kioskStep === 'shopping_checkout' && (
+              <ShoppingScreen
+                config={config}
+                mode="checkout"
                 onBack={handleResetKiosk}
               />
             )}
