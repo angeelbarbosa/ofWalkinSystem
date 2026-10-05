@@ -643,12 +643,52 @@
   font-weight: 600;
 }
 
-/* Staff Access Floating Pill */
-.staff-lock-container {
+/* Staff & Owner Access Floating Pills on Beginning Screen */
+.staff-bottom-bar {
   position: fixed;
   bottom: max(16px, env(safe-area-inset-bottom, 16px));
   right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   z-index: 100;
+}
+
+.staff-trigger-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #09090B;
+  border: 1px solid #E4E4E7;
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  font-size: 0.82rem;
+  font-weight: 750;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.staff-trigger-pill.barber-btn:hover {
+  background: #09090B;
+  color: #FFFFFF;
+  border-color: #09090B;
+  transform: translateY(-2px);
+}
+
+.staff-trigger-pill.owner-btn {
+  background: rgba(244, 244, 245, 0.95);
+  color: #52525B;
+}
+
+.staff-trigger-pill.owner-btn:hover {
+  background: #09090B;
+  color: #FFFFFF;
+  border-color: #09090B;
+  transform: translateY(-2px);
 }
 
 .staff-hub-trigger-btn {

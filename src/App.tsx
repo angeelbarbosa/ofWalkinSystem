@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Lock, ArrowLeft, Sliders, Bell } from 'lucide-react';
+import { Lock, ArrowLeft, Sliders, Bell, Scissors } from 'lucide-react';
 import type { Barber, CheckInRecord, MainNavTab } from './types';
 import { useLiveSystem } from './utils/liveSync';
 import { notificationManager } from './utils/notifications';
@@ -251,16 +251,25 @@ export function App() {
           />
         )}
 
-        {/* Staff / Barber Hub Quick Access Button */}
+        {/* Separated Staff & Owner Access Buttons on Beginning Screen */}
         {currentTab === 'kiosk' && (
-          <div className="staff-lock-container">
+          <div className="staff-bottom-bar">
             <button
               onClick={() => handleOpenStaffModal('barber_portal')}
-              className="staff-hub-trigger-btn"
-              title="Barber Hub & Staff Access (PIN Required)"
+              className="staff-trigger-pill barber-btn"
+              title="Barber Station Hub & Booth Rent"
             >
-              <Lock size={14} />
+              <Scissors size={14} />
               <span>Barber Hub</span>
+            </button>
+
+            <button
+              onClick={() => handleOpenStaffModal('admin')}
+              className="staff-trigger-pill owner-btn"
+              title="Shop Owner Admin & Rent Ledger"
+            >
+              <Lock size={13} />
+              <span>Owner Admin</span>
             </button>
           </div>
         )}
