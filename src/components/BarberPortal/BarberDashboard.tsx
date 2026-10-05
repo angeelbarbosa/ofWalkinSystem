@@ -9,36 +9,48 @@ import {
   Scissors,
   Check,
   Bell,
-  X
+  X,
+  CreditCard,
+  DollarSign
 } from 'lucide-react';
-import type { Barber, CheckInRecord, ShopConfig } from '../../types';
+import type { Barber, CheckInRecord, ShopConfig, RentPaymentRecord } from '../../types';
 import { storage } from '../../utils/storage';
 import { PushNotificationBanner } from './PushNotificationBanner';
+import { BarberRentModal } from './BarberRentModal';
 import { notificationManager, type ArrivalToastEventData } from '../../utils/notifications';
 
 interface BarberDashboardProps {
   barbers: Barber[];
   checkIns: CheckInRecord[];
+  rentRecords?: RentPaymentRecord[];
   config: ShopConfig;
   onUpdateStatus: (id: string, status: CheckInRecord['status']) => void;
+  onPayRent?: (barber: Barber, method: RentPaymentRecord['paymentMethod'], feeCovered: boolean) => Promise<RentPaymentRecord>;
   onAddWalkinDirect: () => void;
 }
 
 export const BarberDashboard: React.FC<BarberDashboardProps> = ({
   barbers,
   checkIns,
+  rentRecords = [],
   config: _config,
-  onUpdateStatus
+  onUpdateStatus,
+  onPayRent
 }) => {
   const [selectedBarberId, setSelectedBarberId] = useState<string>(() => notificationManager.getMyBarberPreference());
   const [currentTime, setCurrentTime] = useState(Date.now());
   const [activeToast, setActiveToast] = useState<ArrivalToastEventData | null>(null);
+  const [isRentModalOpen, setIsRentModalOpen] = useState(false);
 
   const assignedBarber = barbers.find(
     b => b.id === selectedBarberId || b.name.toLowerCase() === selectedBarberId.toLowerCase()
   );
   const isSingleBarberMode = selectedBarberId !== 'all' && selectedBarberId !== '';
   const barberDisplayName = assignedBarber ? assignedBarber.name : (selectedBarberId === 'all' ? 'All Barbers' : selectedBarberId);
+
+  // Barber Booth Rent status
+  const myRentRecord = assignedBarber ? rentRecords.find(r => r.barberId === assignedBarber.id && r.status === 'paid') : null;
+  const isRentPaidThisCycle = !!myRentRecord;
 
   // Tick every second to update elapsed wait times live
   useEffect(() => {
@@ -209,6 +221,69 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
         selectedBarberId={selectedBarberId}
         onSelectBarberFilter={setSelectedBarberId}
       />
+
+      {/* Single Barber: Booth Rent Status Bar */}
+      {isSingleBarberMode && assignedBarber && onPayRent && (
+        <div
+          className="slide-up"
+          style={{
+            background: isRentPaidThisCycle ? '#F0FDF4' : '#FFFBEB',
+            border: isRentPaidThisCycle ? '1px solid #BBF7D0' : '1px solid #FDE68A',
+            borderRadius: 18,
+            padding: '12px 18px',
+            marginBottom: 20,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 12
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: 10,
+                background: isRentPaidThisCycle ? '#22C55E' : '#EAB308',
+                color: '#FFFFFF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <DollarSign size={18} />
+            </div>
+            <div>
+              <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#09090B' }}>
+                {isRentPaidThisCycle
+                  ? `Booth Rent Paid for This Week ($${assignedBarber.weeklyRent || 200})`
+                  : `Booth Rent Due: $${assignedBarber.weeklyRent || 200}.00`}
+              </div>
+              <div style={{ fontSize: '0.78rem', color: isRentPaidThisCycle ? '#15803D' : '#92400E' }}>
+                {isRentPaidThisCycle
+                  ? `Receipt #${myRentRecord?.receiptNumber} • Verified in shop ledger`
+                  : `Due every ${assignedBarber.rentDueDay || 'Monday'} • Pay directly with Apple Pay or card`}
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setIsRentModalOpen(true)}
+            className="choice-card-action-btn"
+            style={{
+              width: 'auto',
+              padding: '8px 16px',
+              fontSize: '0.82rem',
+              borderRadius: 9999,
+              background: '#09090B'
+            }}
+          >
+            <CreditCard size={14} />
+            <span>{isRentPaidThisCycle ? 'View Receipt / Re-Pay' : 'Pay Rent Now'}</span>
+          </button>
+        </div>
+      )}
 
       {/* Multi-Station Filter Banner (Only shown if Shop Manager / All Barbers mode) */}
       {!isSingleBarberMode && (
@@ -466,7 +541,15 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
           </div>
         </div>
       )}
+
+      {/* Barber Rent Payment Modal */}
+      {isRentModalOpen && assignedBarber && onPayRent && (
+        <BarberRentModal
+          barber={assignedBarber}
+          onPayRent={onPayRent}
+          onClose={() => setIsRentModalOpen(false)}
+        />
+      )}
     </div>
   );
 };
-

@@ -43,10 +43,13 @@ export function App() {
     barbers,
     config,
     checkIns,
+    rentRecords,
     addCheckIn,
     updateStatus,
     saveBarbers,
-    saveConfig
+    saveConfig,
+    payBoothRent,
+    markRentPaidOffline
   } = useLiveSystem();
 
   // Handle new Client Check-in from Kiosk
@@ -224,8 +227,10 @@ export function App() {
           <BarberDashboard
             barbers={barbers}
             checkIns={checkIns}
+            rentRecords={rentRecords}
             config={config}
             onUpdateStatus={updateStatus}
+            onPayRent={payBoothRent}
             onAddWalkinDirect={() => {
               setCurrentTab('kiosk');
               setKioskStep('barber_select');
@@ -239,6 +244,8 @@ export function App() {
             barbers={barbers}
             config={config}
             checkIns={checkIns}
+            rentRecords={rentRecords}
+            onMarkPaidOffline={markRentPaidOffline}
             onSaveBarbers={saveBarbers}
             onSaveConfig={saveConfig}
           />

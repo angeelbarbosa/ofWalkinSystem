@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../../convex/_generated/api';
-import type { Barber, CheckInRecord, ShopConfig } from '../types';
+import type { Barber, CheckInRecord, ShopConfig, RentPaymentRecord } from '../types';
 import { storage } from './storage';
 import { notificationManager } from './notifications';
 import { convexClient } from './convexClient';
@@ -11,6 +11,7 @@ export function useLiveSystem() {
   const [barbers, setBarbers] = useState<Barber[]>(() => storage.getBarbers());
   const [config, setConfig] = useState<ShopConfig>(() => storage.getConfig());
   const [checkIns, setCheckIns] = useState<CheckInRecord[]>(() => storage.getCheckIns());
+  const [rentRecords, setRentRecords] = useState<RentPaymentRecord[]>(() => storage.getRentRecords());
   const [isCloudConnected, setIsCloudConnected] = useState<boolean>(!!convexClient);
 
   const knownCheckInIdsRef = useRef<Set<string>>(new Set());
@@ -78,7 +79,11 @@ export function useLiveSystem() {
               phone: b.phone,
               stationNumber: b.stationNumber,
               isWorking: b.isWorking,
-              pushSubscriptionActive: true
+              pushSubscriptionActive: true,
+              weeklyRent: b.weeklyRent ?? 200,
+              rentCycle: b.rentCycle ?? 'weekly',
+              rentDueDay: b.rentDueDay ?? 'Monday',
+              autoPayEnabled: b.autoPayEnabled ?? false
             }));
             setBarbers(mapped);
             storage.saveBarbers(mapped);
@@ -117,10 +122,12 @@ export function useLiveSystem() {
     const handleBarbersUpdate = () => setBarbers(storage.getBarbers());
     const handleConfigUpdate = () => setConfig(storage.getConfig());
     const handleCheckInsUpdate = () => setCheckIns(storage.getCheckIns());
+    const handleRentUpdate = () => setRentRecords(storage.getRentRecords());
 
     window.addEventListener('barbers_updated', handleBarbersUpdate);
     window.addEventListener('config_updated', handleConfigUpdate);
     window.addEventListener('checkins_updated', handleCheckInsUpdate);
+    window.addEventListener('rent_updated', handleRentUpdate);
 
     notificationManager.onMessage((data: any) => {
       if (data?.type === 'NEW_CHECKIN') {
@@ -140,6 +147,7 @@ export function useLiveSystem() {
       window.removeEventListener('barbers_updated', handleBarbersUpdate);
       window.removeEventListener('config_updated', handleConfigUpdate);
       window.removeEventListener('checkins_updated', handleCheckInsUpdate);
+      window.removeEventListener('rent_updated', handleRentUpdate);
     };
   }, []);
 
@@ -234,14 +242,79 @@ export function useLiveSystem() {
     }
   };
 
+  // Booth Rent Actions
+  const payBoothRent = async (
+    barber: Barber,
+    method: RentPaymentRecord['paymentMethod'] = 'apple_pay',
+    feeCovered: boolean = true
+  ): Promise<RentPaymentRecord> => {
+    const baseAmount = barber.weeklyRent || config.defaultWeeklyRent || 200;
+    const fee = feeCovered ? Number(((baseAmount * 0.029) + 0.30).toFixed(2)) : 0;
+    const total = baseAmount + fee;
+
+    const newRecord = storage.recordRentPayment({
+      barberId: barber.id,
+      barberName: barber.name,
+      stationNumber: barber.stationNumber,
+      amount: baseAmount,
+      processingFee: fee,
+      totalPaid: total,
+      feeCoveredByBarber: feeCovered,
+      periodDescription: `Week of ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+      dueDate: new Date().toISOString().split('T')[0],
+      paidAt: new Date().toISOString(),
+      status: 'paid',
+      paymentMethod: method,
+      notes: `Paid via ${method === 'apple_pay' ? 'Apple Pay' : method === 'card' ? 'Card' : method.toUpperCase()}`
+    });
+
+    setRentRecords(storage.getRentRecords());
+    return newRecord;
+  };
+
+  const markRentPaidOffline = (
+    barber: Barber,
+    method: 'cash' | 'zelle' | 'manual',
+    notes?: string
+  ): RentPaymentRecord => {
+    const baseAmount = barber.weeklyRent || config.defaultWeeklyRent || 200;
+    const newRecord = storage.recordRentPayment({
+      barberId: barber.id,
+      barberName: barber.name,
+      stationNumber: barber.stationNumber,
+      amount: baseAmount,
+      processingFee: 0,
+      totalPaid: baseAmount,
+      feeCoveredByBarber: false,
+      periodDescription: `Week of ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+      dueDate: new Date().toISOString().split('T')[0],
+      paidAt: new Date().toISOString(),
+      status: 'paid',
+      paymentMethod: method,
+      notes: notes || `Recorded by Shop Owner via ${method.toUpperCase()}`
+    });
+
+    setRentRecords(storage.getRentRecords());
+    return newRecord;
+  };
+
+  const updateRentStatus = (recordId: string, status: RentPaymentRecord['status'], method?: RentPaymentRecord['paymentMethod'], notes?: string) => {
+    storage.updateRentRecordStatus(recordId, status, method, notes);
+    setRentRecords(storage.getRentRecords());
+  };
+
   return {
     barbers,
     config,
     checkIns,
+    rentRecords,
     isCloudConnected,
     addCheckIn,
     updateStatus,
     saveBarbers,
-    saveConfig
+    saveConfig,
+    payBoothRent,
+    markRentPaidOffline,
+    updateRentStatus
   };
 }

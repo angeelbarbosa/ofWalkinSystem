@@ -1,8 +1,9 @@
-import type { Barber, CheckInRecord, ShopConfig } from '../types';
+import type { Barber, CheckInRecord, ShopConfig, RentPaymentRecord } from '../types';
 
 const BARBERS_KEY = 'of_barbers_v2';
 const CHECKINS_KEY = 'of_checkins_v2';
 const CONFIG_KEY = 'of_shop_config_v2';
+const RENT_KEY = 'of_rent_records_v2';
 
 export const DEFAULT_BARBERS: Barber[] = [
   {
@@ -15,7 +16,11 @@ export const DEFAULT_BARBERS: Barber[] = [
     phone: '(555) 234-5678',
     stationNumber: 1,
     isWorking: true,
-    pushSubscriptionActive: true
+    pushSubscriptionActive: true,
+    weeklyRent: 220,
+    rentCycle: 'weekly',
+    rentDueDay: 'Monday',
+    autoPayEnabled: true
   },
   {
     id: 'barber-2',
@@ -27,7 +32,11 @@ export const DEFAULT_BARBERS: Barber[] = [
     phone: '(555) 345-6789',
     stationNumber: 2,
     isWorking: true,
-    pushSubscriptionActive: true
+    pushSubscriptionActive: true,
+    weeklyRent: 200,
+    rentCycle: 'weekly',
+    rentDueDay: 'Monday',
+    autoPayEnabled: false
   },
   {
     id: 'barber-3',
@@ -39,7 +48,11 @@ export const DEFAULT_BARBERS: Barber[] = [
     phone: '(555) 456-7890',
     stationNumber: 3,
     isWorking: true,
-    pushSubscriptionActive: true
+    pushSubscriptionActive: true,
+    weeklyRent: 200,
+    rentCycle: 'weekly',
+    rentDueDay: 'Monday',
+    autoPayEnabled: false
   },
   {
     id: 'barber-4',
@@ -51,7 +64,11 @@ export const DEFAULT_BARBERS: Barber[] = [
     phone: '(555) 567-8901',
     stationNumber: 4,
     isWorking: true,
-    pushSubscriptionActive: true
+    pushSubscriptionActive: true,
+    weeklyRent: 200,
+    rentCycle: 'weekly',
+    rentDueDay: 'Monday',
+    autoPayEnabled: true
   },
   {
     id: 'barber-5',
@@ -63,7 +80,11 @@ export const DEFAULT_BARBERS: Barber[] = [
     phone: '(555) 678-9012',
     stationNumber: 5,
     isWorking: true,
-    pushSubscriptionActive: true
+    pushSubscriptionActive: true,
+    weeklyRent: 200,
+    rentCycle: 'weekly',
+    rentDueDay: 'Monday',
+    autoPayEnabled: false
   },
   {
     id: 'barber-6',
@@ -75,7 +96,11 @@ export const DEFAULT_BARBERS: Barber[] = [
     phone: '(555) 789-0123',
     stationNumber: 6,
     isWorking: true,
-    pushSubscriptionActive: true
+    pushSubscriptionActive: true,
+    weeklyRent: 200,
+    rentCycle: 'weekly',
+    rentDueDay: 'Monday',
+    autoPayEnabled: false
   },
   {
     id: 'barber-7',
@@ -87,7 +112,11 @@ export const DEFAULT_BARBERS: Barber[] = [
     phone: '(555) 890-1234',
     stationNumber: 7,
     isWorking: true,
-    pushSubscriptionActive: true
+    pushSubscriptionActive: true,
+    weeklyRent: 200,
+    rentCycle: 'weekly',
+    rentDueDay: 'Monday',
+    autoPayEnabled: false
   }
 ];
 
@@ -106,6 +135,11 @@ export const DEFAULT_CONFIG: ShopConfig = {
   vibrateEnabled: true,
   pinCode: '1234',
   allowWalkinsWithoutAppointment: false,
+  rentEnabled: true,
+  defaultWeeklyRent: 200,
+  defaultRentDueDay: 'Monday',
+  passFeesToBarber: true,
+  stripeConnectActive: true,
   twilioConfig: {
     enabled: false,
     accountSid: '',
@@ -136,6 +170,60 @@ export const INITIAL_CHECKINS: CheckInRecord[] = [
     appointmentTime: 'Appointment',
     checkInTime: new Date(Date.now() - 1000 * 60 * 4).toISOString(),
     status: 'waiting'
+  }
+];
+
+export const INITIAL_RENT_RECORDS: RentPaymentRecord[] = [
+  {
+    id: 'rent-1',
+    barberId: 'barber-1',
+    barberName: 'Brandon',
+    stationNumber: 1,
+    amount: 220.00,
+    processingFee: 6.68,
+    totalPaid: 226.68,
+    feeCoveredByBarber: true,
+    periodDescription: 'Week of Oct 5 – Oct 11, 2026',
+    dueDate: '2026-10-05',
+    paidAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
+    status: 'paid',
+    paymentMethod: 'apple_pay',
+    receiptNumber: 'REC-90214',
+    notes: 'Auto-charged via Apple Pay'
+  },
+  {
+    id: 'rent-2',
+    barberId: 'barber-3',
+    barberName: 'Ruben',
+    stationNumber: 3,
+    amount: 200.00,
+    processingFee: 0.00,
+    totalPaid: 200.00,
+    feeCoveredByBarber: false,
+    periodDescription: 'Week of Oct 5 – Oct 11, 2026',
+    dueDate: '2026-10-05',
+    paidAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+    status: 'paid',
+    paymentMethod: 'zelle',
+    receiptNumber: 'REC-90215',
+    notes: 'Paid via Zelle / Verified by Owner'
+  },
+  {
+    id: 'rent-3',
+    barberId: 'barber-4',
+    barberName: 'Angel',
+    stationNumber: 4,
+    amount: 200.00,
+    processingFee: 6.10,
+    totalPaid: 206.10,
+    feeCoveredByBarber: true,
+    periodDescription: 'Week of Oct 5 – Oct 11, 2026',
+    dueDate: '2026-10-05',
+    paidAt: new Date(Date.now() - 1000 * 60 * 60 * 1).toISOString(),
+    status: 'paid',
+    paymentMethod: 'card',
+    receiptNumber: 'REC-90216',
+    notes: 'Paid via Visa debit ending in 4242'
   }
 ];
 
@@ -219,5 +307,54 @@ export const storage = {
     const records = this.getCheckIns();
     const updated = records.filter(r => r.status === 'waiting' || r.status === 'in_chair' || r.status === 'called');
     this.saveCheckIns(updated);
+  },
+
+  // Booth Rent Ledger Storage Methods
+  getRentRecords(): RentPaymentRecord[] {
+    try {
+      const data = localStorage.getItem(RENT_KEY);
+      if (!data) {
+        localStorage.setItem(RENT_KEY, JSON.stringify(INITIAL_RENT_RECORDS));
+        return INITIAL_RENT_RECORDS;
+      }
+      return JSON.parse(data);
+    } catch {
+      return INITIAL_RENT_RECORDS;
+    }
+  },
+
+  saveRentRecords(records: RentPaymentRecord[]) {
+    localStorage.setItem(RENT_KEY, JSON.stringify(records));
+    window.dispatchEvent(new Event('rent_updated'));
+  },
+
+  recordRentPayment(record: Omit<RentPaymentRecord, 'id' | 'receiptNumber'>): RentPaymentRecord {
+    const records = this.getRentRecords();
+    const receiptNumber = 'REC-' + Math.floor(10000 + Math.random() * 90000);
+    const newRecord: RentPaymentRecord = {
+      ...record,
+      id: 'rent-' + Date.now(),
+      receiptNumber
+    };
+    const updated = [newRecord, ...records];
+    this.saveRentRecords(updated);
+    return newRecord;
+  },
+
+  updateRentRecordStatus(id: string, status: RentPaymentRecord['status'], paymentMethod?: RentPaymentRecord['paymentMethod'], notes?: string) {
+    const records = this.getRentRecords();
+    const updated = records.map(r => {
+      if (r.id === id) {
+        return {
+          ...r,
+          status,
+          ...(paymentMethod ? { paymentMethod } : {}),
+          ...(status === 'paid' ? { paidAt: new Date().toISOString() } : {}),
+          ...(notes ? { notes } : {})
+        };
+      }
+      return r;
+    });
+    this.saveRentRecords(updated);
   }
 };

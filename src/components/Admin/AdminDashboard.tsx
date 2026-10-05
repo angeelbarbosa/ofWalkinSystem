@@ -7,14 +7,18 @@ import {
   Users, 
   MessageSquare, 
   Download, 
-  Check 
+  Check,
+  DollarSign
 } from 'lucide-react';
-import type { Barber, CheckInRecord, ShopConfig } from '../../types';
+import type { Barber, CheckInRecord, ShopConfig, RentPaymentRecord } from '../../types';
+import { RentLedgerDashboard } from './RentLedgerDashboard';
 
 interface AdminDashboardProps {
   barbers: Barber[];
   config: ShopConfig;
   checkIns: CheckInRecord[];
+  rentRecords?: RentPaymentRecord[];
+  onMarkPaidOffline?: (barber: Barber, method: 'cash' | 'zelle' | 'manual', notes?: string) => void;
   onSaveBarbers: (barbers: Barber[]) => void;
   onSaveConfig: (config: ShopConfig) => void;
 }
@@ -23,10 +27,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   barbers,
   config,
   checkIns,
+  rentRecords = [],
+  onMarkPaidOffline = () => {},
   onSaveBarbers,
   onSaveConfig
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'roster' | 'settings' | 'sms' | 'history'>('roster');
+  const [activeSubTab, setActiveSubTab] = useState<'roster' | 'rent' | 'settings' | 'sms' | 'history'>('rent');
   
   // Barbers Management State
   const [isAddingBarber, setIsAddingBarber] = useState(false);
@@ -155,6 +161,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
         <div className="portal-barber-filter">
           <button
+            onClick={() => setActiveSubTab('rent')}
+            className={`barber-tab-chip ${activeSubTab === 'rent' ? 'active' : ''}`}
+          >
+            <DollarSign size={16} />
+            <span>Booth Rent Ledger</span>
+          </button>
+
+          <button
             onClick={() => setActiveSubTab('roster')}
             className={`barber-tab-chip ${activeSubTab === 'roster' ? 'active' : ''}`}
           >
@@ -187,6 +201,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Sub-Tab 0: Booth Rent Ledger */}
+      {activeSubTab === 'rent' && (
+        <RentLedgerDashboard
+          barbers={barbers}
+          rentRecords={rentRecords}
+          config={config}
+          onMarkPaidOffline={onMarkPaidOffline}
+          onSaveBarbers={onSaveBarbers}
+        />
+      )}
 
       {/* Sub-Tab 1: Barbers Roster */}
       {activeSubTab === 'roster' && (
