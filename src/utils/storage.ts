@@ -20,7 +20,8 @@ export const DEFAULT_BARBERS: Barber[] = [
     weeklyRent: 220,
     rentCycle: 'weekly',
     rentDueDay: 'Monday',
-    autoPayEnabled: true
+    autoPayEnabled: true,
+    passcode: '1111'
   },
   {
     id: 'barber-2',
@@ -36,7 +37,8 @@ export const DEFAULT_BARBERS: Barber[] = [
     weeklyRent: 200,
     rentCycle: 'weekly',
     rentDueDay: 'Monday',
-    autoPayEnabled: false
+    autoPayEnabled: false,
+    passcode: '1111'
   },
   {
     id: 'barber-3',
@@ -52,7 +54,8 @@ export const DEFAULT_BARBERS: Barber[] = [
     weeklyRent: 200,
     rentCycle: 'weekly',
     rentDueDay: 'Monday',
-    autoPayEnabled: false
+    autoPayEnabled: false,
+    passcode: '1111'
   },
   {
     id: 'barber-4',
@@ -68,7 +71,8 @@ export const DEFAULT_BARBERS: Barber[] = [
     weeklyRent: 200,
     rentCycle: 'weekly',
     rentDueDay: 'Monday',
-    autoPayEnabled: true
+    autoPayEnabled: true,
+    passcode: '1111'
   },
   {
     id: 'barber-5',
@@ -84,7 +88,8 @@ export const DEFAULT_BARBERS: Barber[] = [
     weeklyRent: 200,
     rentCycle: 'weekly',
     rentDueDay: 'Monday',
-    autoPayEnabled: false
+    autoPayEnabled: false,
+    passcode: '1111'
   },
   {
     id: 'barber-6',
@@ -100,7 +105,8 @@ export const DEFAULT_BARBERS: Barber[] = [
     weeklyRent: 200,
     rentCycle: 'weekly',
     rentDueDay: 'Monday',
-    autoPayEnabled: false
+    autoPayEnabled: false,
+    passcode: '1111'
   },
   {
     id: 'barber-7',
@@ -116,7 +122,8 @@ export const DEFAULT_BARBERS: Barber[] = [
     weeklyRent: 200,
     rentCycle: 'weekly',
     rentDueDay: 'Monday',
-    autoPayEnabled: false
+    autoPayEnabled: false,
+    passcode: '1111'
   }
 ];
 

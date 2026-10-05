@@ -14,6 +14,7 @@ export interface Barber {
   rentCycle?: 'weekly' | 'biweekly' | 'monthly';
   rentDueDay?: string; // e.g. 'Monday'
   autoPayEnabled?: boolean;
+  passcode?: string; // e.g. "1111"
 }
 
 export type CheckInType = 'shopping' | 'appointment' | 'walkin';

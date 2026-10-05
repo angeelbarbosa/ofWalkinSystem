@@ -41,6 +41,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [newBarberSpec, setNewBarberSpec] = useState('');
   const [newBarberPhone, setNewBarberPhone] = useState('');
   const [newBarberStation, setNewBarberStation] = useState<number>(barbers.length + 1);
+  const [newBarberPasscode, setNewBarberPasscode] = useState('1111');
 
   // Shop Settings State
   const [welcomeShoppingBody, setWelcomeShoppingBody] = useState(config.welcomeShoppingBody);
@@ -87,7 +88,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         name: newBarberName.trim(),
         specialty: newBarberSpec.trim(),
         phone: newBarberPhone.trim(),
-        stationNumber: Number(newBarberStation)
+        stationNumber: Number(newBarberStation),
+        passcode: newBarberPasscode.trim() || b.passcode || '1111'
       } : b);
       onSaveBarbers(updated);
       setEditingBarber(null);
@@ -101,7 +103,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         avatar: '',
         avatarColor: '#09090B',
         isWorking: true,
-        pushSubscriptionActive: true
+        pushSubscriptionActive: true,
+        passcode: newBarberPasscode.trim() || '1111'
       };
       onSaveBarbers([...barbers, newBarber]);
       setIsAddingBarber(false);
@@ -111,6 +114,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setNewBarberName('');
     setNewBarberSpec('');
     setNewBarberPhone('');
+    setNewBarberPasscode('1111');
   };
 
   const handleToggleWorking = (barberId: string) => {
@@ -246,6 +250,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <tr>
                   <th>Station</th>
                   <th>Barber</th>
+                  <th>Station PIN</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
@@ -278,6 +283,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       </div>
                     </td>
                     <td>
+                      <span style={{ fontWeight: 700, fontFamily: 'monospace', background: '#F4F4F5', padding: '3px 8px', borderRadius: 8, fontSize: '0.85rem', color: '#09090B' }}>
+                        {barber.passcode || '1111'}
+                      </span>
+                    </td>
+                    <td>
                       <button
                         onClick={() => handleToggleWorking(barber.id)}
                         style={{
@@ -305,6 +315,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             setNewBarberSpec(barber.specialty);
                             setNewBarberPhone(barber.phone);
                             setNewBarberStation(barber.stationNumber);
+                            setNewBarberPasscode(barber.passcode || '1111');
                             setIsAddingBarber(true);
                           }}
                           className="back-pill-btn"
@@ -349,14 +360,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     />
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label">Station #</label>
-                    <input
-                      type="number"
-                      value={newBarberStation}
-                      onChange={e => setNewBarberStation(Number(e.target.value))}
-                      className="bubbly-input"
-                    />
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                    <div className="form-group">
+                      <label className="form-label">Station #</label>
+                      <input
+                        type="number"
+                        value={newBarberStation}
+                        onChange={e => setNewBarberStation(Number(e.target.value))}
+                        className="bubbly-input"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Station Passcode (4-Digits)</label>
+                      <input
+                        type="text"
+                        maxLength={4}
+                        placeholder="1111"
+                        value={newBarberPasscode}
+                        onChange={e => setNewBarberPasscode(e.target.value)}
+                        className="bubbly-input"
+                      />
+                    </div>
                   </div>
 
                   <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>

@@ -9,6 +9,7 @@ import { ShoppingScreen } from './components/Kiosk/ShoppingScreen';
 import { BarberSelect } from './components/Kiosk/BarberSelect';
 import { ClientCheckInModal } from './components/Kiosk/ClientCheckInModal';
 import { ConfirmationScreen } from './components/Kiosk/ConfirmationScreen';
+import { BarberLoginScreen } from './components/BarberPortal/BarberLoginScreen';
 import { BarberDashboard } from './components/BarberPortal/BarberDashboard';
 import { AdminDashboard } from './components/Admin/AdminDashboard';
 import { PinModal } from './components/Admin/PinModal';
@@ -34,7 +35,10 @@ export function App() {
   const [selectedBarber, setSelectedBarber] = useState<Barber | null>(null);
   const [latestConfirmedRecord, setLatestConfirmedRecord] = useState<CheckInRecord | null>(null);
 
-  // Security / Kiosk lock
+  // Barber Hub Authentication State
+  const [authenticatedBarber, setAuthenticatedBarber] = useState<Barber | null>(null);
+
+  // Security / Admin kiosk lock
   const [showPinModal, setShowPinModal] = useState(false);
   const [targetTabAfterUnlock, setTargetTabAfterUnlock] = useState<MainNavTab>('barber_portal');
 
@@ -121,6 +125,7 @@ export function App() {
             <div className="staff-nav-bar">
               <button
                 onClick={() => {
+                  setAuthenticatedBarber(null);
                   setCurrentTab('kiosk');
                   handleResetKiosk();
                 }}
@@ -148,7 +153,7 @@ export function App() {
                     }}
                   >
                     <Scissors size={14} />
-                    <span>Barber Hub</span>
+                    <span>{authenticatedBarber ? `${authenticatedBarber.name} (Station #${authenticatedBarber.stationNumber})` : 'Barber Hub'}</span>
                   </div>
                 )}
 
@@ -238,20 +243,45 @@ export function App() {
           </main>
         )}
 
-        {/* Tab 2: BARBER PORTAL & LIVE STATION QUEUE */}
+        {/* Tab 2: BARBER PORTAL WITH PASSCODE AUTHENTICATION & LIVE STATION QUEUE */}
         {currentTab === 'barber_portal' && (
-          <BarberDashboard
-            barbers={barbers}
-            checkIns={checkIns}
-            rentRecords={rentRecords}
-            config={config}
-            onUpdateStatus={updateStatus}
-            onPayRent={payBoothRent}
-            onAddWalkinDirect={() => {
-              setCurrentTab('kiosk');
-              setKioskStep('barber_select');
-            }}
-          />
+          <div>
+            {!authenticatedBarber ? (
+              <BarberLoginScreen
+                barbers={barbers}
+                onLoginSuccess={(barber) => {
+                  notificationManager.setMyBarberPreference(barber.name);
+                  setAuthenticatedBarber(barber);
+                }}
+                onBackToKiosk={() => {
+                  setCurrentTab('kiosk');
+                  handleResetKiosk();
+                }}
+              />
+            ) : (
+              <BarberDashboard
+                currentBarber={authenticatedBarber}
+                barbers={barbers}
+                checkIns={checkIns}
+                rentRecords={rentRecords}
+                config={config}
+                onUpdateStatus={updateStatus}
+                onPayRent={payBoothRent}
+                onSaveBarbers={(updated) => {
+                  saveBarbers(updated);
+                  const refreshed = updated.find(b => b.id === authenticatedBarber.id);
+                  if (refreshed) {
+                    setAuthenticatedBarber(refreshed);
+                  }
+                }}
+                onLockStation={() => setAuthenticatedBarber(null)}
+                onAddWalkinDirect={() => {
+                  setCurrentTab('kiosk');
+                  setKioskStep('barber_select');
+                }}
+              />
+            )}
+          </div>
         )}
 
         {/* Tab 3: ADMIN & SHOP SETTINGS */}
@@ -271,7 +301,10 @@ export function App() {
         {currentTab === 'kiosk' && (
           <div className="staff-bottom-bar">
             <button
-              onClick={() => setCurrentTab('barber_portal')}
+              onClick={() => {
+                setAuthenticatedBarber(null);
+                setCurrentTab('barber_portal');
+              }}
               className="staff-trigger-pill barber-btn"
               title="Barber Station Hub & Booth Rent"
             >
