@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Lock, ArrowLeft, Sliders, Bell, Scissors } from 'lucide-react';
+import { Lock, ArrowLeft, Scissors } from 'lucide-react';
 import type { Barber, CheckInRecord, MainNavTab } from './types';
 import { useLiveSystem } from './utils/liveSync';
 import { notificationManager } from './utils/notifications';
@@ -132,28 +132,44 @@ export function App() {
                 <span>Kiosk</span>
               </button>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <button
-                  onClick={() => {
-                    setCurrentTab('barber_portal');
-                  }}
-                  className={`nav-pill-btn ${currentTab === 'barber_portal' ? 'active' : ''}`}
-                  style={{ padding: '8px 14px', fontSize: '0.82rem', whiteSpace: 'nowrap' }}
-                >
-                  <Bell size={15} />
-                  <span>Barber Hub</span>
-                </button>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                {currentTab === 'barber_portal' && (
+                  <div
+                    style={{
+                      background: '#09090B',
+                      color: '#FFFFFF',
+                      padding: '6px 14px',
+                      borderRadius: 9999,
+                      fontSize: '0.82rem',
+                      fontWeight: 800,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6
+                    }}
+                  >
+                    <Scissors size={14} />
+                    <span>Barber Hub</span>
+                  </div>
+                )}
 
-                <button
-                  onClick={() => {
-                    setCurrentTab('admin');
-                  }}
-                  className={`nav-pill-btn ${currentTab === 'admin' ? 'active' : ''}`}
-                  style={{ padding: '8px 14px', fontSize: '0.82rem', whiteSpace: 'nowrap' }}
-                >
-                  <Sliders size={15} />
-                  <span>Admin</span>
-                </button>
+                {currentTab === 'admin' && (
+                  <div
+                    style={{
+                      background: '#09090B',
+                      color: '#FFFFFF',
+                      padding: '6px 14px',
+                      borderRadius: 9999,
+                      fontSize: '0.82rem',
+                      fontWeight: 800,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6
+                    }}
+                  >
+                    <Lock size={13} />
+                    <span>Owner Admin</span>
+                  </div>
+                )}
               </div>
             </div>
           </header>
@@ -255,7 +271,7 @@ export function App() {
         {currentTab === 'kiosk' && (
           <div className="staff-bottom-bar">
             <button
-              onClick={() => handleOpenStaffModal('barber_portal')}
+              onClick={() => setCurrentTab('barber_portal')}
               className="staff-trigger-pill barber-btn"
               title="Barber Station Hub & Booth Rent"
             >
