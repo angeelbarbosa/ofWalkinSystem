@@ -648,7 +648,9 @@ export function SuperAdminDashboard({
         <div style={{
           display: 'grid',
           gridTemplateColumns: '1fr',
-          gap: '12px'
+          gap: '14px',
+          width: '100%',
+          boxSizing: 'border-box'
         }}>
           {shops.map((shop) => {
             const isCurrentlyActive = shop.slug === activeShopSlug;
@@ -664,24 +666,27 @@ export function SuperAdminDashboard({
                     ? '2px solid var(--text-primary)' 
                     : '1px solid var(--border-subtle)',
                   borderRadius: '20px',
-                  padding: '18px 16px',
+                  padding: '16px',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '14px',
+                  gap: '12px',
                   boxShadow: 'var(--shadow-sm)',
-                  position: 'relative'
+                  position: 'relative',
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  overflow: 'hidden'
                 }}
               >
                 {/* Shop Header Row */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', width: '100%', boxSizing: 'border-box' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
                     {shop.logoUrl ? (
                       <img 
                         src={shop.logoUrl} 
                         alt={shop.name}
                         style={{
-                          width: '42px',
-                          height: '42px',
+                          width: '40px',
+                          height: '40px',
                           borderRadius: '12px',
                           objectFit: 'contain',
                           background: '#FFFFFF',
@@ -693,8 +698,8 @@ export function SuperAdminDashboard({
                     ) : (
                       <div
                         style={{
-                          width: '42px',
-                          height: '42px',
+                          width: '40px',
+                          height: '40px',
                           borderRadius: '12px',
                           backgroundColor: 'var(--surface-pill)',
                           border: '1px solid var(--border-subtle)',
@@ -703,7 +708,7 @@ export function SuperAdminDashboard({
                           justifyContent: 'center',
                           color: 'var(--text-primary)',
                           fontWeight: 900,
-                          fontSize: '15px',
+                          fontSize: '14px',
                           flexShrink: 0
                         }}
                       >
@@ -711,7 +716,7 @@ export function SuperAdminDashboard({
                       </div>
                     )}
 
-                    <div style={{ minWidth: 0 }}>
+                    <div style={{ minWidth: 0, flex: 1 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <h3 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {shop.name}
@@ -719,7 +724,7 @@ export function SuperAdminDashboard({
                         {shop.slug === 'of' && (
                           <span style={{
                             fontSize: '9px',
-                            padding: '2px 6px',
+                            padding: '2px 5px',
                             borderRadius: '4px',
                             background: 'var(--pastel-amber-bg)',
                             color: 'var(--pastel-amber)',
@@ -730,7 +735,7 @@ export function SuperAdminDashboard({
                           </span>
                         )}
                       </div>
-                      <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '2px 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '1px 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {shop.address || 'Address Pending'}
                       </p>
                     </div>
@@ -743,8 +748,8 @@ export function SuperAdminDashboard({
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '5px',
-                      padding: '5px 10px',
+                      gap: '4px',
+                      padding: '5px 9px',
                       borderRadius: '9999px',
                       background: 'var(--surface-pill)',
                       border: '1px solid var(--border-subtle)',
@@ -760,7 +765,7 @@ export function SuperAdminDashboard({
                     ) : (
                       <Moon size={12} style={{ color: 'var(--text-primary)' }} />
                     )}
-                    <span>{shop.themeId === 'clean_studio' ? 'Studio Light' : 'Obsidian Dark'}</span>
+                    <span>{shop.themeId === 'clean_studio' ? 'Light' : 'Dark'}</span>
                   </button>
                 </div>
 
@@ -771,123 +776,140 @@ export function SuperAdminDashboard({
                   gap: '6px',
                   background: 'var(--surface-pill)',
                   borderRadius: '12px',
-                  padding: '8px 10px'
+                  padding: '8px 10px',
+                  width: '100%',
+                  boxSizing: 'border-box'
                 }}>
-                  <div>
+                  <div style={{ minWidth: 0 }}>
                     <p style={{ fontSize: '9px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 800, margin: 0 }}>
                       Link Code
                     </p>
-                    <p style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-primary)', margin: '1px 0 0' }}>
+                    <p style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-primary)', margin: '1px 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       ?shop={shop.slug}
                     </p>
                   </div>
-                  <div>
+                  <div style={{ minWidth: 0 }}>
                     <p style={{ fontSize: '9px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 800, margin: 0 }}>
                       Barbers
                     </p>
-                    <p style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-primary)', margin: '1px 0 0' }}>
+                    <p style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-primary)', margin: '1px 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {barbersCount} Chairs
                     </p>
                   </div>
-                  <div>
+                  <div style={{ minWidth: 0 }}>
                     <p style={{ fontSize: '9px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 800, margin: 0 }}>
                       Queue
                     </p>
-                    <p style={{ fontSize: '11px', fontWeight: 800, color: 'var(--pastel-green)', margin: '1px 0 0' }}>
+                    <p style={{ fontSize: '11px', fontWeight: 800, color: 'var(--pastel-green)', margin: '1px 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {walkInsCount} Waiting
                     </p>
                   </div>
                 </div>
 
-                {/* Actions Row */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                  <button
-                    onClick={() => {
-                      onSwitchShop(shop.slug);
-                      onNavigateTab('kiosk');
-                    }}
-                    style={{
-                      flex: '1 1 auto',
-                      padding: '9px 12px',
-                      background: 'var(--accent-primary)',
-                      color: 'var(--bg-main)',
-                      borderRadius: '12px',
-                      fontSize: '12px',
-                      fontWeight: 800,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '5px',
-                      border: 'none'
-                    }}
-                  >
-                    <Store size={13} />
-                    <span>Launch Kiosk</span>
-                  </button>
+                {/* Actions Grid (Row 1: Primary actions, Row 2: Link + Delete) */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', boxSizing: 'border-box' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', width: '100%' }}>
+                    <button
+                      onClick={() => {
+                        onSwitchShop(shop.slug);
+                        onNavigateTab('kiosk');
+                      }}
+                      style={{
+                        padding: '10px 12px',
+                        background: 'var(--accent-primary)',
+                        color: 'var(--bg-main)',
+                        borderRadius: '12px',
+                        fontSize: '12px',
+                        fontWeight: 850,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        border: 'none',
+                        boxSizing: 'border-box',
+                        width: '100%'
+                      }}
+                    >
+                      <Store size={14} />
+                      <span>Launch Kiosk</span>
+                    </button>
 
-                  <button
-                    onClick={() => {
-                      onSwitchShop(shop.slug);
-                      onNavigateTab('barber_portal');
-                    }}
-                    style={{
-                      padding: '9px 12px',
-                      background: 'var(--surface-pill)',
-                      border: '1px solid var(--border-subtle)',
-                      color: 'var(--text-primary)',
-                      borderRadius: '12px',
-                      fontSize: '12px',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '5px'
-                    }}
-                  >
-                    <Scissors size={13} />
-                    <span>Barbers</span>
-                  </button>
+                    <button
+                      onClick={() => {
+                        onSwitchShop(shop.slug);
+                        onNavigateTab('barber_portal');
+                      }}
+                      style={{
+                        padding: '10px 12px',
+                        background: 'var(--surface-pill)',
+                        border: '1px solid var(--border-subtle)',
+                        color: 'var(--text-primary)',
+                        borderRadius: '12px',
+                        fontSize: '12px',
+                        fontWeight: 750,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        boxSizing: 'border-box',
+                        width: '100%'
+                      }}
+                    >
+                      <Scissors size={14} />
+                      <span>Barber Hub</span>
+                    </button>
+                  </div>
 
-                  <button
-                    onClick={() => handleCopyKioskLink(shop.slug)}
-                    title="Copy direct link"
-                    style={{
-                      padding: '9px 12px',
-                      background: 'var(--surface-pill)',
-                      border: '1px solid var(--border-subtle)',
-                      color: copiedSlug === shop.slug ? 'var(--pastel-green)' : 'var(--text-secondary)',
-                      borderRadius: '12px',
-                      fontSize: '12px',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px'
-                    }}
-                  >
-                    {copiedSlug === shop.slug ? <Check size={13} /> : <Copy size={13} />}
-                    <span>{copiedSlug === shop.slug ? 'Copied' : 'Link'}</span>
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', boxSizing: 'border-box' }}>
+                    <button
+                      onClick={() => handleCopyKioskLink(shop.slug)}
+                      title="Copy direct link"
+                      style={{
+                        flex: 1,
+                        padding: '8px 12px',
+                        background: 'var(--surface-pill)',
+                        border: '1px solid var(--border-subtle)',
+                        color: copiedSlug === shop.slug ? 'var(--pastel-green)' : 'var(--text-secondary)',
+                        borderRadius: '12px',
+                        fontSize: '11px',
+                        fontWeight: 750,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '5px',
+                        boxSizing: 'border-box',
+                        minWidth: 0
+                      }}
+                    >
+                      {copiedSlug === shop.slug ? <Check size={13} /> : <Copy size={13} />}
+                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {copiedSlug === shop.slug ? 'Link Copied!' : 'Copy Direct Link'}
+                      </span>
+                    </button>
 
-                  {/* Delete Shop Button */}
-                  <button
-                    onClick={() => setDeleteConfirmShop(shop)}
-                    title="Delete Barbershop"
-                    style={{
-                      padding: '9px 10px',
-                      background: 'var(--pastel-red-bg)',
-                      border: '1px solid var(--pastel-red-border)',
-                      color: 'var(--pastel-red)',
-                      borderRadius: '12px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                  >
-                    <Trash2 size={13} />
-                  </button>
+                    <button
+                      onClick={() => setDeleteConfirmShop(shop)}
+                      title="Delete Barbershop"
+                      style={{
+                        padding: '8px 12px',
+                        background: 'var(--pastel-red-bg)',
+                        border: '1px solid var(--pastel-red-border)',
+                        color: 'var(--pastel-red)',
+                        borderRadius: '12px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxSizing: 'border-box',
+                        flexShrink: 0
+                      }}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 </div>
               </div>
             );
