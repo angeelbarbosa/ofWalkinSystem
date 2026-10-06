@@ -47,15 +47,13 @@ export const ShopSubscriptionModal: React.FC<ShopSubscriptionModalProps> = ({
   const handleProcessPayment = async () => {
     setIsProcessing(true);
 
-    // If paying with Apple Pay / Stripe Card, open the live Stripe Checkout page
+    // If paying with Apple Pay / Stripe Card, redirect directly to the live Stripe Checkout page
     if (paymentMethod === 'apple_pay' || paymentMethod === 'card') {
-      try {
-        window.open(PLATFORM_STRIPE_PAYMENT_URL, '_blank', 'noopener,noreferrer');
-      } catch (err) {
-        console.error('Failed to open Stripe URL', err);
-      }
+      window.location.href = PLATFORM_STRIPE_PAYMENT_URL;
+      return;
     }
 
+    // For Zelle, confirm locally and record renewal
     setTimeout(() => {
       onPaySubscription(paymentMethod);
       setIsProcessing(false);
@@ -67,7 +65,7 @@ export const ShopSubscriptionModal: React.FC<ShopSubscriptionModalProps> = ({
         invoiceNumber: 'INV-' + Math.floor(100000 + Math.random() * 900000),
         paidAt: new Date().toISOString(),
         totalPaid: totalAmount,
-        method: paymentMethod === 'apple_pay' ? 'Apple Pay (Stripe)' : paymentMethod === 'card' ? 'Stripe Card' : 'Zelle Transfer',
+        method: 'Zelle Transfer',
         nextBillingDate: nextDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
       });
 
@@ -77,7 +75,7 @@ export const ShopSubscriptionModal: React.FC<ShopSubscriptionModalProps> = ({
         origin: { y: 0.6 },
         colors: ['#10B981', '#F59E0B', '#3B82F6', '#FFFFFF']
       });
-    }, 1200);
+    }, 1000);
   };
 
   return (
