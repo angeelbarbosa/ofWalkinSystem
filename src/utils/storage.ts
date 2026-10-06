@@ -1,18 +1,22 @@
-import type { Barber, CheckInRecord, ShopConfig, RentPaymentRecord } from '../types';
+import type { Barber, CheckInRecord, ShopConfig, RentPaymentRecord, Shop } from '../types';
+import type { ThemeId } from './themes';
 
-const BARBERS_KEY = 'of_barbers_v2';
-const CHECKINS_KEY = 'of_checkins_v2';
-const CONFIG_KEY = 'of_shop_config_v2';
-const RENT_KEY = 'of_rent_records_v2';
+const SHOPS_KEY = 'walkin_shops_v3';
+const ACTIVE_SHOP_KEY = 'walkin_active_shop_slug';
+const MASTER_PIN_KEY = 'walkin_master_pin';
 
-export const DEFAULT_BARBERS: Barber[] = [
+// Default Master Super Admin PIN (For platform owner)
+export const DEFAULT_MASTER_PIN = '9999';
+
+// Seed Initial Shop 1: OF Supply & Lounge (The original barbershop)
+export const DEFAULT_OF_BARBERS: Barber[] = [
   {
     id: 'barber-1',
     name: 'Brandon',
     nickname: 'Brandon',
     specialty: 'Master Cuts & Grooming',
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
-    avatarColor: '#3B82F6',
+    avatarColor: '#F59E0B',
     phone: '(555) 234-5678',
     stationNumber: 1,
     isWorking: true,
@@ -127,7 +131,7 @@ export const DEFAULT_BARBERS: Barber[] = [
   }
 ];
 
-export const DEFAULT_CONFIG: ShopConfig = {
+export const DEFAULT_OF_CONFIG: ShopConfig = {
   shopName: 'OF Supply & Lounge',
   tagline: 'Professional Grooming Essentials & Master Cuts',
   address: '104 Main Street, Suite A',
@@ -155,7 +159,7 @@ export const DEFAULT_CONFIG: ShopConfig = {
   }
 };
 
-export const INITIAL_CHECKINS: CheckInRecord[] = [
+export const INITIAL_OF_CHECKINS: CheckInRecord[] = [
   {
     id: 'chk-1',
     clientName: 'Jordan',
@@ -180,7 +184,7 @@ export const INITIAL_CHECKINS: CheckInRecord[] = [
   }
 ];
 
-export const INITIAL_RENT_RECORDS: RentPaymentRecord[] = [
+export const INITIAL_OF_RENT: RentPaymentRecord[] = [
   {
     id: 'rent-1',
     barberId: 'barber-1',
@@ -234,58 +238,429 @@ export const INITIAL_RENT_RECORDS: RentPaymentRecord[] = [
   }
 ];
 
-export const storage = {
-  getBarbers(): Barber[] {
-    try {
-      const data = localStorage.getItem(BARBERS_KEY);
-      if (!data) {
-        localStorage.setItem(BARBERS_KEY, JSON.stringify(DEFAULT_BARBERS));
-        return DEFAULT_BARBERS;
+// Initial Seed Shops
+export const SEED_SHOPS: Shop[] = [
+  {
+    id: 'shop-of',
+    slug: 'of',
+    name: 'OF Supply & Lounge',
+    tagline: 'Professional Grooming Essentials & Master Cuts',
+    address: '104 Main Street, Suite A',
+    logoUrl: '/logo.png',
+    themeId: 'obsidian_emerald',
+    pinCode: '1234',
+    config: DEFAULT_OF_CONFIG,
+    barbers: DEFAULT_OF_BARBERS,
+    checkIns: INITIAL_OF_CHECKINS,
+    rentRecords: INITIAL_OF_RENT,
+    status: 'active',
+    monthlyPlanPrice: 49,
+    createdAt: '2026-01-15T00:00:00.000Z'
+  },
+  {
+    id: 'shop-fademasters',
+    slug: 'fademasters',
+    name: 'Fade Masters Downtown',
+    tagline: 'Precision Fades, Beard Sculpting & Hot Towel Shaves',
+    address: '420 Broadway Ave, Downtown',
+    themeId: 'obsidian_emerald',
+    pinCode: '1234',
+    config: {
+      ...DEFAULT_OF_CONFIG,
+      shopName: 'Fade Masters Downtown',
+      tagline: 'Precision Fades & Luxury Grooming',
+      welcomeShoppingTitle: 'Welcome to Fade Masters',
+      welcomeShoppingBody: 'Check in for your appointment or sign in for walk-in rotation.',
+      defaultWeeklyRent: 250
+    },
+    barbers: [
+      {
+        id: 'fm-1',
+        name: 'Marcus "FadeKing"',
+        nickname: 'Marcus',
+        specialty: 'Skin Fades & Designs',
+        avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&auto=format&fit=crop&q=80',
+        avatarColor: '#10B981',
+        phone: '(555) 777-1010',
+        stationNumber: 1,
+        isWorking: true,
+        pushSubscriptionActive: true,
+        weeklyRent: 250,
+        rentCycle: 'weekly',
+        rentDueDay: 'Monday',
+        autoPayEnabled: true,
+        passcode: '1111'
+      },
+      {
+        id: 'fm-2',
+        name: 'Diego Blade',
+        nickname: 'Diego',
+        specialty: 'Beards & Lineups',
+        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80',
+        avatarColor: '#059669',
+        phone: '(555) 777-2020',
+        stationNumber: 2,
+        isWorking: true,
+        pushSubscriptionActive: true,
+        weeklyRent: 250,
+        rentCycle: 'weekly',
+        rentDueDay: 'Monday',
+        autoPayEnabled: false,
+        passcode: '1111'
+      },
+      {
+        id: 'fm-3',
+        name: 'Jordan Kicks',
+        nickname: 'Jordan',
+        specialty: 'Taper Fades & Scissor Work',
+        avatar: '',
+        avatarColor: '#047857',
+        phone: '(555) 777-3030',
+        stationNumber: 3,
+        isWorking: true,
+        pushSubscriptionActive: true,
+        weeklyRent: 250,
+        rentCycle: 'weekly',
+        rentDueDay: 'Monday',
+        autoPayEnabled: false,
+        passcode: '1111'
       }
-      return JSON.parse(data);
-    } catch {
-      return DEFAULT_BARBERS;
+    ],
+    checkIns: [
+      {
+        id: 'fm-chk-1',
+        clientName: 'Alex Rivera',
+        clientPhone: '(555) 444-1212',
+        type: 'appointment',
+        barberId: 'fm-1',
+        barberName: 'Marcus "FadeKing"',
+        appointmentTime: 'Appointment',
+        checkInTime: new Date(Date.now() - 1000 * 60 * 8).toISOString(),
+        status: 'in_chair'
+      }
+    ],
+    rentRecords: [],
+    status: 'active',
+    monthlyPlanPrice: 49,
+    createdAt: '2026-03-01T00:00:00.000Z'
+  },
+  {
+    id: 'shop-royalcuts',
+    slug: 'royalcuts',
+    name: 'Royal Cuts Lounge',
+    tagline: 'Classic Gentlemen Barbershop & Hot Towel Treatment',
+    address: '88 Heritage Square',
+    themeId: 'classic_heritage',
+    pinCode: '1234',
+    config: {
+      ...DEFAULT_OF_CONFIG,
+      shopName: 'Royal Cuts Lounge',
+      tagline: 'Classic Gentlemen Barbershop',
+      welcomeShoppingTitle: 'Welcome to Royal Cuts',
+      welcomeShoppingBody: 'Please check in with your barber on arrival.',
+      defaultWeeklyRent: 200
+    },
+    barbers: [
+      {
+        id: 'rc-1',
+        name: 'Dominic "The Barber"',
+        nickname: 'Dominic',
+        specialty: 'Classic Scissor Cuts',
+        avatar: '',
+        avatarColor: '#EF4444',
+        phone: '(555) 888-1111',
+        stationNumber: 1,
+        isWorking: true,
+        pushSubscriptionActive: true,
+        weeklyRent: 200,
+        rentCycle: 'weekly',
+        rentDueDay: 'Monday',
+        autoPayEnabled: true,
+        passcode: '1111'
+      },
+      {
+        id: 'rc-2',
+        name: 'Lucas Sharp',
+        nickname: 'Lucas',
+        specialty: 'Razor Fades & Shaves',
+        avatar: '',
+        avatarColor: '#2563EB',
+        phone: '(555) 888-2222',
+        stationNumber: 2,
+        isWorking: true,
+        pushSubscriptionActive: true,
+        weeklyRent: 200,
+        rentCycle: 'weekly',
+        rentDueDay: 'Monday',
+        autoPayEnabled: false,
+        passcode: '1111'
+      }
+    ],
+    checkIns: [],
+    rentRecords: [],
+    status: 'active',
+    monthlyPlanPrice: 49,
+    createdAt: '2026-03-10T00:00:00.000Z'
+  }
+];
+
+export const storage = {
+  // Master Super Admin PIN
+  getMasterPin(): string {
+    return localStorage.getItem(MASTER_PIN_KEY) || DEFAULT_MASTER_PIN;
+  },
+
+  setMasterPin(newPin: string) {
+    localStorage.setItem(MASTER_PIN_KEY, newPin);
+  },
+
+  // Active Shop Management (Defaults to 'of' for existing home screen users!)
+  getActiveShopSlug(): string {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlShop = urlParams.get('shop');
+      if (urlShop) {
+        localStorage.setItem(ACTIVE_SHOP_KEY, urlShop.toLowerCase());
+        return urlShop.toLowerCase();
+      }
+      return localStorage.getItem(ACTIVE_SHOP_KEY) || 'of';
+    }
+    return 'of';
+  },
+
+  setActiveShopSlug(slug: string) {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(ACTIVE_SHOP_KEY, slug.toLowerCase());
+      window.dispatchEvent(new CustomEvent('shop_switched', { detail: { slug } }));
     }
   },
 
+  // All Shops in the Multi-Tenant System
+  getShops(): Shop[] {
+    try {
+      const data = localStorage.getItem(SHOPS_KEY);
+      if (!data) {
+        localStorage.setItem(SHOPS_KEY, JSON.stringify(SEED_SHOPS));
+        return SEED_SHOPS;
+      }
+      const parsed: Shop[] = JSON.parse(data);
+      // Ensure 'of' exists
+      if (!parsed.some(s => s.slug === 'of')) {
+        const merged = [...SEED_SHOPS.filter(s => s.slug === 'of'), ...parsed];
+        localStorage.setItem(SHOPS_KEY, JSON.stringify(merged));
+        return merged;
+      }
+      return parsed;
+    } catch {
+      return SEED_SHOPS;
+    }
+  },
+
+  saveShops(shops: Shop[]) {
+    localStorage.setItem(SHOPS_KEY, JSON.stringify(shops));
+    window.dispatchEvent(new Event('shops_updated'));
+  },
+
+  getActiveShop(): Shop {
+    const slug = this.getActiveShopSlug();
+    const shops = this.getShops();
+    const found = shops.find(s => s.slug === slug || s.id === slug);
+    return found || shops[0] || SEED_SHOPS[0];
+  },
+
+  getShopBySlug(slug: string): Shop | undefined {
+    const shops = this.getShops();
+    return shops.find(s => s.slug.toLowerCase() === slug.toLowerCase() || s.id === slug);
+  },
+
+  createShop(shopData: Partial<Shop> & { name: string; slug: string; themeId: ThemeId }): Shop {
+    const shops = this.getShops();
+    const cleanSlug = shopData.slug.toLowerCase().trim().replace(/[^a-z0-9-_]/g, '-');
+    
+    // Check if slug already exists
+    if (shops.some(s => s.slug === cleanSlug)) {
+      throw new Error(`A barbershop with link code "${cleanSlug}" already exists.`);
+    }
+
+    const newShop: Shop = {
+      id: 'shop-' + Date.now(),
+      slug: cleanSlug,
+      name: shopData.name,
+      tagline: shopData.tagline || 'Master Grooming & Precision Cuts',
+      address: shopData.address || '',
+      logoUrl: shopData.logoUrl || '',
+      themeId: shopData.themeId || 'midnight_gold',
+      pinCode: shopData.pinCode || '1234',
+      status: 'active',
+      monthlyPlanPrice: 49,
+      createdAt: new Date().toISOString(),
+      config: {
+        shopName: shopData.name,
+        tagline: shopData.tagline || 'Master Grooming & Precision Cuts',
+        address: shopData.address || '',
+        welcomeShoppingTitle: `Welcome to ${shopData.name}!`,
+        welcomeShoppingBody: 'Please check in for your appointment or walk-in.',
+        shoppingCategories: [],
+        shoppingAnnouncement: '',
+        autoResetShoppingSec: 6,
+        autoResetAppointmentSec: 6,
+        soundAlertsEnabled: false,
+        voiceAnnouncementsEnabled: false,
+        vibrateEnabled: true,
+        pinCode: shopData.pinCode || '1234',
+        allowWalkinsWithoutAppointment: false,
+        rentEnabled: true,
+        defaultWeeklyRent: 200,
+        defaultRentDueDay: 'Monday',
+        passFeesToBarber: true,
+        stripeConnectActive: true,
+        twilioConfig: {
+          enabled: false,
+          accountSid: '',
+          authToken: '',
+          fromPhone: ''
+        }
+      },
+      barbers: [
+        {
+          id: `barber-${Date.now()}-1`,
+          name: 'Lead Barber',
+          nickname: 'Lead',
+          specialty: 'Master Cuts',
+          avatar: '',
+          avatarColor: '#F59E0B',
+          phone: '(555) 000-0001',
+          stationNumber: 1,
+          isWorking: true,
+          pushSubscriptionActive: true,
+          weeklyRent: 200,
+          rentCycle: 'weekly',
+          rentDueDay: 'Monday',
+          autoPayEnabled: false,
+          passcode: '1111'
+        }
+      ],
+      checkIns: [],
+      rentRecords: []
+    };
+
+    const updated = [...shops, newShop];
+    this.saveShops(updated);
+    return newShop;
+  },
+
+  updateShop(slug: string, updates: Partial<Shop>): Shop {
+    const shops = this.getShops();
+    let updatedShop: Shop | null = null;
+
+    const newShops = shops.map(s => {
+      if (s.slug === slug || s.id === slug) {
+        const merged: Shop = {
+          ...s,
+          ...updates,
+          config: {
+            ...s.config,
+            ...(updates.config || {}),
+            ...(updates.name ? { shopName: updates.name } : {}),
+            ...(updates.tagline ? { tagline: updates.tagline } : {}),
+            ...(updates.address ? { address: updates.address } : {}),
+            ...(updates.pinCode ? { pinCode: updates.pinCode } : {})
+          }
+        };
+        updatedShop = merged;
+        return merged;
+      }
+      return s;
+    });
+
+    this.saveShops(newShops);
+    return updatedShop || this.getActiveShop();
+  },
+
+  deleteShop(slug: string) {
+    const shops = this.getShops();
+    const filtered = shops.filter(s => s.slug !== slug && s.id !== slug);
+    const remaining = filtered.length > 0 ? filtered : [SEED_SHOPS[0]];
+    this.saveShops(remaining);
+    if (this.getActiveShopSlug() === slug) {
+      this.setActiveShopSlug(remaining[0].slug);
+    }
+  },
+
+  // 🧹 Factory Reset: Clean slate for selling to barbershops
+  factoryResetPlatform() {
+    const cleanOF: Shop = {
+      id: 'shop-of',
+      slug: 'of',
+      name: 'OF Supply & Lounge',
+      tagline: 'Professional Grooming Essentials & Master Cuts',
+      address: '104 Main Street, Suite A',
+      logoUrl: '/logo.png',
+      themeId: 'obsidian_emerald',
+      pinCode: '1234',
+      config: DEFAULT_OF_CONFIG,
+      barbers: DEFAULT_OF_BARBERS,
+      checkIns: [],
+      rentRecords: [],
+      status: 'active',
+      monthlyPlanPrice: 49,
+      createdAt: new Date().toISOString()
+    };
+    localStorage.setItem(SHOPS_KEY, JSON.stringify([cleanOF]));
+    localStorage.setItem(ACTIVE_SHOP_KEY, 'of');
+    localStorage.setItem(MASTER_PIN_KEY, DEFAULT_MASTER_PIN);
+    window.dispatchEvent(new Event('shops_updated'));
+    window.dispatchEvent(new CustomEvent('shop_switched', { detail: { slug: 'of' } }));
+  },
+
+  // 🎲 Load Demo Fleet: Re-seeds OF, Fade Masters, and Royal Cuts for live testing
+  loadDemoFleet() {
+    localStorage.setItem(SHOPS_KEY, JSON.stringify(SEED_SHOPS));
+    localStorage.setItem(ACTIVE_SHOP_KEY, 'of');
+    window.dispatchEvent(new Event('shops_updated'));
+    window.dispatchEvent(new CustomEvent('shop_switched', { detail: { slug: 'of' } }));
+  },
+
+  // -------------------------------------------------------------
+  // Scoped active-shop helpers (Backward-compatible for components)
+  // -------------------------------------------------------------
+
+  getBarbers(): Barber[] {
+    const shop = this.getActiveShop();
+    return shop.barbers || [];
+  },
+
   saveBarbers(barbers: Barber[]) {
-    localStorage.setItem(BARBERS_KEY, JSON.stringify(barbers));
+    const shop = this.getActiveShop();
+    this.updateShop(shop.slug, { barbers });
     window.dispatchEvent(new Event('barbers_updated'));
   },
 
   getConfig(): ShopConfig {
-    try {
-      const data = localStorage.getItem(CONFIG_KEY);
-      if (!data) {
-        localStorage.setItem(CONFIG_KEY, JSON.stringify(DEFAULT_CONFIG));
-        return DEFAULT_CONFIG;
-      }
-      return { ...DEFAULT_CONFIG, ...JSON.parse(data) };
-    } catch {
-      return DEFAULT_CONFIG;
-    }
+    const shop = this.getActiveShop();
+    return shop.config;
   },
 
   saveConfig(config: ShopConfig) {
-    localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+    const shop = this.getActiveShop();
+    this.updateShop(shop.slug, {
+      name: config.shopName,
+      tagline: config.tagline,
+      address: config.address,
+      pinCode: config.pinCode,
+      config
+    });
     window.dispatchEvent(new Event('config_updated'));
   },
 
   getCheckIns(): CheckInRecord[] {
-    try {
-      const data = localStorage.getItem(CHECKINS_KEY);
-      if (!data) {
-        localStorage.setItem(CHECKINS_KEY, JSON.stringify(INITIAL_CHECKINS));
-        return INITIAL_CHECKINS;
-      }
-      return JSON.parse(data);
-    } catch {
-      return INITIAL_CHECKINS;
-    }
+    const shop = this.getActiveShop();
+    return shop.checkIns || [];
   },
 
   saveCheckIns(records: CheckInRecord[]) {
-    localStorage.setItem(CHECKINS_KEY, JSON.stringify(records));
+    const shop = this.getActiveShop();
+    this.updateShop(shop.slug, { checkIns: records });
     window.dispatchEvent(new Event('checkins_updated'));
   },
 
@@ -316,22 +691,14 @@ export const storage = {
     this.saveCheckIns(updated);
   },
 
-  // Booth Rent Ledger Storage Methods
   getRentRecords(): RentPaymentRecord[] {
-    try {
-      const data = localStorage.getItem(RENT_KEY);
-      if (!data) {
-        localStorage.setItem(RENT_KEY, JSON.stringify(INITIAL_RENT_RECORDS));
-        return INITIAL_RENT_RECORDS;
-      }
-      return JSON.parse(data);
-    } catch {
-      return INITIAL_RENT_RECORDS;
-    }
+    const shop = this.getActiveShop();
+    return shop.rentRecords || [];
   },
 
   saveRentRecords(records: RentPaymentRecord[]) {
-    localStorage.setItem(RENT_KEY, JSON.stringify(records));
+    const shop = this.getActiveShop();
+    this.updateShop(shop.slug, { rentRecords: records });
     window.dispatchEvent(new Event('rent_updated'));
   },
 

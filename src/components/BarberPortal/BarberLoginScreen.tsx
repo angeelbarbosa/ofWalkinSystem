@@ -68,72 +68,77 @@ export const BarberLoginScreen: React.FC<BarberLoginScreenProps> = ({
   };
 
   return (
-    <div className="pop-in" style={{ width: '100%', maxWidth: 900, margin: '0 auto' }}>
+    <div className="pop-in" style={{ width: '100%', maxWidth: 760, margin: '0 auto', padding: '0 8px' }}>
       {/* 1. If NO barber is selected yet: Show Barber Station Roster */}
       {!selectedBarber ? (
         <div>
           {/* Header Section */}
-          <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <div style={{ textAlign: 'center', marginBottom: 24 }}>
             <div
               style={{
-                width: 58,
-                height: 58,
-                borderRadius: 20,
-                background: '#09090B',
-                color: '#FFFFFF',
+                width: 52,
+                height: 52,
+                borderRadius: 18,
+                background: 'var(--surface-pill, #27272A)',
+                color: 'var(--accent-primary, #F59E0B)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                margin: '0 auto 14px',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.12)'
+                margin: '0 auto 12px',
+                boxShadow: 'var(--shadow-sm)',
+                border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))'
               }}
             >
-              <Scissors size={28} />
+              <Scissors size={26} />
             </div>
 
-            <h2 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#09090B', letterSpacing: '-0.02em', marginBottom: 6 }}>
+            <h2 style={{ fontSize: '1.65rem', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.02em', margin: '0 0 6px' }}>
               Barber Hub Access
             </h2>
-            <p style={{ fontSize: '0.92rem', color: '#71717A', maxWidth: 460, margin: '0 auto' }}>
-              Select your station profile to access your private client queue, call-ins, and booth rent ledger.
+            <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', maxWidth: 420, margin: '0 auto' }}>
+              Select your station to view private call-ins, live chair queue, and booth rent.
             </p>
           </div>
 
-          {/* Barbers Grid */}
+          {/* Barbers Grid (Responsive 2-col or 1-col on mobile) */}
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-              gap: 16,
-              marginBottom: 32
+              gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+              gap: 12,
+              marginBottom: 24
             }}
           >
             {activeBarbers.map((barber) => (
               <div
                 key={barber.id}
                 onClick={() => handleSelectBarber(barber)}
-                className="bubbly-choice-card slide-up"
+                className="slide-up"
                 style={{
-                  padding: '24px 20px',
-                  alignItems: 'flex-start',
-                  textAlign: 'left',
+                  padding: '18px 16px',
+                  borderRadius: 20,
+                  border: '1px solid var(--border-subtle, rgba(255,255,255,0.12))',
+                  background: 'var(--surface-card, #18181B)',
+                  boxShadow: 'var(--shadow-sm)',
                   cursor: 'pointer',
-                  borderRadius: 22,
-                  border: '1px solid #E4E4E7',
-                  background: '#FFFFFF',
-                  position: 'relative'
+                  position: 'relative',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 10,
+                  transition: 'all 0.2s ease'
                 }}
               >
                 {/* Station Tag & Lock Indicator */}
-                <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span
                     style={{
-                      fontSize: '0.78rem',
+                      fontSize: '0.74rem',
                       fontWeight: 800,
-                      background: '#F4F4F5',
-                      color: '#09090B',
-                      padding: '4px 10px',
-                      borderRadius: 9999
+                      background: 'var(--surface-pill, #27272A)',
+                      color: 'var(--accent-primary, #F59E0B)',
+                      padding: '3px 8px',
+                      borderRadius: 9999,
+                      border: '1px solid var(--border-subtle, rgba(255,255,255,0.08))'
                     }}
                   >
                     Station #{barber.stationNumber}
@@ -141,45 +146,45 @@ export const BarberLoginScreen: React.FC<BarberLoginScreenProps> = ({
 
                   <div
                     style={{
-                      width: 26,
-                      height: 26,
+                      width: 24,
+                      height: 24,
                       borderRadius: '50%',
-                      background: '#F4F4F5',
-                      color: '#71717A',
+                      background: 'var(--surface-pill, #27272A)',
+                      color: 'var(--text-muted, #71717A)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center'
                     }}
-                    title="Passcode Protected"
+                    title="PIN Protected"
                   >
-                    <Lock size={13} />
+                    <Lock size={12} />
                   </div>
                 </div>
 
                 {/* Avatar & Name */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div
                     style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 16,
-                      background: '#09090B',
-                      color: '#FFFFFF',
+                      width: 44,
+                      height: 44,
+                      borderRadius: 14,
+                      background: barber.avatarColor || 'var(--accent-primary, #F59E0B)',
+                      color: '#000000',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: '1.25rem',
-                      fontWeight: 850,
+                      fontSize: '1.2rem',
+                      fontWeight: 900,
                       flexShrink: 0
                     }}
                   >
                     {barber.name.charAt(0)}
                   </div>
-                  <div>
-                    <h3 style={{ fontSize: '1.2rem', fontWeight: 850, color: '#09090B', lineHeight: 1.2 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <h3 style={{ fontSize: '1.15rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {barber.name}
                     </h3>
-                    <div style={{ fontSize: '0.78rem', color: '#71717A', marginTop: 2 }}>
+                    <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: 2 }}>
                       {barber.specialty || 'Master Cuts'}
                     </div>
                   </div>
@@ -189,15 +194,15 @@ export const BarberLoginScreen: React.FC<BarberLoginScreenProps> = ({
                 <div
                   style={{
                     width: '100%',
-                    marginTop: 8,
-                    paddingTop: 12,
-                    borderTop: '1px solid #F4F4F5',
+                    marginTop: 4,
+                    paddingTop: 8,
+                    borderTop: '1px solid var(--border-subtle, rgba(255,255,255,0.08))',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    fontSize: '0.8rem',
-                    fontWeight: 700,
-                    color: '#09090B'
+                    fontSize: '0.76rem',
+                    fontWeight: 800,
+                    color: 'var(--accent-primary, #F59E0B)'
                   }}
                 >
                   <span>Open Station</span>
@@ -211,8 +216,19 @@ export const BarberLoginScreen: React.FC<BarberLoginScreenProps> = ({
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             <button
               onClick={onBackToKiosk}
-              className="back-pill-btn"
-              style={{ padding: '10px 20px', fontSize: '0.9rem' }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '10px 20px',
+                background: 'var(--surface-card, #18181B)',
+                border: '1px solid var(--border-subtle, rgba(255,255,255,0.12))',
+                color: 'var(--text-primary)',
+                borderRadius: 9999,
+                fontSize: '0.88rem',
+                fontWeight: 750,
+                cursor: 'pointer'
+              }}
             >
               <ArrowLeft size={16} />
               <span>Back to Customer Kiosk</span>
@@ -221,30 +237,41 @@ export const BarberLoginScreen: React.FC<BarberLoginScreenProps> = ({
         </div>
       ) : (
         /* 2. When a Barber IS selected: Show Touch PIN Keypad */
-        <div className="slide-up" style={{ maxWidth: 400, margin: '0 auto', textAlign: 'center' }}>
+        <div className="slide-up" style={{ maxWidth: 360, margin: '0 auto', textAlign: 'center' }}>
           {/* Selected Barber Header Badge */}
           <div
             style={{
-              background: '#FFFFFF',
-              border: '1px solid #E4E4E7',
+              background: 'var(--surface-card, #18181B)',
+              border: '1px solid var(--border-subtle, rgba(255,255,255,0.15))',
               borderRadius: 24,
-              padding: '24px 20px',
-              boxShadow: '0 8px 30px rgba(0,0,0,0.04)',
-              marginBottom: 20
+              padding: '20px 18px',
+              boxShadow: 'var(--shadow-md)',
+              marginBottom: 16
             }}
           >
             {/* Top Switch Barber action */}
-            <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 8 }}>
               <button
                 onClick={() => {
                   setSelectedBarber(null);
                   setPin('');
                   setError(false);
                 }}
-                className="back-pill-btn"
-                style={{ padding: '6px 12px', fontSize: '0.78rem' }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  padding: '5px 10px',
+                  background: 'var(--surface-pill, #27272A)',
+                  border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
+                  color: 'var(--text-secondary)',
+                  borderRadius: 9999,
+                  fontSize: '0.74rem',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
               >
-                <ArrowLeft size={13} />
+                <ArrowLeft size={12} />
                 <span>Switch Barber</span>
               </button>
             </div>
@@ -252,27 +279,27 @@ export const BarberLoginScreen: React.FC<BarberLoginScreenProps> = ({
             {/* Barber Avatar & Info */}
             <div
               style={{
-                width: 60,
-                height: 60,
-                borderRadius: 20,
-                background: '#09090B',
-                color: '#FFFFFF',
+                width: 54,
+                height: 54,
+                borderRadius: 18,
+                background: selectedBarber.avatarColor || 'var(--accent-primary, #F59E0B)',
+                color: '#000000',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '1.6rem',
-                fontWeight: 850,
-                margin: '0 auto 12px',
-                boxShadow: '0 4px 14px rgba(0,0,0,0.1)'
+                fontSize: '1.45rem',
+                fontWeight: 900,
+                margin: '0 auto 10px',
+                boxShadow: '0 4px 14px rgba(0,0,0,0.2)'
               }}
             >
               {selectedBarber.name.charAt(0)}
             </div>
 
-            <h3 style={{ fontSize: '1.4rem', fontWeight: 850, color: '#09090B', marginBottom: 2 }}>
+            <h3 style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--text-primary)', margin: '0 0 2px' }}>
               {selectedBarber.name}
             </h3>
-            <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#71717A', marginBottom: 18 }}>
+            <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 16 }}>
               Station #{selectedBarber.stationNumber} • Enter 4-Digit Passcode
             </div>
 
@@ -281,8 +308,8 @@ export const BarberLoginScreen: React.FC<BarberLoginScreenProps> = ({
               style={{
                 display: 'flex',
                 justifyContent: 'center',
-                gap: 16,
-                marginBottom: error ? 12 : 20,
+                gap: 14,
+                marginBottom: error ? 10 : 16,
                 transform: isShaking ? 'translateX(4px)' : 'none',
                 transition: 'transform 0.1s'
               }}
@@ -291,12 +318,13 @@ export const BarberLoginScreen: React.FC<BarberLoginScreenProps> = ({
                 <div
                   key={i}
                   style={{
-                    width: 18,
-                    height: 18,
+                    width: 16,
+                    height: 16,
                     borderRadius: '50%',
-                    background: i < pin.length ? '#09090B' : '#E4E4E7',
-                    border: error ? '2px solid #DC2626' : 'none',
-                    transform: i < pin.length ? 'scale(1.1)' : 'scale(1)',
+                    background: i < pin.length ? 'var(--accent-primary, #F59E0B)' : 'var(--surface-pill, #27272A)',
+                    border: error ? '2px solid #EF4444' : '1px solid var(--border-subtle, rgba(255,255,255,0.2))',
+                    transform: i < pin.length ? 'scale(1.15)' : 'scale(1)',
+                    boxShadow: i < pin.length ? '0 0 8px var(--accent-primary, #F59E0B)' : 'none',
                     transition: 'all 0.15s ease'
                   }}
                 />
@@ -308,37 +336,39 @@ export const BarberLoginScreen: React.FC<BarberLoginScreenProps> = ({
               <div
                 className="slide-down"
                 style={{
-                  color: '#DC2626',
-                  fontSize: '0.82rem',
+                  color: '#EF4444',
+                  fontSize: '0.78rem',
                   fontWeight: 700,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: 6,
-                  marginBottom: 16
+                  gap: 5,
+                  marginBottom: 12
                 }}
               >
-                <AlertCircle size={14} />
-                <span>Incorrect passcode. Please try again.</span>
+                <AlertCircle size={13} />
+                <span>Incorrect passcode. Try again.</span>
               </div>
             )}
 
             {/* Numeric Keypad */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 12 }}>
               {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((num) => (
                 <button
                   key={num}
                   type="button"
-                  className="key-btn"
                   style={{
-                    height: 54,
-                    fontSize: '1.4rem',
-                    fontWeight: 700,
-                    borderRadius: 18,
-                    background: '#F4F4F5',
-                    color: '#09090B',
-                    border: 'none',
-                    cursor: 'pointer'
+                    height: 50,
+                    fontSize: '1.35rem',
+                    fontWeight: 750,
+                    borderRadius: 16,
+                    background: 'var(--surface-pill, #27272A)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid var(--border-subtle, rgba(255,255,255,0.08))',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                   }}
                   onClick={() => handleDigit(num)}
                 >
@@ -347,15 +377,14 @@ export const BarberLoginScreen: React.FC<BarberLoginScreenProps> = ({
               ))}
               <button
                 type="button"
-                className="key-btn"
                 style={{
-                  height: 54,
-                  borderRadius: 18,
-                  background: '#F4F4F5',
-                  fontSize: '0.85rem',
+                  height: 50,
+                  borderRadius: 16,
+                  background: 'var(--surface-pill, #27272A)',
+                  fontSize: '0.8rem',
                   fontWeight: 700,
-                  color: '#71717A',
-                  border: 'none',
+                  color: 'var(--text-muted)',
+                  border: '1px solid var(--border-subtle, rgba(255,255,255,0.08))',
                   cursor: 'pointer'
                 }}
                 onClick={handleClear}
@@ -364,15 +393,14 @@ export const BarberLoginScreen: React.FC<BarberLoginScreenProps> = ({
               </button>
               <button
                 type="button"
-                className="key-btn"
                 style={{
-                  height: 54,
-                  fontSize: '1.4rem',
-                  fontWeight: 700,
-                  borderRadius: 18,
-                  background: '#F4F4F5',
-                  color: '#09090B',
-                  border: 'none',
+                  height: 50,
+                  fontSize: '1.35rem',
+                  fontWeight: 750,
+                  borderRadius: 16,
+                  background: 'var(--surface-pill, #27272A)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border-subtle, rgba(255,255,255,0.08))',
                   cursor: 'pointer'
                 }}
                 onClick={() => handleDigit('0')}
@@ -381,14 +409,13 @@ export const BarberLoginScreen: React.FC<BarberLoginScreenProps> = ({
               </button>
               <button
                 type="button"
-                className="key-btn"
                 style={{
-                  height: 54,
-                  borderRadius: 18,
-                  background: '#F4F4F5',
-                  fontSize: '1.25rem',
-                  color: '#09090B',
-                  border: 'none',
+                  height: 50,
+                  borderRadius: 16,
+                  background: 'var(--surface-pill, #27272A)',
+                  fontSize: '1.2rem',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border-subtle, rgba(255,255,255,0.08))',
                   cursor: 'pointer'
                 }}
                 onClick={handleBackspace}
@@ -397,19 +424,31 @@ export const BarberLoginScreen: React.FC<BarberLoginScreenProps> = ({
               </button>
             </div>
 
-            {/* Helpful Passcode Note */}
-            <div style={{ fontSize: '0.78rem', color: '#A1A1AA', marginTop: 12 }}>
-              Default passcode: <strong>1111</strong> (Can be changed inside station settings)
+            {/* Passcode Helper Note */}
+            <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+              Default PIN: <strong style={{ color: 'var(--accent-primary)' }}>1111</strong>
             </div>
           </div>
 
           <button
             onClick={onBackToKiosk}
-            className="back-pill-btn"
-            style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              padding: '8px 16px',
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--text-secondary)',
+              fontSize: '0.82rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              margin: '0 auto'
+            }}
           >
-            <ArrowLeft size={15} />
-            <span>Cancel & Back to Kiosk</span>
+            <ArrowLeft size={14} />
+            <span>Cancel & Back</span>
           </button>
         </div>
       )}

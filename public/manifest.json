@@ -1,7 +1,7 @@
 {
-  "name": "OF Barber & Supply Check-In System",
-  "short_name": "OF CheckIn",
-  "description": "Smart Walk-in & Client Notification System for OF Barber Supply",
+  "name": "WalkinApp — Smart Barbershop Platform",
+  "short_name": "WalkinApp",
+  "description": "Smart Walk-in Kiosks & Booth Rent Management for Modern Barbershops",
   "start_url": "/?portal=barber",
   "display": "standalone",
   "background_color": "#09090B",

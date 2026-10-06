@@ -18,8 +18,7 @@ export const ShoppingScreen: React.FC<ShoppingScreenProps> = ({ config, mode, on
       confetti({
         particleCount: 70,
         spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#09090B', '#27272A', '#71717A', '#D4D4D8', '#FFFFFF']
+        origin: { y: 0.6 }
       });
     }
 
@@ -54,40 +53,48 @@ export const ShoppingScreen: React.FC<ShoppingScreenProps> = ({ config, mode, on
           {/* Hero Icon */}
           <div
             className="card-icon-bubble bubbly-float"
-            style={{ margin: '0 auto 20px', width: 92, height: 92, borderRadius: 30, background: '#09090B', color: '#FFFFFF' }}
+            style={{
+              margin: '0 auto 20px',
+              width: 84,
+              height: 84,
+              borderRadius: 26,
+              background: 'var(--surface-pill, #27272A)',
+              color: 'var(--accent-primary, #F59E0B)',
+              boxShadow: 'var(--shadow-sm)'
+            }}
           >
-            <ShoppingBag size={46} strokeWidth={2.2} />
+            <ShoppingBag size={42} strokeWidth={2.2} />
           </div>
 
           <h2 className="shopping-main-title">
-            Welcome to OF Supply Store!
+            Welcome to {config.shopName}!
           </h2>
           
-          <p style={{ fontSize: '1.15rem', color: '#52525B', lineHeight: 1.5, marginBottom: '24px', fontWeight: 500 }}>
-            Feel free to browse all our barber supplies, clippers, blades, and grooming products.
+          <p style={{ fontSize: '1.05rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '22px', fontWeight: 500 }}>
+            {config.welcomeShoppingBody || 'Feel free to browse all our barber supplies, clippers, blades, and grooming products.'}
           </p>
 
           {/* Prominent Reminder Card */}
           <div
             style={{
-              background: '#F4F4F5',
-              border: '1px solid #E4E4E7',
+              background: 'var(--surface-pill, #27272A)',
+              border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
               borderRadius: 20,
-              padding: '18px 20px',
+              padding: '16px 18px',
               textAlign: 'left',
-              marginBottom: 28,
+              marginBottom: 24,
               display: 'flex',
               alignItems: 'flex-start',
-              gap: 14
+              gap: 12
             }}
           >
             <div
               style={{
-                width: 38,
-                height: 38,
+                width: 36,
+                height: 36,
                 borderRadius: 12,
-                background: '#09090B',
-                color: '#FFFFFF',
+                background: 'var(--accent-primary-light, rgba(245,158,11,0.15))',
+                color: 'var(--accent-primary, #F59E0B)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -97,18 +104,18 @@ export const ShoppingScreen: React.FC<ShoppingScreenProps> = ({ config, mode, on
               <Bell size={18} />
             </div>
             <div>
-              <div style={{ fontSize: '0.98rem', fontWeight: 800, color: '#09090B', marginBottom: 3 }}>
+              <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: 2 }}>
                 When You're Ready to Checkout:
               </div>
-              <div style={{ fontSize: '0.88rem', color: '#52525B', lineHeight: 1.4 }}>
-                Please return to this screen and tap <strong>"Ready to Checkout"</strong> so our team can meet you at the register to ring you up!
+              <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                Please return to this screen and tap <strong style={{ color: 'var(--accent-primary)' }}>"Ready to Checkout"</strong> so our team can meet you at the register to ring you up!
               </div>
             </div>
           </div>
 
           {/* Auto Reset Progress Bar */}
-          <div className="countdown-container" style={{ marginBottom: '24px' }}>
-            <div className="countdown-bar-track" style={{ height: 8 }}>
+          <div className="countdown-container" style={{ marginBottom: '20px' }}>
+            <div className="countdown-bar-track" style={{ height: 6 }}>
               <div
                 className="countdown-bar-fill"
                 style={{ width: `${100 - progressPercent}%` }}
@@ -134,26 +141,34 @@ export const ShoppingScreen: React.FC<ShoppingScreenProps> = ({ config, mode, on
           {/* Checkout Alert Confirmed */}
           <div
             className="card-icon-bubble bubbly-float"
-            style={{ margin: '0 auto 20px', width: 92, height: 92, borderRadius: 30, background: '#09090B', color: '#FFFFFF' }}
+            style={{
+              margin: '0 auto 20px',
+              width: 84,
+              height: 84,
+              borderRadius: 26,
+              background: 'var(--accent-primary, #F59E0B)',
+              color: '#000000',
+              boxShadow: '0 8px 24px rgba(245,158,11,0.35)'
+            }}
           >
-            <CreditCard size={46} strokeWidth={2.2} />
+            <CreditCard size={42} strokeWidth={2.2} />
           </div>
 
           <h2 className="shopping-main-title">
             Staff Notified for Checkout!
           </h2>
           
-          <p style={{ fontSize: '1.2rem', color: '#09090B', fontWeight: 750, lineHeight: 1.4, marginBottom: '12px' }}>
+          <p style={{ fontSize: '1.15rem', color: 'var(--text-primary)', fontWeight: 800, lineHeight: 1.4, marginBottom: '10px' }}>
             A team member is on their way to the front register to check you out.
           </p>
 
-          <p style={{ fontSize: '0.95rem', color: '#52525B', marginBottom: 28 }}>
-            Please bring your items to the front counter. Thank you for shopping with OF!
+          <p style={{ fontSize: '0.92rem', color: 'var(--text-secondary)', marginBottom: 24 }}>
+            Please bring your items to the front counter. Thank you for shopping with us!
           </p>
 
           {/* Auto Reset Progress Bar */}
-          <div className="countdown-container" style={{ marginBottom: '24px' }}>
-            <div className="countdown-bar-track" style={{ height: 8 }}>
+          <div className="countdown-container" style={{ marginBottom: '20px' }}>
+            <div className="countdown-bar-track" style={{ height: 6 }}>
               <div
                 className="countdown-bar-fill"
                 style={{ width: `${100 - progressPercent}%` }}

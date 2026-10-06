@@ -14,7 +14,8 @@ import {
   Lock,
   KeyRound,
   Vibrate,
-  Smartphone
+  Smartphone,
+  Plus
 } from 'lucide-react';
 import type { Barber, CheckInRecord, ShopConfig, RentPaymentRecord } from '../../types';
 import { storage } from '../../utils/storage';
@@ -44,7 +45,8 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
   onUpdateStatus,
   onPayRent,
   onSaveBarbers,
-  onLockStation
+  onLockStation,
+  onAddWalkinDirect
 }) => {
   // If a currentBarber was passed from login, use it; otherwise fallback to preference
   const assignedBarber = currentBarber || barbers.find(
@@ -166,39 +168,39 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
   };
 
   return (
-    <div className="pop-in" style={{ position: 'relative' }}>
+    <div className="pop-in" style={{ position: 'relative', width: '100%', maxWidth: 860, margin: '0 auto' }}>
       {/* Floating In-App Arrival Toast Banner */}
       {activeToast && (
         <div
           className="slide-down"
           style={{
             position: 'fixed',
-            top: 24,
+            top: 16,
             left: '50%',
             transform: 'translateX(-50%)',
             zIndex: 9999,
-            width: 'calc(100% - 32px)',
-            maxWidth: 500,
-            background: '#09090B',
-            color: '#FFFFFF',
-            borderRadius: 20,
-            padding: '16px 20px',
-            boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+            width: 'calc(100% - 24px)',
+            maxWidth: 480,
+            background: 'var(--surface-card, #18181B)',
+            border: '2px solid var(--accent-primary, #F59E0B)',
+            color: 'var(--text-primary, #FAFAFA)',
+            borderRadius: 22,
+            padding: '14px 18px',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.8), 0 0 30px rgba(245, 158, 11, 0.3)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: 14,
-            animation: 'slideDown 0.3s ease-out'
+            gap: 12
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
             <div
               style={{
-                width: 42,
-                height: 42,
-                borderRadius: 12,
-                background: '#FFFFFF',
-                color: '#09090B',
+                width: 40,
+                height: 40,
+                borderRadius: 14,
+                background: 'var(--accent-primary, #F59E0B)',
+                color: '#000000',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -207,39 +209,39 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
             >
               <Bell size={20} />
             </div>
-            <div>
-              <div style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#A1A1AA', fontWeight: 700 }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--accent-primary, #F59E0B)', fontWeight: 800 }}>
                 🔔 Client Arrived
               </div>
-              <div style={{ fontSize: '1.05rem', fontWeight: 850, color: '#FFFFFF', marginTop: 1 }}>
-                {activeToast.clientName} is here for you!
+              <div style={{ fontSize: '0.98rem', fontWeight: 850, color: 'var(--text-primary, #FAFAFA)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {activeToast.clientName} is here!
               </div>
               {activeToast.appointmentTime && (
-                <div style={{ fontSize: '0.8rem', color: '#D4D4D8', marginTop: 2 }}>
-                  Appointment: <strong>{activeToast.appointmentTime}</strong> • Waiting in lobby
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary, #A1A1AA)' }}>
+                  {activeToast.appointmentTime} • In lobby
                 </div>
               )}
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
             <button
               onClick={() => setActiveToast(null)}
               style={{
-                background: 'rgba(255,255,255,0.15)',
-                color: '#FFFFFF',
+                background: 'var(--accent-primary, #F59E0B)',
+                color: '#000000',
                 border: 'none',
-                padding: '8px 14px',
+                padding: '7px 12px',
                 borderRadius: 9999,
-                fontSize: '0.82rem',
-                fontWeight: 700,
+                fontSize: '0.78rem',
+                fontWeight: 800,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 6
+                gap: 4
               }}
             >
-              <Check size={14} />
+              <Check size={13} />
               <span>Got it</span>
             </button>
             <button
@@ -247,279 +249,419 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: '#A1A1AA',
+                color: 'var(--text-muted, #71717A)',
                 cursor: 'pointer',
-                padding: 4,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
+                padding: 4
               }}
             >
-              <X size={18} />
+              <X size={16} />
             </button>
           </div>
         </div>
       )}
 
-      {/* Station Header Bar: Profile, Passcode Settings, and Lock */}
+      {/* Station Header Bar: Profile Info + Compact Mobile Action Strip */}
       <div
         className="slide-down"
         style={{
-          background: '#FFFFFF',
-          border: '1px solid #E4E4E7',
-          borderRadius: 22,
-          padding: '16px 22px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+          background: 'var(--surface-card, #18181B)',
+          border: '1px solid var(--border-subtle, rgba(255,255,255,0.12))',
+          borderRadius: 24,
+          padding: '16px 18px',
+          boxShadow: 'var(--shadow-md)',
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
+          flexDirection: 'column',
           gap: 14,
-          marginBottom: 20
+          marginBottom: 16
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 16,
-              background: '#09090B',
-              color: '#FFFFFF',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '1.3rem',
-              fontWeight: 900,
-              boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-            }}
-          >
-            {assignedBarber.name.charAt(0)}
-          </div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <h2 style={{ fontSize: '1.35rem', fontWeight: 850, color: '#09090B', lineHeight: 1.2 }}>
-                {assignedBarber.name}
-              </h2>
-              <span
-                style={{
-                  background: '#F4F4F5',
-                  color: '#09090B',
-                  fontSize: '0.75rem',
-                  fontWeight: 800,
-                  padding: '3px 8px',
-                  borderRadius: 9999
-                }}
-              >
-                Station #{assignedBarber.stationNumber}
-              </span>
+        {/* Top Info Row */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+            <div
+              style={{
+                width: 46,
+                height: 46,
+                borderRadius: 16,
+                background: assignedBarber.avatarColor || 'var(--accent-primary, #F59E0B)',
+                color: '#000000',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.25rem',
+                fontWeight: 900,
+                flexShrink: 0,
+                boxShadow: '0 4px 14px rgba(0,0,0,0.2)'
+              }}
+            >
+              {assignedBarber.name.charAt(0)}
             </div>
-            <div style={{ fontSize: '0.8rem', color: '#71717A', display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
-              <span
-                style={{
-                  width: 7,
-                  height: 7,
-                  borderRadius: '50%',
-                  background: permission === 'granted' ? '#22C55E' : '#EAB308',
-                  display: 'inline-block'
-                }}
-              />
-              <span>{permission === 'granted' ? 'Station Phone Alerts Active' : 'Lockscreen alerts disabled'}</span>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-primary)', margin: 0, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {assignedBarber.name}
+                </h2>
+                <span
+                  style={{
+                    background: 'var(--surface-pill, #27272A)',
+                    color: 'var(--accent-primary, #F59E0B)',
+                    fontSize: '0.72rem',
+                    fontWeight: 800,
+                    padding: '2px 8px',
+                    borderRadius: 9999,
+                    border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  Station #{assignedBarber.stationNumber}
+                </span>
+              </div>
+              <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
+                <span
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: '50%',
+                    background: permission === 'granted' ? '#10B981' : '#F59E0B',
+                    display: 'inline-block'
+                  }}
+                />
+                <span>{permission === 'granted' ? 'Phone Alerts Ready' : 'Alerts Not Enabled'}</span>
+              </div>
             </div>
           </div>
+
+          {/* Quick Lock Station Icon for security */}
+          {onLockStation && (
+            <button
+              onClick={onLockStation}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+                padding: '7px 12px',
+                background: 'var(--surface-pill, #27272A)',
+                border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
+                color: 'var(--text-primary)',
+                borderRadius: 9999,
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                flexShrink: 0
+              }}
+              title="Lock station screen"
+            >
+              <Lock size={12} />
+              <span>Lock</span>
+            </button>
+          )}
         </div>
 
-        {/* Header Action Buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        {/* Bottom Responsive Action Buttons Row */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, width: '100%' }}>
           {permission !== 'granted' ? (
             <button
               onClick={handleEnablePush}
-              className="choice-card-action-btn"
-              style={{ padding: '8px 14px', fontSize: '0.82rem', width: 'auto' }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 5,
+                padding: '8px 10px',
+                background: 'var(--accent-primary, #F59E0B)',
+                color: '#000000',
+                border: 'none',
+                borderRadius: 12,
+                fontSize: '0.76rem',
+                fontWeight: 800,
+                cursor: 'pointer'
+              }}
             >
-              <Smartphone size={14} />
-              <span>Enable Alerts</span>
+              <Smartphone size={13} />
+              <span>Enable Push</span>
             </button>
           ) : (
             <button
               onClick={handleTestAlert}
-              className="back-pill-btn"
-              style={{ background: '#F4F4F5', color: '#09090B', padding: '8px 12px', fontSize: '0.8rem' }}
-              title="Send a quick test alert to this device"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 5,
+                padding: '8px 10px',
+                background: 'var(--surface-pill, #27272A)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
+                borderRadius: 12,
+                fontSize: '0.76rem',
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
+              title="Send a quick test vibration/sound alert to this device"
             >
-              <Vibrate size={13} />
+              <Vibrate size={13} style={{ color: 'var(--accent-primary)' }} />
               <span>{tested ? 'Buzzed!' : 'Test Buzz'}</span>
             </button>
           )}
 
-          {/* Change Passcode Button */}
+          {/* Change PIN Button */}
           <button
             onClick={() => setIsPasscodeModalOpen(true)}
-            className="back-pill-btn"
-            style={{ background: '#F4F4F5', color: '#09090B', padding: '8px 12px', fontSize: '0.8rem' }}
-            title="Change your personal station 4-digit passcode"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 5,
+              padding: '8px 10px',
+              background: 'var(--surface-pill, #27272A)',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
+              borderRadius: 12,
+              fontSize: '0.76rem',
+              fontWeight: 700,
+              cursor: 'pointer'
+            }}
+            title="Change station 4-digit passcode"
           >
-            <KeyRound size={13} />
+            <KeyRound size={13} style={{ color: 'var(--accent-primary)' }} />
             <span>Change PIN</span>
           </button>
 
-          {/* Lock Station / Log Out Button */}
-          {onLockStation && (
-            <button
-              onClick={onLockStation}
-              className="back-pill-btn"
-              style={{
-                background: '#09090B',
-                color: '#FFFFFF',
-                padding: '8px 14px',
-                fontSize: '0.8rem',
-                fontWeight: 700
-              }}
-              title="Lock station screen to prevent other barbers from seeing your queue or rent"
-            >
-              <Lock size={13} />
-              <span>Lock Station</span>
-            </button>
-          )}
+          {/* Quick Add Walk-In Directly for this barber */}
+          <button
+            onClick={onAddWalkinDirect}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 5,
+              padding: '8px 10px',
+              background: 'var(--surface-pill, #27272A)',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
+              borderRadius: 12,
+              fontSize: '0.76rem',
+              fontWeight: 700,
+              cursor: 'pointer'
+            }}
+            title="Directly add walk-in client to queue"
+          >
+            <Plus size={13} style={{ color: 'var(--accent-primary)' }} />
+            <span>Add Walk-In</span>
+          </button>
         </div>
       </div>
 
-      {/* Booth Rent Status Bar for this Barber */}
+      {/* Booth Rent Strip for this Barber */}
       {onPayRent && (
         <div
           className="slide-up"
           style={{
-            background: isRentPaidThisCycle ? '#F0FDF4' : '#FFFBEB',
-            border: isRentPaidThisCycle ? '1px solid #BBF7D0' : '1px solid #FDE68A',
+            background: isRentPaidThisCycle 
+              ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, var(--surface-card, #18181B) 100%)' 
+              : 'linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, var(--surface-card, #18181B) 100%)',
+            border: isRentPaidThisCycle 
+              ? '1px solid rgba(16, 185, 129, 0.35)' 
+              : '1px solid rgba(245, 158, 11, 0.35)',
             borderRadius: 20,
-            padding: '14px 20px',
-            marginBottom: 22,
+            padding: '12px 16px',
+            marginBottom: 16,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: 12
+            gap: 12,
+            boxShadow: 'var(--shadow-sm)'
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
             <div
               style={{
-                width: 38,
-                height: 38,
-                borderRadius: 12,
-                background: isRentPaidThisCycle ? '#22C55E' : '#EAB308',
-                color: '#FFFFFF',
+                width: 34,
+                height: 34,
+                borderRadius: 10,
+                background: isRentPaidThisCycle ? '#10B981' : '#F59E0B',
+                color: '#000000',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                flexShrink: 0
               }}
             >
-              <DollarSign size={20} />
+              <DollarSign size={18} />
             </div>
-            <div>
-              <div style={{ fontSize: '0.96rem', fontWeight: 800, color: '#09090B' }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {isRentPaidThisCycle
-                  ? `Booth Rent Paid for This Week ($${assignedBarber.weeklyRent || 200})`
-                  : `Booth Rent Due: $${assignedBarber.weeklyRent || 200}.00`}
+                  ? `Rent Paid ($${assignedBarber.weeklyRent || 200})`
+                  : `Rent Due: $${assignedBarber.weeklyRent || 200}.00`}
               </div>
-              <div style={{ fontSize: '0.78rem', color: isRentPaidThisCycle ? '#15803D' : '#92400E' }}>
+              <div style={{ fontSize: '0.72rem', color: isRentPaidThisCycle ? '#10B981' : '#F59E0B' }}>
                 {isRentPaidThisCycle
-                  ? `Receipt #${myRentRecord?.receiptNumber} • Verified in shop ledger`
-                  : `Due every ${assignedBarber.rentDueDay || 'Monday'} • Pay directly with Apple Pay or card`}
+                  ? `Receipt #${myRentRecord?.receiptNumber}`
+                  : `Due every ${assignedBarber.rentDueDay || 'Monday'}`}
               </div>
             </div>
           </div>
 
           <button
             onClick={() => setIsRentModalOpen(true)}
-            className="choice-card-action-btn"
             style={{
-              width: 'auto',
-              padding: '9px 18px',
-              fontSize: '0.84rem',
+              padding: '7px 14px',
+              fontSize: '0.78rem',
+              fontWeight: 800,
               borderRadius: 9999,
-              background: '#09090B'
+              background: isRentPaidThisCycle ? 'var(--surface-pill, #27272A)' : 'var(--accent-primary, #F59E0B)',
+              color: isRentPaidThisCycle ? 'var(--text-primary)' : '#000000',
+              border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+              flexShrink: 0
             }}
           >
-            <CreditCard size={15} />
-            <span>{isRentPaidThisCycle ? 'View Receipt / Re-Pay' : 'Pay Rent Now'}</span>
+            <CreditCard size={13} />
+            <span>{isRentPaidThisCycle ? 'Receipt' : 'Pay Rent'}</span>
           </button>
         </div>
       )}
 
-      {/* Personal Stats Overview */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 24 }}>
-        <div style={{ background: '#FFFFFF', padding: '16px 18px', borderRadius: 20, border: '1px solid var(--border-subtle)', boxShadow: '0 2px 6px rgba(0,0,0,0.02)', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 42, height: 42, borderRadius: 12, background: '#F4F4F5', color: '#09090B', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Clock size={20} />
+      {/* Sleek 3-Column Personal Stats Overview */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 20 }}>
+        {/* Waiting */}
+        <div style={{
+          background: 'var(--surface-card, #18181B)',
+          padding: '12px 10px',
+          borderRadius: 18,
+          border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
+          textAlign: 'center',
+          boxShadow: 'var(--shadow-sm)'
+        }}>
+          <div style={{ fontSize: '1.45rem', fontWeight: 900, color: 'var(--accent-primary, #F59E0B)', lineHeight: 1.1 }}>
+            {waitingList.length}
           </div>
-          <div>
-            <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#09090B' }}>{waitingList.length}</div>
-            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#71717A' }}>
-              Waiting for You
-            </div>
-          </div>
-        </div>
-
-        <div style={{ background: '#FFFFFF', padding: '16px 18px', borderRadius: 20, border: '1px solid var(--border-subtle)', boxShadow: '0 2px 6px rgba(0,0,0,0.02)', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 42, height: 42, borderRadius: 12, background: '#F4F4F5', color: '#09090B', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Scissors size={20} />
-          </div>
-          <div>
-            <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#09090B' }}>{inChairList.length}</div>
-            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#71717A' }}>
-              In Your Chair
-            </div>
+          <div style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-secondary)', marginTop: 3 }}>
+            Waiting
           </div>
         </div>
 
-        <div style={{ background: '#FFFFFF', padding: '16px 18px', borderRadius: 20, border: '1px solid var(--border-subtle)', boxShadow: '0 2px 6px rgba(0,0,0,0.02)', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 42, height: 42, borderRadius: 12, background: '#F4F4F5', color: '#71717A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <CheckCircle size={20} />
+        {/* In Chair */}
+        <div style={{
+          background: 'var(--surface-card, #18181B)',
+          padding: '12px 10px',
+          borderRadius: 18,
+          border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
+          textAlign: 'center',
+          boxShadow: 'var(--shadow-sm)'
+        }}>
+          <div style={{ fontSize: '1.45rem', fontWeight: 900, color: '#10B981', lineHeight: 1.1 }}>
+            {inChairList.length}
           </div>
-          <div>
-            <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#09090B' }}>{completedList.length}</div>
-            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#71717A' }}>
-              Your Cuts Today
-            </div>
+          <div style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-secondary)', marginTop: 3 }}>
+            In Chair
+          </div>
+        </div>
+
+        {/* Completed */}
+        <div style={{
+          background: 'var(--surface-card, #18181B)',
+          padding: '12px 10px',
+          borderRadius: 18,
+          border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
+          textAlign: 'center',
+          boxShadow: 'var(--shadow-sm)'
+        }}>
+          <div style={{ fontSize: '1.45rem', fontWeight: 900, color: 'var(--text-primary)', lineHeight: 1.1 }}>
+            {completedList.length}
+          </div>
+          <div style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-secondary)', marginTop: 3 }}>
+            Completed
           </div>
         </div>
       </div>
 
       {/* Main Waiting Queue Section */}
-      <div style={{ marginBottom: 32 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-          <h3 style={{ fontSize: '1.15rem', fontWeight: 850, color: '#09090B', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span>Your Waiting Clients</span>
-            <span style={{ fontSize: '0.8rem', background: '#09090B', color: '#FFFFFF', padding: '2px 9px', borderRadius: 9999, fontWeight: 700 }}>
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <h3 style={{ fontSize: '1.1rem', fontWeight: 850, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+            <span>Waiting for Your Station</span>
+            <span style={{ fontSize: '0.75rem', background: 'var(--accent-primary, #F59E0B)', color: '#000000', padding: '2px 8px', borderRadius: 9999, fontWeight: 900 }}>
               {waitingList.length}
             </span>
           </h3>
         </div>
 
         {waitingList.length === 0 ? (
-          <div style={{ background: '#FFFFFF', borderRadius: 20, padding: '40px 20px', textAlign: 'center', border: '1px solid var(--border-subtle)', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }}>
-            <div style={{ width: 56, height: 56, borderRadius: 18, background: '#F4F4F5', color: '#71717A', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-              <Armchair size={26} />
+          <div style={{
+            background: 'var(--surface-card, #18181B)',
+            borderRadius: 22,
+            padding: '32px 18px',
+            textAlign: 'center',
+            border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
+            boxShadow: 'var(--shadow-sm)'
+          }}>
+            <div style={{
+              width: 48,
+              height: 48,
+              borderRadius: 16,
+              background: 'var(--surface-pill, #27272A)',
+              color: 'var(--text-muted, #71717A)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 10px'
+            }}>
+              <Armchair size={24} />
             </div>
-            <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#09090B', marginBottom: 4 }}>
-              No clients currently waiting for {barberDisplayName}
+            <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 4px' }}>
+              No clients waiting right now
             </h4>
-            <p style={{ fontSize: '0.85rem', color: '#71717A', maxWidth: 360, margin: '0 auto' }}>
-              When a customer checks in for your station, they will appear here and buzz your device immediately.
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', maxWidth: 320, margin: '0 auto' }}>
+              When a client checks in for {barberDisplayName} or joins the walk-in rotation, they appear here instantly.
             </p>
           </div>
         ) : (
-          <div className="queue-grid">
-            {waitingList.map((record) => (
-              <div key={record.id} className="queue-card waiting slide-up">
-                <div className="queue-card-top">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {waitingList.map((record, index) => (
+              <div
+                key={record.id}
+                className="slide-up"
+                style={{
+                  background: 'var(--surface-card, #18181B)',
+                  borderRadius: 22,
+                  padding: '16px 18px',
+                  border: index === 0 ? '2px solid var(--accent-primary, #F59E0B)' : '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
+                  boxShadow: index === 0 ? '0 8px 24px rgba(245, 158, 11, 0.2)' : 'var(--shadow-sm)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 12
+                }}
+              >
+                {/* Client info top row */}
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
                   <div>
-                    <span className="time-badge" style={{ marginBottom: 6, display: 'inline-block' }}>
-                      {record.appointmentTime || 'Appointment'}
-                    </span>
-                    <h4 className="client-name-bold">{record.clientName}</h4>
-                    <div style={{ fontSize: '0.82rem', color: '#71717A', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                      <span
+                        style={{
+                          fontSize: '0.72rem',
+                          fontWeight: 800,
+                          padding: '2px 8px',
+                          borderRadius: 6,
+                          background: index === 0 ? 'var(--accent-primary, #F59E0B)' : 'var(--surface-pill, #27272A)',
+                          color: index === 0 ? '#000000' : 'var(--text-primary)',
+                          textTransform: 'uppercase'
+                        }}
+                      >
+                        {index === 0 ? '🔥 Next Up' : `#${index + 1} in line`}
+                      </span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        {record.appointmentTime || 'Walk-In'}
+                      </span>
+                    </div>
+                    <h4 style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.01em' }}>
+                      {record.clientName}
+                    </h4>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
                       <Clock size={12} />
                       <span>Arrived {getElapsedTime(record.checkInTime)}</span>
                     </div>
@@ -527,25 +669,63 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                 </div>
 
                 {record.status === 'called' && (
-                  <div style={{ background: '#F4F4F5', color: '#09090B', padding: '6px 12px', borderRadius: 12, fontSize: '0.82rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{
+                    background: 'rgba(245, 158, 11, 0.15)',
+                    border: '1px solid rgba(245, 158, 11, 0.3)',
+                    color: 'var(--accent-primary, #F59E0B)',
+                    padding: '6px 12px',
+                    borderRadius: 12,
+                    fontSize: '0.78rem',
+                    fontWeight: 750,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6
+                  }}>
                     <Megaphone size={14} />
-                    <span>Called client • Waiting to take seat</span>
+                    <span>Called client • Ready to take seat</span>
                   </div>
                 )}
 
-                <div className="queue-actions">
+                {/* Big, thumb-friendly Action Buttons */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: 10 }}>
                   <button
                     onClick={() => handleCallClient(record)}
-                    className="btn-action-pill"
+                    style={{
+                      padding: '12px 14px',
+                      borderRadius: 14,
+                      fontSize: '0.86rem',
+                      fontWeight: 800,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                      background: 'var(--surface-pill, #27272A)',
+                      border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
+                      color: 'var(--text-primary)',
+                      cursor: 'pointer'
+                    }}
                   >
-                    <Megaphone size={15} />
+                    <Megaphone size={15} style={{ color: 'var(--accent-primary)' }} />
                     <span>Call In</span>
                   </button>
 
                   <button
                     onClick={() => handleSetInChair(record)}
-                    className="btn-action-pill"
-                    style={{ background: '#09090B', color: '#FFFFFF' }}
+                    style={{
+                      padding: '12px 14px',
+                      borderRadius: 14,
+                      fontSize: '0.88rem',
+                      fontWeight: 900,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                      background: 'linear-gradient(135deg, var(--accent-primary, #F59E0B) 0%, var(--accent-primary-hover, #D97706) 100%)',
+                      color: '#000000',
+                      border: 'none',
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 14px rgba(245, 158, 11, 0.35)'
+                    }}
                   >
                     <Scissors size={15} />
                     <span>In Chair</span>
@@ -559,39 +739,76 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
 
       {/* In Chair Section */}
       {inChairList.length > 0 && (
-        <div style={{ marginBottom: 32 }}>
-          <h3 style={{ fontSize: '1.15rem', fontWeight: 850, color: '#09090B', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ marginBottom: 24 }}>
+          <h3 style={{ fontSize: '1.1rem', fontWeight: 850, color: 'var(--text-primary)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
             <span>Currently in Your Chair</span>
-            <span style={{ fontSize: '0.8rem', background: '#09090B', color: '#FFFFFF', padding: '2px 9px', borderRadius: 9999, fontWeight: 700 }}>
+            <span style={{ fontSize: '0.75rem', background: '#10B981', color: '#000000', padding: '2px 8px', borderRadius: 9999, fontWeight: 900 }}>
               {inChairList.length}
             </span>
           </h3>
 
-          <div className="queue-grid">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {inChairList.map((record) => (
-              <div key={record.id} className="queue-card in_chair slide-up">
-                <div className="queue-card-top">
-                  <div>
-                    <span className="time-badge" style={{ marginBottom: 6, display: 'inline-block' }}>
-                      ✂️ In Chair
-                    </span>
-                    <h4 className="client-name-bold">{record.clientName}</h4>
-                    <div style={{ fontSize: '0.82rem', color: '#71717A', marginTop: 2 }}>
-                      {record.appointmentTime ? `Appointment: ${record.appointmentTime}` : 'Walk-In'}
-                    </div>
+              <div
+                key={record.id}
+                className="slide-up"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, var(--surface-card, #18181B) 100%)',
+                  border: '2px solid #10B981',
+                  borderRadius: 22,
+                  padding: '18px',
+                  boxShadow: '0 8px 24px rgba(16, 185, 129, 0.2)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 14
+                }}
+              >
+                <div>
+                  <span
+                    style={{
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      padding: '2px 8px',
+                      borderRadius: 6,
+                      background: '#10B981',
+                      color: '#000000',
+                      display: 'inline-block',
+                      marginBottom: 4,
+                      textTransform: 'uppercase'
+                    }}
+                  >
+                    ✂️ In Service
+                  </span>
+                  <h4 style={{ fontSize: '1.35rem', fontWeight: 900, color: 'var(--text-primary)', margin: 0 }}>
+                    {record.clientName}
+                  </h4>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: 3 }}>
+                    {record.appointmentTime ? `Appointment: ${record.appointmentTime}` : 'Walk-In Customer'}
                   </div>
                 </div>
 
-                <div className="queue-actions">
-                  <button
-                    onClick={() => handleSetCompleted(record)}
-                    className="choice-card-action-btn"
-                    style={{ padding: '10px 16px', fontSize: '0.88rem' }}
-                  >
-                    <Check size={16} />
-                    <span>Mark Cut Finished</span>
-                  </button>
-                </div>
+                <button
+                  onClick={() => handleSetCompleted(record)}
+                  style={{
+                    width: '100%',
+                    padding: '14px',
+                    borderRadius: 16,
+                    fontSize: '0.96rem',
+                    fontWeight: 900,
+                    background: '#10B981',
+                    color: '#000000',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    boxShadow: '0 6px 20px rgba(16, 185, 129, 0.35)'
+                  }}
+                >
+                  <Check size={18} />
+                  <span>Mark Cut Finished</span>
+                </button>
               </div>
             ))}
           </div>
@@ -600,39 +817,48 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
 
       {/* Completed Today Section */}
       {completedList.length > 0 && (
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#71717A' }}>
-              Your Finished Cuts Today ({completedList.length})
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-muted)', margin: 0 }}>
+              Finished Today ({completedList.length})
             </h3>
             <button
               onClick={handleClearHistory}
-              className="back-pill-btn"
-              style={{ fontSize: '0.78rem', padding: '4px 10px' }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-muted)',
+                fontSize: '0.76rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4
+              }}
             >
               <Trash2 size={12} />
               <span>Clear</span>
             </button>
           </div>
 
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {completedList.map((record) => (
               <div
                 key={record.id}
                 style={{
-                  background: '#FFFFFF',
-                  border: '1px solid var(--border-subtle)',
-                  borderRadius: 14,
-                  padding: '7px 14px',
+                  background: 'var(--surface-pill, #27272A)',
+                  border: '1px solid var(--border-subtle, rgba(255,255,255,0.08))',
+                  borderRadius: 12,
+                  padding: '6px 12px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 8,
-                  fontSize: '0.85rem',
-                  color: '#71717A'
+                  gap: 6,
+                  fontSize: '0.8rem',
+                  color: 'var(--text-primary)'
                 }}
               >
-                <CheckCircle size={14} color="#09090B" />
-                <span style={{ fontWeight: 700, color: '#09090B' }}>{record.clientName}</span>
+                <CheckCircle size={13} style={{ color: '#10B981' }} />
+                <span style={{ fontWeight: 750 }}>{record.clientName}</span>
               </div>
             ))}
           </div>

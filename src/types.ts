@@ -1,3 +1,5 @@
+import type { ThemeId } from './utils/themes';
+
 export interface Barber {
   id: string;
   name: string;
@@ -60,6 +62,8 @@ export interface ShopConfig {
   shopName: string;
   tagline: string;
   address?: string;
+  logoUrl?: string;
+  themeId?: ThemeId;
   welcomeShoppingTitle: string;
   welcomeShoppingBody: string;
   shoppingCategories: string[];
@@ -85,4 +89,22 @@ export interface ShopConfig {
   };
 }
 
-export type MainNavTab = 'kiosk' | 'barber_portal' | 'admin';
+export interface Shop {
+  id: string; // e.g. 'shop-of'
+  slug: string; // e.g. 'of' (used for URL: ?shop=of)
+  name: string; // e.g. 'OF Supply & Lounge'
+  tagline: string;
+  address?: string;
+  logoUrl?: string;
+  themeId: ThemeId;
+  pinCode: string;
+  config: ShopConfig;
+  barbers: Barber[];
+  checkIns: CheckInRecord[];
+  rentRecords: RentPaymentRecord[];
+  status: 'active' | 'trial' | 'suspended';
+  monthlyPlanPrice?: number; // e.g. 49
+  createdAt: string;
+}
+
+export type MainNavTab = 'kiosk' | 'barber_portal' | 'admin' | 'super_admin' | 'shop_select';

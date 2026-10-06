@@ -1,13 +1,18 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '../../convex/_generated/api';
-import type { Barber, CheckInRecord, ShopConfig, RentPaymentRecord } from '../types';
+import type { Barber, CheckInRecord, ShopConfig, RentPaymentRecord, Shop } from '../types';
 import { storage } from './storage';
 import { notificationManager } from './notifications';
 import { convexClient } from './convexClient';
+import { applyTheme, type ThemeId } from './themes';
 
 export { convexClient };
 
 export function useLiveSystem() {
+  const [activeShopSlug, setActiveShopSlugState] = useState<string>(() => storage.getActiveShopSlug());
+  const [shops, setShops] = useState<Shop[]>(() => storage.getShops());
+  const [activeShop, setActiveShop] = useState<Shop>(() => storage.getActiveShop());
+
   const [barbers, setBarbers] = useState<Barber[]>(() => storage.getBarbers());
   const [config, setConfig] = useState<ShopConfig>(() => storage.getConfig());
   const [checkIns, setCheckIns] = useState<CheckInRecord[]>(() => storage.getCheckIns());
@@ -17,7 +22,30 @@ export function useLiveSystem() {
   const knownCheckInIdsRef = useRef<Set<string>>(new Set());
   const isInitialCheckInsLoadRef = useRef<boolean>(true);
 
+  // Apply active shop's theme whenever active shop changes
   useEffect(() => {
+    const current = storage.getActiveShop();
+    setActiveShop(current);
+    if (current && current.themeId) {
+      applyTheme(current.themeId);
+    }
+  }, [activeShopSlug, shops]);
+
+  // Handle reload / refresh of active shop data
+  const refreshActiveShopData = useCallback(() => {
+    const currentShop = storage.getActiveShop();
+    setActiveShop(currentShop);
+    setBarbers(currentShop.barbers || []);
+    setConfig(currentShop.config || storage.getConfig());
+    setCheckIns(currentShop.checkIns || []);
+    setRentRecords(currentShop.rentRecords || []);
+    setShops(storage.getShops());
+  }, []);
+
+  useEffect(() => {
+    // Initial sync
+    refreshActiveShopData();
+
     // 1. If Convex Client is available, set up live cloud watch queries
     if (convexClient) {
       try {
@@ -83,7 +111,8 @@ export function useLiveSystem() {
               weeklyRent: b.weeklyRent ?? 200,
               rentCycle: b.rentCycle ?? 'weekly',
               rentDueDay: b.rentDueDay ?? 'Monday',
-              autoPayEnabled: b.autoPayEnabled ?? false
+              autoPayEnabled: b.autoPayEnabled ?? false,
+              passcode: b.passcode || '1111'
             }));
             setBarbers(mapped);
             storage.saveBarbers(mapped);
@@ -105,7 +134,6 @@ export function useLiveSystem() {
 
         // Initial seed check
         convexClient.mutation(api.barbers.seed, {}).catch(() => {});
-
         setIsCloudConnected(true);
 
         return () => {
@@ -118,16 +146,27 @@ export function useLiveSystem() {
       }
     }
 
-    // 2. Local fallback events & BroadcastChannel sync
+    // 2. Local fallback events & multi-shop events
     const handleBarbersUpdate = () => setBarbers(storage.getBarbers());
     const handleConfigUpdate = () => setConfig(storage.getConfig());
     const handleCheckInsUpdate = () => setCheckIns(storage.getCheckIns());
     const handleRentUpdate = () => setRentRecords(storage.getRentRecords());
+    const handleShopsUpdate = () => {
+      setShops(storage.getShops());
+      refreshActiveShopData();
+    };
+    const handleShopSwitched = (e: any) => {
+      const slug = e?.detail?.slug || storage.getActiveShopSlug();
+      setActiveShopSlugState(slug);
+      refreshActiveShopData();
+    };
 
     window.addEventListener('barbers_updated', handleBarbersUpdate);
     window.addEventListener('config_updated', handleConfigUpdate);
     window.addEventListener('checkins_updated', handleCheckInsUpdate);
     window.addEventListener('rent_updated', handleRentUpdate);
+    window.addEventListener('shops_updated', handleShopsUpdate);
+    window.addEventListener('shop_switched', handleShopSwitched);
 
     notificationManager.onMessage((data: any) => {
       if (data?.type === 'NEW_CHECKIN') {
@@ -148,11 +187,51 @@ export function useLiveSystem() {
       window.removeEventListener('config_updated', handleConfigUpdate);
       window.removeEventListener('checkins_updated', handleCheckInsUpdate);
       window.removeEventListener('rent_updated', handleRentUpdate);
+      window.removeEventListener('shops_updated', handleShopsUpdate);
+      window.removeEventListener('shop_switched', handleShopSwitched);
     };
-  }, []);
+  }, [refreshActiveShopData]);
 
-  // Actions
-  const addCheckIn = async (clientName: string, selectedBarber?: Barber, appointmentTime: string = 'Scheduled') => {
+  // Actions: Switch Active Barbershop
+  const switchShop = (slug: string) => {
+    storage.setActiveShopSlug(slug);
+    setActiveShopSlugState(slug);
+    refreshActiveShopData();
+  };
+
+  // Actions: Create New Barbershop
+  const createShop = (shopData: Partial<Shop> & { name: string; slug: string; themeId: ThemeId }): Shop => {
+    const newShop = storage.createShop(shopData);
+    setShops(storage.getShops());
+    return newShop;
+  };
+
+  // Actions: Update Shop Branding or Config
+  const updateShop = (slug: string, updates: Partial<Shop>): Shop => {
+    const updated = storage.updateShop(slug, updates);
+    setShops(storage.getShops());
+    if (activeShopSlug === slug) {
+      refreshActiveShopData();
+    }
+    return updated;
+  };
+
+  // Actions: Delete Shop
+  const deleteShop = (slug: string) => {
+    storage.deleteShop(slug);
+    setShops(storage.getShops());
+    if (activeShopSlug === slug) {
+      switchShop('of');
+    }
+  };
+
+  // Actions: Client Check-in
+  const addCheckIn = async (
+    clientName: string, 
+    selectedBarber?: Barber, 
+    appointmentTime: string = 'Scheduled',
+    type: CheckInRecord['type'] = 'appointment'
+  ) => {
     const barberId = selectedBarber?.id;
     const barberName = selectedBarber?.name || 'Brandon';
 
@@ -161,16 +240,15 @@ export function useLiveSystem() {
       try {
         await convexClient.mutation(api.checkins.add, {
           clientName,
-          type: 'appointment',
+          type,
           barberId,
           barberName,
           appointmentTime
         });
       } catch {
-        // Fallback local
         storage.addCheckIn({
           clientName,
-          type: 'appointment',
+          type,
           barberId,
           barberName,
           appointmentTime
@@ -179,7 +257,7 @@ export function useLiveSystem() {
     } else {
       storage.addCheckIn({
         clientName,
-        type: 'appointment',
+        type,
         barberId,
         barberName,
         appointmentTime
@@ -192,7 +270,7 @@ export function useLiveSystem() {
     const newRecord: CheckInRecord = {
       id: 'chk-' + Date.now(),
       clientName,
-      type: 'appointment',
+      type,
       barberId,
       barberName,
       appointmentTime,
@@ -303,18 +381,42 @@ export function useLiveSystem() {
     setRentRecords(storage.getRentRecords());
   };
 
+  const factoryReset = () => {
+    storage.factoryResetPlatform();
+    setShops(storage.getShops());
+    setActiveShopSlugState('of');
+    refreshActiveShopData();
+  };
+
+  const loadDemoFleet = () => {
+    storage.loadDemoFleet();
+    setShops(storage.getShops());
+    setActiveShopSlugState('of');
+    refreshActiveShopData();
+  };
+
   return {
+    activeShopSlug,
+    activeShop,
+    shops,
     barbers,
     config,
     checkIns,
     rentRecords,
     isCloudConnected,
+    switchShop,
+    createShop,
+    updateShop,
+    deleteShop,
+    factoryReset,
+    loadDemoFleet,
     addCheckIn,
     updateStatus,
     saveBarbers,
     saveConfig,
     payBoothRent,
     markRentPaidOffline,
-    updateRentStatus
+    updateRentStatus,
+    refreshActiveShopData
   };
 }
