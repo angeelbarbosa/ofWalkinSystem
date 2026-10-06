@@ -107,4 +107,4 @@ export interface Shop {
   createdAt: string;
 }
 
-export type MainNavTab = 'kiosk' | 'barber_portal' | 'admin' | 'super_admin' | 'shop_select';
+export type MainNavTab = 'landing' | 'kiosk' | 'barber_portal' | 'admin' | 'super_admin' | 'shop_select';

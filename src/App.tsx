@@ -17,6 +17,7 @@ import { AdminDashboard } from './components/Admin/AdminDashboard';
 import { PinModal } from './components/Admin/PinModal';
 import { SuperAdminDashboard } from './components/SuperAdmin/SuperAdminDashboard';
 import { ShopSwitcherBar } from './components/Shared/ShopSwitcherBar';
+import { RootLandingScreen } from './components/Landing/RootLandingScreen';
 
 import './App.css';
 
@@ -31,11 +32,14 @@ export function App() {
 
       const params = new URLSearchParams(window.location.search);
       const portal = params.get('portal');
+      const shopParam = params.get('shop');
+
       if (portal === 'super_admin' || portal === 'superadmin' || portal === 'hq') return 'super_admin';
       if (portal === 'barber' || portal === 'barber_portal') return 'barber_portal';
       if (portal === 'admin') return 'admin';
+      if (shopParam) return 'kiosk';
 
-      // Check if standalone PWA mode was launched from an HQ bookmark
+      // Check if standalone PWA mode was launched from an icon
       const isStandalone = (
         window.matchMedia('(display-mode: standalone)').matches ||
         (window.navigator as any).standalone === true ||
@@ -45,34 +49,16 @@ export function App() {
       if (isStandalone && savedPortal === 'super_admin') {
         return 'super_admin';
       }
+      if (isStandalone && savedPortal && savedPortal !== 'landing') {
+        return savedPortal as MainNavTab;
+      }
     }
-    return 'kiosk';
+    // Naked root URL shows the Minimal Brand Gate with Shop Finder
+    return 'landing';
   };
 
   // Navigation State
   const [currentTab, setCurrentTab] = useState<MainNavTab>(getInitialTab);
-
-  // Keep URL query parameter and localStorage in sync with active portal
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    // Save active portal for standalone PWA icon launch
-    localStorage.setItem('walkin_pwa_portal', currentTab);
-
-    // Update browser URL without reloading
-    const currentUrl = new URL(window.location.href);
-    if (currentTab === 'super_admin') {
-      currentUrl.searchParams.set('portal', 'super_admin');
-      currentUrl.searchParams.delete('shop');
-    } else if (currentTab === 'admin') {
-      currentUrl.searchParams.set('portal', 'admin');
-    } else if (currentTab === 'barber_portal') {
-      currentUrl.searchParams.set('portal', 'barber');
-    } else {
-      currentUrl.searchParams.delete('portal');
-    }
-    window.history.replaceState({}, '', currentUrl.toString());
-  }, [currentTab]);
   const [kioskStep, setKioskStep] = useState<'home' | 'shopping_browsing' | 'shopping_checkout' | 'barber_select' | 'live_queue' | 'confirmed'>('home');
   const [checkInMode, setCheckInMode] = useState<'appointment' | 'walkin'>('appointment');
   const [isCheckInModalOpen, setIsCheckInModalOpen] = useState(false);
@@ -108,6 +94,34 @@ export function App() {
     payBoothRent,
     markRentPaidOffline
   } = useLiveSystem();
+
+  // Keep URL query parameter and localStorage in sync with active portal
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Save active portal for standalone PWA icon launch
+    localStorage.setItem('walkin_pwa_portal', currentTab);
+
+    // Update browser URL without reloading
+    const currentUrl = new URL(window.location.href);
+    if (currentTab === 'landing') {
+      currentUrl.searchParams.delete('portal');
+      currentUrl.searchParams.delete('shop');
+    } else if (currentTab === 'super_admin') {
+      currentUrl.searchParams.set('portal', 'super_admin');
+      currentUrl.searchParams.delete('shop');
+    } else if (currentTab === 'admin') {
+      currentUrl.searchParams.set('portal', 'admin');
+      if (activeShopSlug) currentUrl.searchParams.set('shop', activeShopSlug);
+    } else if (currentTab === 'barber_portal') {
+      currentUrl.searchParams.set('portal', 'barber');
+      if (activeShopSlug) currentUrl.searchParams.set('shop', activeShopSlug);
+    } else if (currentTab === 'kiosk') {
+      currentUrl.searchParams.delete('portal');
+      if (activeShopSlug) currentUrl.searchParams.set('shop', activeShopSlug);
+    }
+    window.history.replaceState({}, '', currentUrl.toString());
+  }, [currentTab, activeShopSlug]);
 
   // Reset auth when switching shops
   useEffect(() => {
@@ -176,12 +190,24 @@ export function App() {
       <div 
         className="content-wrapper" 
         style={{ 
-          padding: currentTab === 'super_admin' ? 0 : currentTab === 'kiosk' ? 'max(24px, env(safe-area-inset-top, 24px)) 16px 20px' : 'max(16px, env(safe-area-inset-top, 16px)) 16px 20px' 
+          padding: (currentTab === 'super_admin' || currentTab === 'landing') ? 0 : currentTab === 'kiosk' ? 'max(24px, env(safe-area-inset-top, 24px)) 16px 20px' : 'max(16px, env(safe-area-inset-top, 16px)) 16px 20px' 
         }}
       >
         
-        {/* SUPER ADMIN DASHBOARD VIEW */}
-        {currentTab === 'super_admin' ? (
+        {/* ROOT LANDING SCREEN (When visiting naked domain without direct shop link) */}
+        {currentTab === 'landing' ? (
+          <RootLandingScreen
+            shops={shops}
+            onSelectShop={(slug, targetPortal = 'kiosk') => {
+              switchShop(slug);
+              setCurrentTab(targetPortal);
+              if (targetPortal === 'kiosk') {
+                handleResetKiosk();
+              }
+            }}
+            onOpenSuperAdmin={() => setCurrentTab('super_admin')}
+          />
+        ) : currentTab === 'super_admin' ? (
           <SuperAdminDashboard
             shops={shops}
             activeShopSlug={activeShopSlug}
