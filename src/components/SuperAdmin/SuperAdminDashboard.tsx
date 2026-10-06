@@ -185,8 +185,8 @@ export function SuperAdminDashboard({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'var(--bg-gradient)',
-        padding: '20px 16px',
+        background: 'var(--bg-main)',
+        padding: 'max(24px, env(safe-area-inset-top, 24px)) 16px max(40px, env(safe-area-inset-bottom, 24px)) 16px',
         boxSizing: 'border-box'
       }}>
         <div style={{
@@ -298,10 +298,9 @@ export function SuperAdminDashboard({
   return (
     <div style={{
       minHeight: '100dvh',
-      background: 'var(--bg-gradient)',
+      background: 'var(--bg-main)',
       color: 'var(--text-primary)',
-      padding: '20px 14px',
-      paddingBottom: 'max(120px, env(safe-area-inset-bottom, 32px))',
+      padding: 'max(24px, env(safe-area-inset-top, 24px)) 14px max(120px, env(safe-area-inset-bottom, 32px)) 14px',
       fontFamily: 'var(--font-body)',
       width: '100%',
       boxSizing: 'border-box'

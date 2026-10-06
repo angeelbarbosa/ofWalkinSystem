@@ -135,11 +135,12 @@ export function App() {
 
   return (
     <div className="app-container">
-      {/* Soft Ambient Floating Bubbles */}
-      <div className="ambient-bubble ambient-bubble-1" />
-      <div className="ambient-bubble ambient-bubble-2" />
-
-      <div className="content-wrapper" style={{ padding: currentTab === 'kiosk' ? '32px 16px 20px' : '20px' }}>
+      <div 
+        className="content-wrapper" 
+        style={{ 
+          padding: currentTab === 'super_admin' ? 0 : currentTab === 'kiosk' ? 'max(24px, env(safe-area-inset-top, 24px)) 16px 20px' : 'max(16px, env(safe-area-inset-top, 16px)) 16px 20px' 
+        }}
+      >
         
         {/* SUPER ADMIN DASHBOARD VIEW */}
         {currentTab === 'super_admin' ? (

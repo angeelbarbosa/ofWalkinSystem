@@ -1,37 +1,19 @@
-/* App-wide Component Styling - Monochrome White / Grey / Black */
+/* App-wide Component Styling - Static Monochrome White / Grey / Black */
 
 .app-container {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  background: var(--bg-gradient);
+  background: var(--bg-main);
   position: relative;
+  width: 100%;
+  overflow-x: hidden;
 }
 
-/* Subtle Monochrome Ambient Bubbles */
+/* Ambient Bubbles disabled for clean static background */
 .ambient-bubble {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(90px);
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.45;
-}
-
-.ambient-bubble-1 {
-  width: 450px;
-  height: 450px;
-  background: #E4E4E7;
-  top: -100px;
-  right: -50px;
-}
-
-.ambient-bubble-2 {
-  width: 400px;
-  height: 400px;
-  background: #E5E7EB;
-  bottom: 0;
-  left: -80px;
+  display: none !important;
 }
 
 /* Main Content Wrapper */
