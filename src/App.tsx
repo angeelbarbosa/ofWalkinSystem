@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Lock, ArrowLeft, Scissors } from 'lucide-react';
 import type { Barber, CheckInRecord, MainNavTab } from './types';
 import { useLiveSystem } from './utils/liveSync';
@@ -188,6 +188,23 @@ export function App() {
     setTargetTabAfterUnlock(tab);
     setShowPinModal(true);
   };
+
+  const handleSendSupportMessage = useCallback((text: string) => {
+    if (activeShop) {
+      sendSupportMessage(
+        activeShop.slug, 
+        text, 
+        'shop_owner', 
+        `${activeShop.ownerContactName || 'Owner'} (${activeShop.name})`
+      );
+    }
+  }, [activeShop, sendSupportMessage]);
+
+  const handleMarkSupportRead = useCallback(() => {
+    if (activeShop) {
+      markSupportMessagesRead(activeShop.slug, 'shop');
+    }
+  }, [activeShop, markSupportMessagesRead]);
 
   return (
     <div className="app-container">
@@ -453,16 +470,8 @@ export function App() {
                 onMarkPaidOffline={markRentPaidOffline}
                 onSaveBarbers={saveBarbers}
                 onSaveConfig={saveConfig}
-                onSendSupportMessage={(text) => {
-                  if (activeShop) {
-                    sendSupportMessage(activeShop.slug, text, 'shop_owner', `${activeShop.ownerContactName || 'Owner'} (${activeShop.name})`);
-                  }
-                }}
-                onMarkSupportRead={() => {
-                  if (activeShop) {
-                    markSupportMessagesRead(activeShop.slug, 'shop');
-                  }
-                }}
+                onSendSupportMessage={handleSendSupportMessage}
+                onMarkSupportRead={handleMarkSupportRead}
               />
             )}
 

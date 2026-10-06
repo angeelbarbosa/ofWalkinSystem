@@ -280,6 +280,16 @@ export const INITIAL_SUPPORT_MESSAGES: SupportMessage[] = [
     createdAt: new Date(Date.now() - 1000 * 60 * 150).toISOString(),
     readByHq: true,
     readByShop: true
+  },
+  {
+    id: 'msg-4',
+    shopSlug: 'of',
+    sender: 'platform_hq',
+    senderName: 'Platform HQ',
+    text: 'Welcome to your shop direct line! If you have any questions about booth rent, iPads, or settings, chat with us right here.',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
+    readByHq: true,
+    readByShop: true
   }
 ];
 
@@ -842,14 +852,19 @@ export const storage = {
   getSupportMessages(shopSlug?: string): SupportMessage[] {
     try {
       const data = localStorage.getItem(SUPPORT_MESSAGES_KEY);
+      let messages: SupportMessage[];
       if (!data) {
         localStorage.setItem(SUPPORT_MESSAGES_KEY, JSON.stringify(INITIAL_SUPPORT_MESSAGES));
-        return shopSlug 
-          ? INITIAL_SUPPORT_MESSAGES.filter(m => m.shopSlug === shopSlug)
-          : INITIAL_SUPPORT_MESSAGES;
+        messages = INITIAL_SUPPORT_MESSAGES;
+      } else {
+        const parsed = JSON.parse(data);
+        messages = Array.isArray(parsed) ? parsed : INITIAL_SUPPORT_MESSAGES;
       }
-      const parsed: SupportMessage[] = JSON.parse(data);
-      return shopSlug ? parsed.filter(m => m.shopSlug === shopSlug) : parsed;
+      if (shopSlug) {
+        const cleanSlug = shopSlug.toLowerCase().trim();
+        return messages.filter(m => (m.shopSlug || '').toLowerCase().trim() === cleanSlug);
+      }
+      return messages;
     } catch {
       return INITIAL_SUPPORT_MESSAGES;
     }
@@ -859,14 +874,17 @@ export const storage = {
     shopSlug: string, 
     text: string, 
     sender: 'shop_owner' | 'platform_hq', 
-    senderName: string
+    senderName?: string
   ): SupportMessage {
+    const cleanSlug = (shopSlug || 'of').toLowerCase().trim();
     const allMessages = this.getSupportMessages();
+    const defaultSenderName = sender === 'platform_hq' ? 'Platform HQ' : 'Shop Owner';
+    
     const newMessage: SupportMessage = {
       id: 'msg-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
-      shopSlug,
+      shopSlug: cleanSlug,
       sender,
-      senderName,
+      senderName: senderName || defaultSenderName,
       text: text.trim(),
       createdAt: new Date().toISOString(),
       readByHq: sender === 'platform_hq',
@@ -874,15 +892,16 @@ export const storage = {
     };
     const updated = [...allMessages, newMessage];
     localStorage.setItem(SUPPORT_MESSAGES_KEY, JSON.stringify(updated));
-    window.dispatchEvent(new CustomEvent('support_messages_updated', { detail: { shopSlug, message: newMessage } }));
+    window.dispatchEvent(new CustomEvent('support_messages_updated', { detail: { shopSlug: cleanSlug, message: newMessage } }));
     return newMessage;
   },
 
   markSupportMessagesRead(shopSlug: string, reader: 'hq' | 'shop') {
+    const cleanSlug = (shopSlug || 'of').toLowerCase().trim();
     const allMessages = this.getSupportMessages();
     let changed = false;
     const updated = allMessages.map(m => {
-      if (m.shopSlug === shopSlug) {
+      if ((m.shopSlug || '').toLowerCase().trim() === cleanSlug) {
         if (reader === 'hq' && !m.readByHq) {
           changed = true;
           return { ...m, readByHq: true };
@@ -896,7 +915,7 @@ export const storage = {
     });
     if (changed) {
       localStorage.setItem(SUPPORT_MESSAGES_KEY, JSON.stringify(updated));
-      window.dispatchEvent(new CustomEvent('support_messages_updated', { detail: { shopSlug } }));
+      window.dispatchEvent(new CustomEvent('support_messages_updated', { detail: { shopSlug: cleanSlug } }));
     }
   },
 

@@ -31,31 +31,49 @@ export const SupportChatDrawer: React.FC<SupportChatDrawerProps> = ({
   isOpen,
   onClose,
   currentShop,
-  messages,
+  messages = [],
   onSendMessage,
   onMarkRead,
   userRole = 'shop_owner'
 }) => {
   const [inputText, setInputText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const onMarkReadRef = useRef(onMarkRead);
+  onMarkReadRef.current = onMarkRead;
 
-  // Filter messages for this specific shop
-  const shopSlug = currentShop?.slug || 'of';
-  const shopMessages = messages.filter(m => m.shopSlug === shopSlug);
+  // Filter messages for this specific shop (case-insensitive & trimmed)
+  const shopSlug = (currentShop?.slug || 'of').toLowerCase().trim();
+  const shopMessages = (messages || []).filter(
+    m => (m.shopSlug || '').toLowerCase().trim() === shopSlug
+  );
 
+  const isHqUser = userRole === 'platform_hq';
+  const hasUnread = shopMessages.some(m => isHqUser ? !m.readByHq : !m.readByShop);
+
+  // Mark unread messages as read ONLY when open and unread messages actually exist
+  useEffect(() => {
+    if (isOpen && hasUnread) {
+      onMarkReadRef.current?.();
+    }
+  }, [isOpen, hasUnread]);
+
+  // Smooth scroll to bottom on open or new messages
   useEffect(() => {
     if (isOpen) {
-      onMarkRead();
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      const timer = setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 50);
+      return () => clearTimeout(timer);
     }
-  }, [isOpen, shopMessages.length, onMarkRead]);
+  }, [isOpen, shopMessages.length]);
 
   if (!isOpen || !currentShop) return null;
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputText.trim()) return;
-    onSendMessage(inputText.trim());
+    const clean = inputText.trim();
+    if (!clean) return;
+    onSendMessage(clean);
     setInputText('');
   };
 
@@ -72,8 +90,6 @@ export const SupportChatDrawer: React.FC<SupportChatDrawerProps> = ({
     }
   };
 
-  const isHqUser = userRole === 'platform_hq';
-
   return (
     <div 
       style={{
@@ -82,10 +98,10 @@ export const SupportChatDrawer: React.FC<SupportChatDrawerProps> = ({
         left: 0,
         right: 0,
         bottom: 0,
-        background: 'rgba(0, 0, 0, 0.7)',
+        background: 'rgba(0, 0, 0, 0.75)',
         backdropFilter: 'blur(10px)',
         WebkitBackdropFilter: 'blur(10px)',
-        zIndex: 1000,
+        zIndex: 9999,
         display: 'flex',
         justifyContent: 'flex-end',
         alignItems: 'stretch'
@@ -299,6 +315,7 @@ export const SupportChatDrawer: React.FC<SupportChatDrawerProps> = ({
             {QUICK_PROMPTS.map((prompt, idx) => (
               <button
                 key={idx}
+                type="button"
                 onClick={() => handleQuickPrompt(prompt)}
                 style={{
                   padding: '5px 10px',

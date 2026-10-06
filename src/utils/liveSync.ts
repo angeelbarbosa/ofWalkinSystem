@@ -472,28 +472,28 @@ export function useLiveSystem() {
     syncToConvexCloud(updated);
   };
 
-  const sendSupportMessage = (
+  const sendSupportMessage = useCallback((
     shopSlug: string,
     text: string,
     sender: 'shop_owner' | 'platform_hq',
-    senderName: string
+    senderName?: string
   ): SupportMessage => {
     const msg = storage.sendSupportMessage(shopSlug, text, sender, senderName);
     setSupportMessages(storage.getSupportMessages());
     return msg;
-  };
+  }, []);
 
-  const markSupportMessagesRead = (shopSlug: string, reader: 'hq' | 'shop') => {
+  const markSupportMessagesRead = useCallback((shopSlug: string, reader: 'hq' | 'shop') => {
     storage.markSupportMessagesRead(shopSlug, reader);
     setSupportMessages(storage.getSupportMessages());
-  };
+  }, []);
 
-  const markShopSubscriptionPaid = (slug: string, paymentMethod: SubscriptionPaymentMethod = 'zelle') => {
+  const markShopSubscriptionPaid = useCallback((slug: string, paymentMethod: SubscriptionPaymentMethod = 'zelle') => {
     storage.markShopSubscriptionPaid(slug, paymentMethod);
     const updatedFleet = storage.getShops();
     setShops(updatedFleet);
     syncToConvexCloud(updatedFleet);
-  };
+  }, []);
 
   return {
     activeShopSlug,
