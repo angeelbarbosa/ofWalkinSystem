@@ -92,67 +92,67 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
   };
 
   return (
-    <div className="pop-in" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <div className="pop-in" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* 1. Header Overview & Metrics */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
         {/* Metric 1: Total Collected */}
-        <div style={{ background: '#FFFFFF', padding: '20px 22px', borderRadius: 20, border: '1px solid var(--border-subtle)', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#71717A', textTransform: 'uppercase' }}>Rent Collected</span>
-            <div style={{ width: 34, height: 34, borderRadius: 10, background: '#F4F4F5', color: '#22C55E', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <CheckCircle2 size={18} />
+        <div style={{ background: 'var(--surface-card)', padding: '18px 20px', borderRadius: 20, border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Rent Collected</span>
+            <div style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--pastel-green-bg)', color: 'var(--pastel-green)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <CheckCircle2 size={16} />
             </div>
           </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 900, color: '#09090B' }}>
+          <div style={{ fontSize: '1.65rem', fontWeight: 900, color: 'var(--text-primary)' }}>
             ${totalCollected.toLocaleString()}
-            <span style={{ fontSize: '0.9rem', color: '#71717A', fontWeight: 600 }}> / ${totalExpectedRent.toLocaleString()}</span>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}> / ${totalExpectedRent.toLocaleString()}</span>
           </div>
-          <div style={{ fontSize: '0.8rem', color: '#22C55E', fontWeight: 700, marginTop: 4 }}>
-            {collectionRate}% on-time this week
+          <div style={{ fontSize: '0.78rem', color: 'var(--pastel-green)', fontWeight: 700, marginTop: 3 }}>
+            {collectionRate}% collected this week
           </div>
         </div>
 
         {/* Metric 2: Outstanding Balance */}
-        <div style={{ background: '#FFFFFF', padding: '20px 22px', borderRadius: 20, border: '1px solid var(--border-subtle)', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#71717A', textTransform: 'uppercase' }}>Unpaid / Due</span>
-            <div style={{ width: 34, height: 34, borderRadius: 10, background: '#F4F4F5', color: '#EAB308', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Clock size={18} />
+        <div style={{ background: 'var(--surface-card)', padding: '18px 20px', borderRadius: 20, border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Unpaid / Due</span>
+            <div style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--pastel-amber-bg)', color: 'var(--pastel-amber)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Clock size={16} />
             </div>
           </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 900, color: totalOutstanding > 0 ? '#E11D48' : '#09090B' }}>
+          <div style={{ fontSize: '1.65rem', fontWeight: 900, color: totalOutstanding > 0 ? 'var(--pastel-red)' : 'var(--text-primary)' }}>
             ${totalOutstanding.toLocaleString()}
           </div>
-          <div style={{ fontSize: '0.8rem', color: '#71717A', fontWeight: 600, marginTop: 4 }}>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600, marginTop: 3 }}>
             {barberPaymentStatus.filter(b => !b.isPaid).length} chairs pending payment
           </div>
         </div>
 
         {/* Metric 3: Active Stations */}
-        <div style={{ background: '#FFFFFF', padding: '20px 22px', borderRadius: 20, border: '1px solid var(--border-subtle)', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#71717A', textTransform: 'uppercase' }}>Direct Deposits</span>
-            <div style={{ width: 34, height: 34, borderRadius: 10, background: '#F4F4F5', color: '#09090B', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <DollarSign size={18} />
+        <div style={{ background: 'var(--surface-card)', padding: '18px 20px', borderRadius: 20, border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Auto Payouts</span>
+            <div style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--surface-pill)', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <DollarSign size={16} />
             </div>
           </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 900, color: '#09090B' }}>
-            Stripe Active
+          <div style={{ fontSize: '1.65rem', fontWeight: 900, color: 'var(--text-primary)' }}>
+            Active
           </div>
-          <div style={{ fontSize: '0.8rem', color: '#71717A', fontWeight: 600, marginTop: 4 }}>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600, marginTop: 3 }}>
             Direct bank deposits on payment
           </div>
         </div>
       </div>
 
       {/* 2. Barbers Station Rent Roster Grid */}
-      <div style={{ background: '#FFFFFF', borderRadius: 24, padding: '24px', border: '1px solid var(--border-subtle)', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, flexWrap: 'wrap', gap: 12 }}>
+      <div style={{ background: 'var(--surface-card)', borderRadius: 24, padding: '20px', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
           <div>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 850, color: '#09090B' }}>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0 }}>
               Station Rent Status
             </h3>
-            <p style={{ fontSize: '0.82rem', color: '#71717A' }}>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '2px 0 0' }}>
               Track payments, record offline cash/Zelle, and adjust chair fees
             </p>
           </div>
@@ -160,58 +160,59 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
           <button
             onClick={handleExportCSV}
             className="back-pill-btn"
-            style={{ padding: '8px 14px', fontSize: '0.82rem' }}
+            style={{ padding: '7px 12px', fontSize: '0.8rem' }}
           >
-            <Download size={14} />
+            <Download size={13} />
             <span>Export CSV</span>
           </button>
         </div>
 
         {/* Reminder toast */}
         {reminderSentFor && (
-          <div className="slide-down" style={{ background: '#09090B', color: '#FFFFFF', padding: '10px 16px', borderRadius: 12, fontSize: '0.85rem', fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className="slide-down" style={{ background: 'var(--text-primary)', color: 'var(--bg-main)', padding: '10px 16px', borderRadius: 12, fontSize: '0.82rem', fontWeight: 700, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
             <Send size={14} />
             <span>Payment reminder notification sent to {reminderSentFor}!</span>
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 14 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
           {barberPaymentStatus.map(({ barber, isPaid, latestPayment, amount }) => (
             <div
               key={barber.id}
               style={{
-                background: isPaid ? '#FAFAFA' : '#FFFFFF',
-                border: isPaid ? '1px solid #E4E4E7' : '1.5px solid #F43F5E',
+                background: 'var(--surface-pill)',
+                border: isPaid ? '1px solid var(--border-subtle)' : '1.5px solid var(--pastel-red-border)',
                 borderRadius: 18,
-                padding: '18px',
+                padding: '16px',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 12
+                gap: 10
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div
                     style={{
-                      width: 38,
-                      height: 38,
+                      width: 36,
+                      height: 36,
                       borderRadius: 12,
-                      background: '#09090B',
-                      color: '#FFFFFF',
+                      background: 'var(--surface-card)',
+                      border: '1px solid var(--border-subtle)',
+                      color: 'var(--text-primary)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontWeight: 800,
-                      fontSize: '0.95rem'
+                      fontWeight: 900,
+                      fontSize: '0.9rem'
                     }}
                   >
                     {barber.name.charAt(0)}
                   </div>
                   <div>
-                    <div style={{ fontSize: '1.05rem', fontWeight: 850, color: '#09090B' }}>
+                    <div style={{ fontSize: '1rem', fontWeight: 850, color: 'var(--text-primary)' }}>
                       {barber.name}
                     </div>
-                    <div style={{ fontSize: '0.78rem', color: '#71717A', fontWeight: 600 }}>
+                    <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
                       Station #{barber.stationNumber} • ${amount}/week
                     </div>
                   </div>
@@ -219,25 +220,26 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
 
                 <span
                   style={{
-                    padding: '4px 10px',
+                    padding: '3px 8px',
                     borderRadius: 9999,
-                    fontSize: '0.78rem',
+                    fontSize: '0.75rem',
                     fontWeight: 800,
-                    background: isPaid ? '#DCFCE7' : '#FFE4E6',
-                    color: isPaid ? '#15803D' : '#BE123C'
+                    background: isPaid ? 'var(--pastel-green-bg)' : 'var(--pastel-red-bg)',
+                    color: isPaid ? 'var(--pastel-green)' : 'var(--pastel-red)',
+                    border: isPaid ? '1px solid var(--pastel-green-border)' : '1px solid var(--pastel-red-border)'
                   }}
                 >
-                  {isPaid ? '🟢 Paid' : '🔴 Unpaid'}
+                  {isPaid ? 'Paid' : 'Unpaid'}
                 </span>
               </div>
 
               {latestPayment && isPaid ? (
-                <div style={{ fontSize: '0.8rem', color: '#71717A', background: '#FFFFFF', padding: '8px 12px', borderRadius: 10, border: '1px solid #E4E4E7' }}>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', background: 'var(--surface-card)', padding: '7px 10px', borderRadius: 10, border: '1px solid var(--border-subtle)' }}>
                   Paid via <strong>{latestPayment.paymentMethod === 'apple_pay' ? ' Apple Pay' : latestPayment.paymentMethod?.toUpperCase()}</strong> • {new Date(latestPayment.paidAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </div>
               ) : (
-                <div style={{ fontSize: '0.8rem', color: '#BE123C', background: '#FFF1F2', padding: '8px 12px', borderRadius: 10 }}>
-                  Rent due for current weekly cycle ($ {amount}.00)
+                <div style={{ fontSize: '0.78rem', color: 'var(--pastel-red)', background: 'var(--pastel-red-bg)', padding: '7px 10px', borderRadius: 10, border: '1px solid var(--pastel-red-border)' }}>
+                  Rent due for current weekly cycle (${amount}.00)
                 </div>
               )}
 
@@ -286,35 +288,36 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
       {/* 3. Record Offline Cash/Zelle Modal */}
       {selectedBarberForCash && (
         <div className="modal-overlay">
-          <div className="bubbly-modal-card pop-in" style={{ maxWidth: 440, padding: '28px 24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 850, color: '#09090B' }}>
-                Record Payment for {selectedBarberForCash.name}
+          <div className="bubbly-modal-card pop-in" style={{ maxWidth: 420, padding: '24px 20px', background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-bubble)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0 }}>
+                Record Rent: {selectedBarberForCash.name}
               </h3>
               <button
                 onClick={() => setSelectedBarberForCash(null)}
-                style={{ background: 'transparent', border: 'none', color: '#71717A', cursor: 'pointer' }}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
               >
                 <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleRecordOfflinePayment} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <form onSubmit={handleRecordOfflinePayment} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
                 <label className="form-label">Payment Method</label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
                   {(['zelle', 'cash', 'manual'] as const).map((m) => (
                     <button
                       key={m}
                       type="button"
                       onClick={() => setCashPaymentMethod(m)}
                       style={{
-                        padding: '10px',
+                        padding: '9px',
                         borderRadius: 12,
-                        border: cashPaymentMethod === m ? '2px solid #09090B' : '1px solid #E4E4E7',
-                        background: cashPaymentMethod === m ? '#F4F4F5' : '#FFFFFF',
+                        border: cashPaymentMethod === m ? '2px solid var(--text-primary)' : '1px solid var(--border-subtle)',
+                        background: cashPaymentMethod === m ? 'var(--surface-pill)' : 'var(--surface-card)',
+                        color: 'var(--text-primary)',
                         fontWeight: 750,
-                        fontSize: '0.85rem',
+                        fontSize: '0.82rem',
                         textTransform: 'capitalize',
                         cursor: 'pointer'
                       }}
@@ -346,7 +349,7 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
                 />
               </div>
 
-              <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
+              <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
                 <button
                   type="button"
                   onClick={() => setSelectedBarberForCash(null)}
@@ -372,20 +375,20 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
       {/* 4. Edit Chair Rent Amount Modal */}
       {editingRentBarber && (
         <div className="modal-overlay">
-          <div className="bubbly-modal-card pop-in" style={{ maxWidth: 400, padding: '28px 24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 850, color: '#09090B' }}>
-                Set Rent for {editingRentBarber.name}
+          <div className="bubbly-modal-card pop-in" style={{ maxWidth: 380, padding: '24px 20px', background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-bubble)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0 }}>
+                Set Rent: {editingRentBarber.name}
               </h3>
               <button
                 onClick={() => setEditingRentBarber(null)}
-                style={{ background: 'transparent', border: 'none', color: '#71717A', cursor: 'pointer' }}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
               >
                 <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleSaveEditedRent} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <form onSubmit={handleSaveEditedRent} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
                 <label className="form-label">Weekly Booth Rent ($)</label>
                 <input
@@ -399,7 +402,7 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
                 />
               </div>
 
-              <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
+              <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
                 <button
                   type="button"
                   onClick={() => setEditingRentBarber(null)}
@@ -413,7 +416,7 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
                   className="choice-card-action-btn"
                   style={{ flex: 2, justifyContent: 'center' }}
                 >
-                  <span>Save Rent Rate</span>
+                  <span>Save Rate</span>
                 </button>
               </div>
             </form>
@@ -422,8 +425,8 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
       )}
 
       {/* 5. Historical Payment Ledger Table */}
-      <div style={{ background: '#FFFFFF', borderRadius: 24, padding: '24px', border: '1px solid var(--border-subtle)', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-        <h3 style={{ fontSize: '1.2rem', fontWeight: 850, color: '#09090B', marginBottom: 16 }}>
+      <div style={{ background: 'var(--surface-card)', borderRadius: 24, padding: '20px', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
+        <h3 style={{ fontSize: '1.15rem', fontWeight: 850, color: 'var(--text-primary)', marginBottom: 14 }}>
           Payment History & Receipts
         </h3>
 
@@ -434,7 +437,7 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
                 <th>Receipt #</th>
                 <th>Barber</th>
                 <th>Amount</th>
-                <th>Payment Method</th>
+                <th>Method</th>
                 <th>Date Paid</th>
                 <th>Status</th>
               </tr>
@@ -442,11 +445,11 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
             <tbody>
               {rentRecords.map((r) => (
                 <tr key={r.id}>
-                  <td style={{ fontWeight: 750, color: '#09090B' }}>{r.receiptNumber}</td>
+                  <td style={{ fontWeight: 750, color: 'var(--text-primary)' }}>{r.receiptNumber}</td>
                   <td>
                     <strong>{r.barberName}</strong> (Station #{r.stationNumber})
                   </td>
-                  <td style={{ fontWeight: 800, color: '#09090B' }}>
+                  <td style={{ fontWeight: 800, color: 'var(--text-primary)' }}>
                     ${r.totalPaid.toFixed(2)}
                   </td>
                   <td style={{ textTransform: 'capitalize' }}>
@@ -456,7 +459,7 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
                     {new Date(r.paidAt || r.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </td>
                   <td>
-                    <span style={{ padding: '3px 8px', borderRadius: 9999, fontSize: '0.75rem', fontWeight: 800, background: '#DCFCE7', color: '#15803D' }}>
+                    <span style={{ padding: '3px 8px', borderRadius: 9999, fontSize: '0.75rem', fontWeight: 800, background: 'var(--pastel-green-bg)', color: 'var(--pastel-green)', border: '1px solid var(--pastel-green-border)' }}>
                       Paid
                     </span>
                   </td>

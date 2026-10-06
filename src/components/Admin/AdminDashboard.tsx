@@ -151,56 +151,61 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   return (
-    <div className="pop-in">
+    <div className="pop-in" style={{ paddingBottom: 'max(100px, env(safe-area-inset-bottom, 28px))' }}>
       {/* Top Banner & Sub-Tabs */}
-      <div className="portal-header-banner">
-        <div>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 850, color: '#09090B', marginBottom: 4 }}>
+      <div className="portal-header-banner" style={{ background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderRadius: '24px', padding: '18px 20px', marginBottom: 20 }}>
+        <div style={{ marginBottom: 14 }}>
+          <h2 style={{ fontSize: '1.4rem', fontWeight: 850, color: 'var(--text-primary)', marginBottom: 2 }}>
             Shop Manager & Settings
           </h2>
-          <p style={{ fontSize: '0.85rem', color: '#71717A' }}>
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
             Manage barbers, adjust timers & view check-in logs
           </p>
         </div>
 
-        <div className="portal-barber-filter">
+        <div className="portal-barber-filter" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           <button
             onClick={() => setActiveSubTab('rent')}
             className={`barber-tab-chip ${activeSubTab === 'rent' ? 'active' : ''}`}
+            style={{ padding: '8px 14px', borderRadius: 9999, fontSize: '0.82rem', fontWeight: 750, display: 'flex', alignItems: 'center', gap: 6, background: activeSubTab === 'rent' ? 'var(--accent-primary)' : 'var(--surface-pill)', color: activeSubTab === 'rent' ? 'var(--bg-main)' : 'var(--text-primary)', border: '1px solid var(--border-subtle)', cursor: 'pointer' }}
           >
-            <DollarSign size={16} />
+            <DollarSign size={15} />
             <span>Booth Rent Ledger</span>
           </button>
 
           <button
             onClick={() => setActiveSubTab('roster')}
             className={`barber-tab-chip ${activeSubTab === 'roster' ? 'active' : ''}`}
+            style={{ padding: '8px 14px', borderRadius: 9999, fontSize: '0.82rem', fontWeight: 750, display: 'flex', alignItems: 'center', gap: 6, background: activeSubTab === 'roster' ? 'var(--accent-primary)' : 'var(--surface-pill)', color: activeSubTab === 'roster' ? 'var(--bg-main)' : 'var(--text-primary)', border: '1px solid var(--border-subtle)', cursor: 'pointer' }}
           >
-            <Users size={16} />
+            <Users size={15} />
             <span>Barbers ({barbers.length})</span>
           </button>
 
           <button
             onClick={() => setActiveSubTab('settings')}
             className={`barber-tab-chip ${activeSubTab === 'settings' ? 'active' : ''}`}
+            style={{ padding: '8px 14px', borderRadius: 9999, fontSize: '0.82rem', fontWeight: 750, display: 'flex', alignItems: 'center', gap: 6, background: activeSubTab === 'settings' ? 'var(--accent-primary)' : 'var(--surface-pill)', color: activeSubTab === 'settings' ? 'var(--bg-main)' : 'var(--text-primary)', border: '1px solid var(--border-subtle)', cursor: 'pointer' }}
           >
-            <Settings size={16} />
+            <Settings size={15} />
             <span>Settings</span>
           </button>
 
           <button
             onClick={() => setActiveSubTab('sms')}
             className={`barber-tab-chip ${activeSubTab === 'sms' ? 'active' : ''}`}
+            style={{ padding: '8px 14px', borderRadius: 9999, fontSize: '0.82rem', fontWeight: 750, display: 'flex', alignItems: 'center', gap: 6, background: activeSubTab === 'sms' ? 'var(--accent-primary)' : 'var(--surface-pill)', color: activeSubTab === 'sms' ? 'var(--bg-main)' : 'var(--text-primary)', border: '1px solid var(--border-subtle)', cursor: 'pointer' }}
           >
-            <MessageSquare size={16} />
+            <MessageSquare size={15} />
             <span>SMS Backup</span>
           </button>
 
           <button
             onClick={() => setActiveSubTab('history')}
             className={`barber-tab-chip ${activeSubTab === 'history' ? 'active' : ''}`}
+            style={{ padding: '8px 14px', borderRadius: 9999, fontSize: '0.82rem', fontWeight: 750, display: 'flex', alignItems: 'center', gap: 6, background: activeSubTab === 'history' ? 'var(--accent-primary)' : 'var(--surface-pill)', color: activeSubTab === 'history' ? 'var(--bg-main)' : 'var(--text-primary)', border: '1px solid var(--border-subtle)', cursor: 'pointer' }}
           >
-            <Download size={16} />
+            <Download size={15} />
             <span>Logs ({checkIns.length})</span>
           </button>
         </div>
@@ -219,11 +224,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* Sub-Tab 1: Barbers Roster */}
       {activeSubTab === 'roster' && (
-        <div className="admin-card slide-up">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <div className="admin-card slide-up" style={{ background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderRadius: '24px', padding: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
             <div>
-              <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#09090B' }}>Barber Team</h3>
-              <p style={{ fontSize: '0.85rem', color: '#71717A' }}>Manage active barbers and station assignments</p>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>Barber Team</h3>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: '2px 0 0' }}>Manage active barbers and station assignments</p>
             </div>
 
             <button
@@ -236,9 +241,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 setIsAddingBarber(true);
               }}
               className="choice-card-action-btn"
-              style={{ width: 'auto', padding: '10px 20px', fontSize: '0.9rem' }}
+              style={{ width: 'auto', padding: '9px 18px', fontSize: '0.88rem' }}
             >
-              <Plus size={18} />
+              <Plus size={16} />
               <span>Add Barber</span>
             </button>
           </div>
@@ -259,31 +264,33 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 {barbers.map((barber) => (
                   <tr key={barber.id}>
                     <td>
-                      <span style={{ fontWeight: 800, background: '#F4F4F5', padding: '4px 10px', borderRadius: 9999, fontSize: '0.85rem' }}>
+                      <span style={{ fontWeight: 800, background: 'var(--surface-pill)', color: 'var(--text-primary)', padding: '4px 10px', borderRadius: 9999, fontSize: '0.82rem', border: '1px solid var(--border-subtle)' }}>
                         #{barber.stationNumber}
                       </span>
                     </td>
                     <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <div
                           style={{
-                            width: 38,
-                            height: 38,
-                            borderRadius: 12,
-                            background: '#F4F4F5',
-                            color: '#09090B',
+                            width: 34,
+                            height: 34,
+                            borderRadius: 10,
+                            background: 'var(--surface-pill)',
+                            color: 'var(--text-primary)',
+                            border: '1px solid var(--border-subtle)',
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center'
+                            justifyContent: 'center',
+                            fontWeight: 800
                           }}
                         >
-                          <Users size={18} />
+                          {barber.name.charAt(0)}
                         </div>
-                        <span style={{ fontWeight: 800, color: '#09090B' }}>{barber.name}</span>
+                        <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{barber.name}</span>
                       </div>
                     </td>
                     <td>
-                      <span style={{ fontWeight: 700, fontFamily: 'monospace', background: '#F4F4F5', padding: '3px 8px', borderRadius: 8, fontSize: '0.85rem', color: '#09090B' }}>
+                      <span style={{ fontWeight: 700, fontFamily: 'monospace', background: 'var(--surface-pill)', padding: '3px 8px', borderRadius: 8, fontSize: '0.82rem', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }}>
                         {barber.passcode || '1111'}
                       </span>
                     </td>
@@ -293,13 +300,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         style={{
                           display: 'inline-flex',
                           alignItems: 'center',
-                          gap: 6,
-                          padding: '4px 12px',
+                          gap: 5,
+                          padding: '4px 10px',
                           borderRadius: 9999,
-                          fontSize: '0.8rem',
-                          fontWeight: 700,
-                          background: barber.isWorking ? '#09090B' : '#E4E4E7',
-                          color: barber.isWorking ? '#FFFFFF' : '#71717A',
+                          fontSize: '0.78rem',
+                          fontWeight: 750,
+                          background: barber.isWorking ? 'var(--pastel-green-bg)' : 'var(--surface-pill)',
+                          color: barber.isWorking ? 'var(--pastel-green)' : 'var(--text-muted)',
+                          border: barber.isWorking ? '1px solid var(--pastel-green-border)' : '1px solid var(--border-subtle)',
                           cursor: 'pointer'
                         }}
                       >
@@ -307,7 +315,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       </button>
                     </td>
                     <td>
-                      <div style={{ display: 'flex', gap: 8 }}>
+                      <div style={{ display: 'flex', gap: 6 }}>
                         <button
                           onClick={() => {
                             setEditingBarber(barber);
@@ -319,18 +327,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             setIsAddingBarber(true);
                           }}
                           className="back-pill-btn"
-                          style={{ padding: '6px 10px', fontSize: '0.8rem' }}
+                          style={{ padding: '6px 10px', fontSize: '0.78rem' }}
                           title="Edit Barber"
                         >
-                          <Edit3 size={14} />
+                          <Edit3 size={13} />
                         </button>
                         <button
                           onClick={() => handleDeleteBarber(barber.id)}
                           className="back-pill-btn"
-                          style={{ padding: '6px 10px', fontSize: '0.8rem' }}
+                          style={{ padding: '6px 10px', fontSize: '0.78rem', color: 'var(--pastel-red)' }}
                           title="Delete Barber"
                         >
-                          <Trash2 size={14} />
+                          <Trash2 size={13} />
                         </button>
                       </div>
                     </td>
@@ -343,13 +351,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           {/* Add / Edit Barber Modal */}
           {isAddingBarber && (
             <div className="modal-overlay">
-              <div className="bubbly-modal-card pop-in">
-                <h3 style={{ fontSize: '1.4rem', fontWeight: 850, color: '#09090B', marginBottom: 16 }}>
+              <div className="bubbly-modal-card pop-in" style={{ background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-bubble)', padding: '24px 20px', maxWidth: 420 }}>
+                <h3 style={{ fontSize: '1.3rem', fontWeight: 850, color: 'var(--text-primary)', marginBottom: 16 }}>
                   {editingBarber ? 'Edit Barber' : 'Add Barber'}
                 </h3>
                 <form onSubmit={handleSaveBarber}>
-                  <div className="form-group">
-                    <label className="form-label">Name *</label>
+                  <div className="form-group" style={{ marginBottom: 12 }}>
+                    <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Name *</label>
                     <input
                       type="text"
                       required
@@ -360,9 +368,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     />
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                    <div className="form-group">
-                      <label className="form-label">Station #</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div className="form-group" style={{ marginBottom: 12 }}>
+                      <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Station #</label>
                       <input
                         type="number"
                         value={newBarberStation}
@@ -371,8 +379,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       />
                     </div>
 
-                    <div className="form-group">
-                      <label className="form-label">Station Passcode (4-Digits)</label>
+                    <div className="form-group" style={{ marginBottom: 12 }}>
+                      <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Station PIN</label>
                       <input
                         type="text"
                         maxLength={4}
@@ -384,7 +392,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
+                  <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
                     <button
                       type="button"
                       onClick={() => setIsAddingBarber(false)}
@@ -398,7 +406,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       className="choice-card-action-btn"
                       style={{ flex: 2 }}
                     >
-                      <Check size={18} />
+                      <Check size={16} />
                       <span>{editingBarber ? 'Save Changes' : 'Add Barber'}</span>
                     </button>
                   </div>
@@ -411,17 +419,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* Sub-Tab 2: Settings */}
       {activeSubTab === 'settings' && (
-        <div className="admin-card slide-up">
-          <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#09090B', marginBottom: 6 }}>
+        <div className="admin-card slide-up" style={{ background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderRadius: '24px', padding: '20px' }}>
+          <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: 4 }}>
             Kiosk Settings
           </h3>
-          <p style={{ fontSize: '0.85rem', color: '#71717A', marginBottom: 24 }}>
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 20 }}>
             Tailor greetings, auto-reset timers, and security PIN
           </p>
 
           <form onSubmit={handleSaveShopSettings}>
-            <div className="form-group">
-              <label className="form-label">Shopping Welcome Message</label>
+            <div className="form-group" style={{ marginBottom: 14 }}>
+              <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Shopping Welcome Message</label>
               <textarea
                 rows={3}
                 value={welcomeShoppingBody}
@@ -431,9 +439,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12 }}>
               <div className="form-group">
-                <label className="form-label">Shopping Reset (Seconds)</label>
+                <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Shopping Reset (s)</label>
                 <input
                   type="number"
                   value={autoResetShoppingSec}
@@ -443,7 +451,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
 
               <div className="form-group">
-                <label className="form-label">Check-in Reset (Seconds)</label>
+                <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Check-in Reset (s)</label>
                 <input
                   type="number"
                   value={autoResetAppointmentSec}
@@ -453,7 +461,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
 
               <div className="form-group">
-                <label className="form-label">Manager PIN</label>
+                <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Manager PIN</label>
                 <input
                   type="text"
                   maxLength={4}
@@ -467,9 +475,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <button
               type="submit"
               className="choice-card-action-btn"
-              style={{ maxWidth: 240, marginTop: 16 }}
+              style={{ maxWidth: 220, marginTop: 16 }}
             >
-              <Check size={18} />
+              <Check size={16} />
               <span>Save Settings</span>
             </button>
           </form>
@@ -478,36 +486,36 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* Sub-Tab 3: Twilio SMS */}
       {activeSubTab === 'sms' && (
-        <div className="admin-card slide-up">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 14, background: '#F4F4F5', color: '#09090B', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <MessageSquare size={22} />
+        <div className="admin-card slide-up" style={{ background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderRadius: '24px', padding: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--surface-pill)', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <MessageSquare size={20} />
             </div>
             <div>
-              <h3 style={{ fontSize: '1.3rem', fontWeight: 850, color: '#09090B' }}>
-                Automated SMS Backup (Twilio)
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0 }}>
+                Automated SMS Backup
               </h3>
-              <p style={{ fontSize: '0.85rem', color: '#71717A' }}>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '2px 0 0' }}>
                 Optionally text the barber's phone when a client arrives
               </p>
             </div>
           </div>
 
           <form onSubmit={handleSaveShopSettings}>
-            <div style={{ background: '#F4F4F5', borderRadius: 20, padding: 20, marginBottom: 20 }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontWeight: 700, fontSize: '1rem', marginBottom: 16 }}>
+            <div style={{ background: 'var(--surface-pill)', borderRadius: 18, padding: 16, marginBottom: 18, border: '1px solid var(--border-subtle)' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontWeight: 700, fontSize: '0.92rem', marginBottom: 14 }}>
                 <input
                   type="checkbox"
                   checked={twilioEnabled}
                   onChange={e => setTwilioEnabled(e.target.checked)}
-                  style={{ width: 20, height: 20, accentColor: '#09090B' }}
+                  style={{ width: 18, height: 18, accentColor: 'var(--text-primary)' }}
                 />
                 <span>Enable Twilio SMS Alerts to Barbers</span>
               </label>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div className="form-group">
-                  <label className="form-label">Twilio Account SID</label>
+                  <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Twilio Account SID</label>
                   <input
                     type="text"
                     placeholder="ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
@@ -518,7 +526,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Twilio Auth Token</label>
+                  <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Twilio Auth Token</label>
                   <input
                     type="password"
                     placeholder="Your Twilio Token"
@@ -529,15 +537,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
               </div>
 
-              <div className="form-group">
-                <label className="form-label">From Phone Number</label>
+              <div className="form-group" style={{ marginTop: 10 }}>
+                <label className="form-label" style={{ color: 'var(--text-secondary)' }}>From Phone Number</label>
                 <input
                   type="text"
                   placeholder="+15551234567"
                   value={fromPhone}
                   onChange={e => setFromPhone(e.target.value)}
                   className="bubbly-input"
-                  style={{ maxWidth: 360 }}
+                  style={{ maxWidth: 320 }}
                 />
               </div>
             </div>
@@ -545,9 +553,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <button
               type="submit"
               className="choice-card-action-btn"
-              style={{ maxWidth: 240 }}
+              style={{ maxWidth: 220 }}
             >
-              <Check size={18} />
+              <Check size={16} />
               <span>Save SMS Settings</span>
             </button>
           </form>
@@ -556,19 +564,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* Sub-Tab 4: Check-in Logs History */}
       {activeSubTab === 'history' && (
-        <div className="admin-card slide-up">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <div className="admin-card slide-up" style={{ background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderRadius: '24px', padding: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <div>
-              <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#09090B' }}>Check-in History</h3>
-              <p style={{ fontSize: '0.85rem', color: '#71717A' }}>Audit trail of all arrivals</p>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>Check-in History</h3>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '2px 0 0' }}>Audit trail of all arrivals</p>
             </div>
 
             <button
               onClick={handleExportCSV}
               className="choice-card-action-btn"
-              style={{ width: 'auto', padding: '10px 20px', fontSize: '0.9rem' }}
+              style={{ width: 'auto', padding: '9px 16px', fontSize: '0.85rem' }}
             >
-              <Download size={18} />
+              <Download size={15} />
               <span>Export CSV</span>
             </button>
           </div>
@@ -587,14 +595,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 {checkIns.map((item) => (
                   <tr key={item.id}>
                     <td>
-                      <div style={{ fontWeight: 800, color: '#09090B' }}>{item.clientName}</div>
+                      <div style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{item.clientName}</div>
                     </td>
                     <td style={{ fontWeight: 700 }}>{item.barberName}</td>
-                    <td style={{ fontSize: '0.85rem', color: '#71717A' }}>
+                    <td style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
                       {new Date(item.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </td>
                     <td>
-                      <span style={{ fontSize: '0.8rem', fontWeight: 700, padding: '3px 10px', borderRadius: 9999, background: '#F4F4F5', color: '#09090B' }}>
+                      <span style={{ fontSize: '0.76rem', fontWeight: 750, padding: '3px 8px', borderRadius: 9999, background: 'var(--surface-pill)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }}>
                         {item.status}
                       </span>
                     </td>
@@ -608,3 +616,4 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     </div>
   );
 };
+

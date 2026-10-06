@@ -1,13 +1,15 @@
 export type ThemeId = 
+  | 'clean_studio' 
+  | 'obsidian_noir'
+  // Legacy aliases mapped smoothly
   | 'midnight_gold' 
   | 'obsidian_emerald' 
   | 'classic_heritage' 
   | 'cyber_slate' 
-  | 'rose_gold' 
-  | 'clean_studio';
+  | 'rose_gold';
 
 export interface ThemePreset {
-  id: ThemeId;
+  id: 'clean_studio' | 'obsidian_noir';
   name: string;
   tagline: string;
   badgeBg: string;
@@ -17,6 +19,7 @@ export interface ThemePreset {
   bgMain: string;
   bgGradient: string;
   surfaceCard: string;
+  surfaceCardSubtle: string;
   surfacePill: string;
   textPrimary: string;
   textSecondary: string;
@@ -26,144 +29,123 @@ export interface ThemePreset {
   accentPrimary: string;
   accentHover: string;
   accentLight: string;
+  pastelGreen: string;
+  pastelGreenBg: string;
+  pastelGreenBorder: string;
+  pastelRed: string;
+  pastelRedBg: string;
+  pastelRedBorder: string;
+  pastelAmber: string;
+  pastelAmberBg: string;
+  pastelAmberBorder: string;
+  pastelBlue: string;
+  pastelBlueBg: string;
+  pastelBlueBorder: string;
+  glassReflection: string;
+  shadowBubble: string;
 }
 
-export const THEME_PRESETS: Record<ThemeId, ThemePreset> = {
-  midnight_gold: {
-    id: 'midnight_gold',
-    name: 'Midnight Gold',
-    tagline: 'Luxury carbon black with metallic gold accents',
-    badgeBg: '#CA8A04',
-    previewColor: '#F59E0B',
-    accentColor: '#F59E0B',
-    secondaryAccent: '#D97706',
-    bgMain: '#09090B',
-    bgGradient: 'radial-gradient(circle at 50% 0%, #1C1917 0%, #09090B 75%, #050507 100%)',
-    surfaceCard: '#18181B',
-    surfacePill: '#27272A',
-    textPrimary: '#FAFAFA',
-    textSecondary: '#D4D4D8',
-    textMuted: '#A1A1AA',
-    borderSubtle: 'rgba(245, 158, 11, 0.2)',
-    borderDark: '#3F3F46',
-    accentPrimary: '#F59E0B',
-    accentHover: '#D97706',
-    accentLight: 'rgba(245, 158, 11, 0.15)'
-  },
-  obsidian_emerald: {
-    id: 'obsidian_emerald',
-    name: 'Obsidian & Emerald',
-    tagline: 'High-end matte obsidian with electric neon emerald',
-    badgeBg: '#059669',
-    previewColor: '#10B981',
-    accentColor: '#10B981',
-    secondaryAccent: '#059669',
-    bgMain: '#050B08',
-    bgGradient: 'radial-gradient(circle at 50% 0%, #064E3B 0%, #031D14 60%, #020F0A 100%)',
-    surfaceCard: '#0A2016',
-    surfacePill: '#0F2E20',
-    textPrimary: '#ECFDF5',
-    textSecondary: '#A7F3D0',
-    textMuted: '#6EE7B7',
-    borderSubtle: 'rgba(16, 185, 129, 0.25)',
-    borderDark: '#065F46',
-    accentPrimary: '#10B981',
-    accentHover: '#059669',
-    accentLight: 'rgba(16, 185, 129, 0.15)'
-  },
-  classic_heritage: {
-    id: 'classic_heritage',
-    name: 'Classic Heritage',
-    tagline: 'Iconic barber pole red, vintage navy & crisp white',
-    badgeBg: '#DC2626',
-    previewColor: '#EF4444',
-    accentColor: '#EF4444',
-    secondaryAccent: '#2563EB',
-    bgMain: '#0A0F1D',
-    bgGradient: 'radial-gradient(circle at 50% 0%, #1E293B 0%, #0F172A 70%, #090D16 100%)',
-    surfaceCard: '#1E293B',
-    surfacePill: '#334155',
-    textPrimary: '#F8FAFC',
-    textSecondary: '#CBD5E1',
-    textMuted: '#94A3B8',
-    borderSubtle: 'rgba(239, 68, 68, 0.25)',
-    borderDark: '#475569',
-    accentPrimary: '#EF4444',
-    accentHover: '#DC2626',
-    accentLight: 'rgba(239, 68, 68, 0.15)'
-  },
-  cyber_slate: {
-    id: 'cyber_slate',
-    name: 'Cyber Slate',
-    tagline: 'Futuristic slate with electric cyan and purple accents',
-    badgeBg: '#0891B2',
-    previewColor: '#06B6D4',
-    accentColor: '#06B6D4',
-    secondaryAccent: '#8B5CF6',
-    bgMain: '#030712',
-    bgGradient: 'radial-gradient(circle at 50% 0%, #1E1B4B 0%, #0F172A 60%, #030712 100%)',
-    surfaceCard: '#0F172A',
-    surfacePill: '#1E293B',
-    textPrimary: '#F8FAFC',
-    textSecondary: '#94A3B8',
-    textMuted: '#64748B',
-    borderSubtle: 'rgba(6, 182, 212, 0.25)',
-    borderDark: '#334155',
-    accentPrimary: '#06B6D4',
-    accentHover: '#0891B2',
-    accentLight: 'rgba(6, 182, 212, 0.15)'
-  },
-  rose_gold: {
-    id: 'rose_gold',
-    name: 'Rose Gold Luxe',
-    tagline: 'Warm bronze-black with refined champagne rose gold',
-    badgeBg: '#E11D48',
-    previewColor: '#FB7185',
-    accentColor: '#FB7185',
-    secondaryAccent: '#F43F5E',
-    bgMain: '#181114',
-    bgGradient: 'radial-gradient(circle at 50% 0%, #3B1822 0%, #181114 70%, #0D080A 100%)',
-    surfaceCard: '#27171D',
-    surfacePill: '#3D202B',
-    textPrimary: '#FFF1F2',
-    textSecondary: '#FECDD3',
-    textMuted: '#FDA4AF',
-    borderSubtle: 'rgba(251, 113, 133, 0.25)',
-    borderDark: '#4C1D2D',
-    accentPrimary: '#FB7185',
-    accentHover: '#F43F5E',
-    accentLight: 'rgba(251, 113, 133, 0.15)'
-  },
-  clean_studio: {
-    id: 'clean_studio',
-    name: 'Clean Studio',
-    tagline: 'Ultra-modern studio monochrome with crisp light aesthetics',
-    badgeBg: '#18181B',
-    previewColor: '#27272A',
-    accentColor: '#18181B',
-    secondaryAccent: '#52525B',
-    bgMain: '#F4F4F6',
-    bgGradient: 'radial-gradient(circle at 50% 0%, #FFFFFF 0%, #F5F5F7 60%, #EAEAEF 100%)',
-    surfaceCard: '#FFFFFF',
-    surfacePill: '#F4F4F5',
-    textPrimary: '#09090B',
-    textSecondary: '#52525B',
-    textMuted: '#A1A1AA',
-    borderSubtle: 'rgba(0, 0, 0, 0.08)',
-    borderDark: '#E4E4E7',
-    accentPrimary: '#09090B',
-    accentHover: '#27272A',
-    accentLight: '#F4F4F5'
-  }
+const clean_studio: ThemePreset = {
+  id: 'clean_studio',
+  name: 'Studio Light',
+  tagline: 'Ultra-clean studio white with deep ink accents & reflective glass bubbles',
+  badgeBg: '#18181B',
+  previewColor: '#09090B',
+  accentColor: '#09090B',
+  secondaryAccent: '#52525B',
+  bgMain: '#F8F9FB',
+  bgGradient: 'radial-gradient(circle at 50% 0%, #FFFFFF 0%, #F4F5F8 55%, #E9EAEF 100%)',
+  surfaceCard: '#FFFFFF',
+  surfaceCardSubtle: '#F4F4F6',
+  surfacePill: '#F1F3F5',
+  textPrimary: '#09090B',
+  textSecondary: '#52525B',
+  textMuted: '#71717A',
+  borderSubtle: 'rgba(0, 0, 0, 0.08)',
+  borderDark: '#E4E4E7',
+  accentPrimary: '#09090B',
+  accentHover: '#27272A',
+  accentLight: 'rgba(9, 9, 11, 0.06)',
+  pastelGreen: '#10B981',
+  pastelGreenBg: '#ECFDF5',
+  pastelGreenBorder: '#A7F3D0',
+  pastelRed: '#EF4444',
+  pastelRedBg: '#FEF2F2',
+  pastelRedBorder: '#FECDD3',
+  pastelAmber: '#F59E0B',
+  pastelAmberBg: '#FFFBEB',
+  pastelAmberBorder: '#FDE68A',
+  pastelBlue: '#0284C7',
+  pastelBlueBg: '#F0F9FF',
+  pastelBlueBorder: '#BAE6FD',
+  glassReflection: 'inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 8px 24px rgba(0, 0, 0, 0.04)',
+  shadowBubble: '0 12px 32px rgba(0, 0, 0, 0.06), inset 0 1px 2px rgba(255, 255, 255, 0.8)'
 };
 
-export function applyTheme(themeId: ThemeId = 'midnight_gold') {
-  const theme = THEME_PRESETS[themeId] || THEME_PRESETS.midnight_gold;
+const obsidian_noir: ThemePreset = {
+  id: 'obsidian_noir',
+  name: 'Obsidian Dark',
+  tagline: 'Stealth matte obsidian black with reflective glass pills & vibrant pastel accents',
+  badgeBg: '#FAFAFA',
+  previewColor: '#FAFAFA',
+  accentColor: '#FAFAFA',
+  secondaryAccent: '#A1A1AA',
+  bgMain: '#09090B',
+  bgGradient: 'radial-gradient(circle at 50% 0%, #18181B 0%, #09090B 75%, #030304 100%)',
+  surfaceCard: '#141417',
+  surfaceCardSubtle: '#1C1C21',
+  surfacePill: '#222227',
+  textPrimary: '#FAFAFA',
+  textSecondary: '#D4D4D8',
+  textMuted: '#A1A1AA',
+  borderSubtle: 'rgba(255, 255, 255, 0.1)',
+  borderDark: '#27272A',
+  accentPrimary: '#FAFAFA',
+  accentHover: '#E4E4E7',
+  accentLight: 'rgba(255, 255, 255, 0.12)',
+  pastelGreen: '#34D399',
+  pastelGreenBg: 'rgba(52, 211, 153, 0.12)',
+  pastelGreenBorder: 'rgba(52, 211, 153, 0.28)',
+  pastelRed: '#FB7185',
+  pastelRedBg: 'rgba(251, 113, 133, 0.12)',
+  pastelRedBorder: 'rgba(251, 113, 133, 0.28)',
+  pastelAmber: '#FBBF24',
+  pastelAmberBg: 'rgba(251, 191, 36, 0.12)',
+  pastelAmberBorder: 'rgba(251, 191, 36, 0.28)',
+  pastelBlue: '#38BDF8',
+  pastelBlueBg: 'rgba(56, 189, 248, 0.12)',
+  pastelBlueBorder: 'rgba(56, 189, 248, 0.28)',
+  glassReflection: 'inset 0 1px 1px rgba(255, 255, 255, 0.16), 0 8px 24px rgba(0, 0, 0, 0.5)',
+  shadowBubble: '0 16px 36px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.15)'
+};
+
+export const THEME_PRESETS: Record<ThemeId, ThemePreset> = {
+  clean_studio,
+  obsidian_noir,
+  midnight_gold: obsidian_noir,
+  obsidian_emerald: obsidian_noir,
+  classic_heritage: clean_studio,
+  cyber_slate: obsidian_noir,
+  rose_gold: clean_studio
+};
+
+// Map any legacy theme keys to either clean_studio or obsidian_noir
+export function resolveTheme(themeId?: string): ThemePreset {
+  if (themeId === 'clean_studio' || themeId === 'classic_heritage' || themeId === 'rose_gold') {
+    return THEME_PRESETS.clean_studio;
+  }
+  // Default to Obsidian Dark for all dark variants
+  return THEME_PRESETS.obsidian_noir;
+}
+
+export function applyTheme(themeId: ThemeId = 'clean_studio') {
+  const theme = resolveTheme(themeId);
   const root = document.documentElement;
 
   root.style.setProperty('--bg-main', theme.bgMain);
   root.style.setProperty('--bg-gradient', theme.bgGradient);
   root.style.setProperty('--surface-card', theme.surfaceCard);
+  root.style.setProperty('--surface-card-subtle', theme.surfaceCardSubtle);
   root.style.setProperty('--surface-pill', theme.surfacePill);
   root.style.setProperty('--text-primary', theme.textPrimary);
   root.style.setProperty('--text-secondary', theme.textSecondary);
@@ -174,6 +156,24 @@ export function applyTheme(themeId: ThemeId = 'midnight_gold') {
   root.style.setProperty('--accent-primary-hover', theme.accentHover);
   root.style.setProperty('--accent-primary-light', theme.accentLight);
   root.style.setProperty('--brand-accent', theme.accentColor);
+
+  // Pastel Color Variables
+  root.style.setProperty('--pastel-green', theme.pastelGreen);
+  root.style.setProperty('--pastel-green-bg', theme.pastelGreenBg);
+  root.style.setProperty('--pastel-green-border', theme.pastelGreenBorder);
+  root.style.setProperty('--pastel-red', theme.pastelRed);
+  root.style.setProperty('--pastel-red-bg', theme.pastelRedBg);
+  root.style.setProperty('--pastel-red-border', theme.pastelRedBorder);
+  root.style.setProperty('--pastel-amber', theme.pastelAmber);
+  root.style.setProperty('--pastel-amber-bg', theme.pastelAmberBg);
+  root.style.setProperty('--pastel-amber-border', theme.pastelAmberBorder);
+  root.style.setProperty('--pastel-blue', theme.pastelBlue);
+  root.style.setProperty('--pastel-blue-bg', theme.pastelBlueBg);
+  root.style.setProperty('--pastel-blue-border', theme.pastelBlueBorder);
+
+  // Bubbly Reflection Tokens
+  root.style.setProperty('--glass-reflection', theme.glassReflection);
+  root.style.setProperty('--shadow-bubble', theme.shadowBubble);
 
   // Set meta theme-color for iOS/Android status bar
   const metaTheme = document.querySelector('meta[name="theme-color"]');
