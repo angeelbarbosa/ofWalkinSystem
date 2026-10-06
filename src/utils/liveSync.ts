@@ -125,7 +125,7 @@ export function useLiveSystem() {
           }
         });
 
-        // Watch config
+        // Watch config & multi-tenant fleet state
         const configWatch = convexClient.watchQuery(api.config.get, {});
         const unsubscribeConfig = configWatch.onUpdate(() => {
           const cloudConfig = configWatch.localQueryResult() as any;
@@ -133,6 +133,34 @@ export function useLiveSystem() {
             const merged = { ...storage.getConfig(), ...cloudConfig };
             setConfig(merged);
             storage.saveConfig(merged);
+
+            // 1. Sync full multi-tenant fleet from Convex Cloud across all devices
+            if (cloudConfig.shopsJson) {
+              try {
+                const cloudShops: Shop[] = JSON.parse(cloudConfig.shopsJson);
+                if (Array.isArray(cloudShops) && cloudShops.length > 0) {
+                  storage.saveShops(cloudShops);
+                  setShops(cloudShops);
+                  const cur = storage.getActiveShop();
+                  setActiveShop(cur);
+                  setBarbers(cur.barbers || []);
+                  setConfig(cur.config || storage.getConfig());
+                  setCheckIns(cur.checkIns || []);
+                  setRentRecords(cur.rentRecords || []);
+                }
+              } catch (e) {
+                console.warn('Convex shopsJson parse error:', e);
+              }
+            }
+
+            // 2. Sync theme across all devices in real-time
+            if (cloudConfig.themeId) {
+              applyTheme(cloudConfig.themeId as ThemeId);
+              const active = storage.getActiveShop();
+              if (active && active.themeId !== cloudConfig.themeId) {
+                storage.updateShop(active.slug, { themeId: cloudConfig.themeId as ThemeId });
+              }
+            }
           }
         });
 
@@ -196,6 +224,23 @@ export function useLiveSystem() {
     };
   }, [refreshActiveShopData]);
 
+  // Helper: Sync multi-tenant state & themes to Convex Cloud
+  const syncToConvexCloud = async (customShops?: Shop[]) => {
+    if (!convexClient) return;
+    try {
+      const all = customShops || storage.getShops();
+      const active = storage.getActiveShop();
+      await convexClient.mutation(api.config.update, {
+        shopsJson: JSON.stringify(all),
+        themeId: active?.themeId,
+        logoUrl: active?.logoUrl,
+        shopName: active?.name || active?.config?.shopName
+      });
+    } catch (err) {
+      console.warn('Convex cloud sync error:', err);
+    }
+  };
+
   // Actions: Switch Active Barbershop
   const switchShop = (slug: string) => {
     storage.setActiveShopSlug(slug);
@@ -206,27 +251,36 @@ export function useLiveSystem() {
   // Actions: Create New Barbershop
   const createShop = (shopData: Partial<Shop> & { name: string; slug: string; themeId: ThemeId }): Shop => {
     const newShop = storage.createShop(shopData);
-    setShops(storage.getShops());
+    const updated = storage.getShops();
+    setShops(updated);
+    syncToConvexCloud(updated);
     return newShop;
   };
 
   // Actions: Update Shop Branding or Config
   const updateShop = (slug: string, updates: Partial<Shop>): Shop => {
-    const updated = storage.updateShop(slug, updates);
-    setShops(storage.getShops());
+    const updatedShop = storage.updateShop(slug, updates);
+    const updatedFleet = storage.getShops();
+    setShops(updatedFleet);
     if (activeShopSlug === slug) {
       refreshActiveShopData();
+      if (updates.themeId) {
+        applyTheme(updates.themeId);
+      }
     }
-    return updated;
+    syncToConvexCloud(updatedFleet);
+    return updatedShop;
   };
 
   // Actions: Delete Shop
   const deleteShop = (slug: string) => {
     storage.deleteShop(slug);
-    setShops(storage.getShops());
+    const updatedFleet = storage.getShops();
+    setShops(updatedFleet);
     if (activeShopSlug === slug) {
       switchShop('of');
     }
+    syncToConvexCloud(updatedFleet);
   };
 
   // Actions: Client Check-in
@@ -387,16 +441,20 @@ export function useLiveSystem() {
 
   const factoryReset = () => {
     storage.factoryResetPlatform();
-    setShops(storage.getShops());
+    const updated = storage.getShops();
+    setShops(updated);
     setActiveShopSlugState('of');
     refreshActiveShopData();
+    syncToConvexCloud(updated);
   };
 
   const loadDemoFleet = () => {
     storage.loadDemoFleet();
-    setShops(storage.getShops());
+    const updated = storage.getShops();
+    setShops(updated);
     setActiveShopSlugState('of');
     refreshActiveShopData();
+    syncToConvexCloud(updated);
   };
 
   return {

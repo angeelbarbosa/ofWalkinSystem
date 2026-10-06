@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Lock, ArrowLeft, Scissors, Shield } from 'lucide-react';
+import { Lock, ArrowLeft, Scissors } from 'lucide-react';
 import type { Barber, CheckInRecord, MainNavTab } from './types';
 import { useLiveSystem } from './utils/liveSync';
 import { notificationManager } from './utils/notifications';

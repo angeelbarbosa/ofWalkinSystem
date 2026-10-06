@@ -450,6 +450,12 @@ export const storage = {
         localStorage.setItem(SHOPS_KEY, JSON.stringify(merged));
         return merged;
       }
+      // Upgrade default theme if it was old midnight_gold
+      const ofShop = parsed.find(s => s.slug === 'of');
+      if (ofShop && ofShop.themeId === ('midnight_gold' as any)) {
+        ofShop.themeId = 'obsidian_emerald';
+        localStorage.setItem(SHOPS_KEY, JSON.stringify(parsed));
+      }
       return parsed;
     } catch {
       return SEED_SHOPS;

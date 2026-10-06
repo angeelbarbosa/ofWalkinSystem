@@ -30,7 +30,10 @@ export default defineSchema({
     autoResetShoppingSec: v.number(),
     autoResetAppointmentSec: v.number(),
     soundAlertsEnabled: v.boolean(),
-    pinCode: v.string()
+    pinCode: v.string(),
+    themeId: v.optional(v.string()),
+    logoUrl: v.optional(v.string()),
+    shopsJson: v.optional(v.string())
   }),
 
   pushSubscriptions: defineTable({

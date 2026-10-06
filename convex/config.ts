@@ -24,7 +24,10 @@ export const update = mutation({
     autoResetShoppingSec: v.optional(v.number()),
     autoResetAppointmentSec: v.optional(v.number()),
     soundAlertsEnabled: v.optional(v.boolean()),
-    pinCode: v.optional(v.string())
+    pinCode: v.optional(v.string()),
+    themeId: v.optional(v.string()),
+    logoUrl: v.optional(v.string()),
+    shopsJson: v.optional(v.string())
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db.query("shopConfig").first();
