@@ -27,7 +27,8 @@ export const update = mutation({
     pinCode: v.optional(v.string()),
     themeId: v.optional(v.string()),
     logoUrl: v.optional(v.string()),
-    shopsJson: v.optional(v.string())
+    shopsJson: v.optional(v.string()),
+    supportMessagesJson: v.optional(v.string())
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db.query("shopConfig").first();

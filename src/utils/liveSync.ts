@@ -170,6 +170,46 @@ export function useLiveSystem() {
                 storage.updateShop(active.slug, { themeId: cloudConfig.themeId as ThemeId });
               }
             }
+
+            // 3. Sync real-time support messages across ALL physical devices (iPhone, iPad, Mac, PC)
+            if (cloudConfig.supportMessagesJson) {
+              try {
+                const cloudMessages: SupportMessage[] = JSON.parse(cloudConfig.supportMessagesJson);
+                if (Array.isArray(cloudMessages)) {
+                  const local = storage.getSupportMessages();
+                  const map = new Map<string, SupportMessage>();
+                  local.forEach(m => map.set(m.id, m));
+                  cloudMessages.forEach(m => {
+                    // Cloud version takes priority or merges read flags
+                    const existing = map.get(m.id);
+                    if (existing) {
+                      map.set(m.id, {
+                        ...m,
+                        readByHq: m.readByHq || existing.readByHq,
+                        readByShop: m.readByShop || existing.readByShop
+                      });
+                    } else {
+                      map.set(m.id, m);
+                    }
+                  });
+                  const merged = Array.from(map.values()).sort(
+                    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+                  );
+                  localStorage.setItem('walkin_support_messages_v1', JSON.stringify(merged));
+                  setSupportMessages(merged);
+                }
+              } catch (e) {
+                console.warn('Convex support messages parse error:', e);
+              }
+            } else {
+              // Initial sync to cloud if cloud is empty
+              const local = storage.getSupportMessages();
+              if (local.length > 0 && convexClient) {
+                convexClient.mutation(api.config.update, {
+                  supportMessagesJson: JSON.stringify(local)
+                }).catch(() => {});
+              }
+            }
           }
         });
 
@@ -516,6 +556,19 @@ export function useLiveSystem() {
     syncToConvexCloud(updated);
   };
 
+  // Helper: Sync Support Messages to Convex Cloud for real-time multi-device sync
+  const syncSupportMessagesToConvexCloud = async (customMessages?: SupportMessage[]) => {
+    if (!convexClient) return;
+    try {
+      const all = customMessages || storage.getSupportMessages();
+      await convexClient.mutation(api.config.update, {
+        supportMessagesJson: JSON.stringify(all)
+      });
+    } catch (err) {
+      console.warn('Convex support messages sync error:', err);
+    }
+  };
+
   const sendSupportMessage = useCallback((
     shopSlug: string,
     text: string,
@@ -523,13 +576,17 @@ export function useLiveSystem() {
     senderName?: string
   ): SupportMessage => {
     const msg = storage.sendSupportMessage(shopSlug, text, sender, senderName);
-    setSupportMessages(storage.getSupportMessages());
+    const updated = storage.getSupportMessages();
+    setSupportMessages(updated);
+    syncSupportMessagesToConvexCloud(updated);
     return msg;
   }, []);
 
   const markSupportMessagesRead = useCallback((shopSlug: string, reader: 'hq' | 'shop') => {
     storage.markSupportMessagesRead(shopSlug, reader);
-    setSupportMessages(storage.getSupportMessages());
+    const updated = storage.getSupportMessages();
+    setSupportMessages(updated);
+    syncSupportMessagesToConvexCloud(updated);
   }, []);
 
   const markShopSubscriptionPaid = useCallback((slug: string, paymentMethod: SubscriptionPaymentMethod = 'zelle') => {

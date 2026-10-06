@@ -33,7 +33,8 @@ export default defineSchema({
     pinCode: v.string(),
     themeId: v.optional(v.string()),
     logoUrl: v.optional(v.string()),
-    shopsJson: v.optional(v.string())
+    shopsJson: v.optional(v.string()),
+    supportMessagesJson: v.optional(v.string())
   }),
 
   pushSubscriptions: defineTable({
