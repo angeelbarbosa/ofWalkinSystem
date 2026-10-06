@@ -3,6 +3,7 @@ import { Lock, ArrowLeft, Scissors } from 'lucide-react';
 import type { Barber, CheckInRecord, MainNavTab } from './types';
 import { useLiveSystem } from './utils/liveSync';
 import { notificationManager } from './utils/notifications';
+import { updatePwaBranding } from './utils/pwaBranding';
 
 import { KioskHome } from './components/Kiosk/KioskHome';
 import { ShoppingScreen } from './components/Kiosk/ShoppingScreen';
@@ -74,6 +75,13 @@ export function App() {
   useEffect(() => {
     setAuthenticatedBarber(null);
   }, [activeShopSlug]);
+
+  // Keep PWA bookmark title, Apple Touch icon, and start_url dynamically synced with current tab
+  useEffect(() => {
+    if (activeShop) {
+      updatePwaBranding(activeShop, currentTab);
+    }
+  }, [activeShop, currentTab]);
 
   // Handle new Client Check-in from Kiosk
   const handleCheckInSubmit = async (

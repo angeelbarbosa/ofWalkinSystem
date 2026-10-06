@@ -2,7 +2,7 @@
   "name": "WalkinApp — Smart Barbershop Platform",
   "short_name": "WalkinApp",
   "description": "Smart Walk-in Kiosks & Booth Rent Management for Modern Barbershops",
-  "start_url": "/?portal=barber",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#09090B",
   "theme_color": "#09090B",
