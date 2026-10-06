@@ -1324,15 +1324,16 @@
   }
 
   .content-wrapper {
-    padding: 10px 10px calc(env(safe-area-inset-bottom, 16px) + 54px) !important;
+    padding: max(64px, calc(env(safe-area-inset-top, 24px) + 28px)) 12px calc(env(safe-area-inset-bottom, 16px) + 40px) !important;
     width: 100%;
     max-width: 100vw;
     box-sizing: border-box;
   }
 
   .staff-nav-bar {
-    padding: 6px 8px;
+    padding: 4px 2px;
     gap: 6px;
+    flex-wrap: nowrap;
   }
 
   .kiosk-home-container {

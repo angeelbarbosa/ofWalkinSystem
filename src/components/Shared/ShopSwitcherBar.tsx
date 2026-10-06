@@ -33,7 +33,7 @@ export function ShopSwitcherBar({ currentShop }: ShopSwitcherBarProps) {
           boxShadow: '0 0 6px var(--pastel-green)'
         }}
       />
-      <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+      <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '140px' }}>
         {currentShop.name}
       </span>
       <span
