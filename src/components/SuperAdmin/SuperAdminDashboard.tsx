@@ -186,7 +186,7 @@ export function SuperAdminDashboard({
         alignItems: 'center',
         justifyContent: 'center',
         background: 'var(--bg-main)',
-        padding: 'max(24px, env(safe-area-inset-top, 24px)) 16px max(40px, env(safe-area-inset-bottom, 24px)) 16px',
+        padding: 'max(56px, calc(env(safe-area-inset-top, 0px) + 24px)) 16px max(40px, env(safe-area-inset-bottom, 24px)) 16px',
         boxSizing: 'border-box'
       }}>
         <div style={{
@@ -300,10 +300,13 @@ export function SuperAdminDashboard({
       minHeight: '100dvh',
       background: 'var(--bg-main)',
       color: 'var(--text-primary)',
-      padding: 'max(24px, env(safe-area-inset-top, 24px)) 14px max(120px, env(safe-area-inset-bottom, 32px)) 14px',
+      padding: 'max(56px, calc(env(safe-area-inset-top, 0px) + 24px)) 16px max(120px, env(safe-area-inset-bottom, 32px)) 16px',
       fontFamily: 'var(--font-body)',
       width: '100%',
-      boxSizing: 'border-box'
+      boxSizing: 'border-box',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center'
     }}>
       {/* Toast Alert Banner */}
       {toastMessage && (
@@ -328,15 +331,14 @@ export function SuperAdminDashboard({
         </div>
       )}
 
-      <div style={{ maxWidth: '1080px', margin: '0 auto' }}>
+      <div style={{ maxWidth: '680px', width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
         {/* Top Header */}
         <div style={{
           display: 'flex',
           flexDirection: 'column',
           gap: '16px',
           paddingBottom: '20px',
-          borderBottom: '1px solid var(--border-subtle)',
-          marginBottom: '22px'
+          borderBottom: '1px solid var(--border-subtle)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>

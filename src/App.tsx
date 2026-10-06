@@ -159,10 +159,10 @@ export function App() {
           <>
             {/* STAFF VIEWS HEADER (Only shown when inside Barber Portal or Admin) */}
             {currentTab !== 'kiosk' && (
-              <header style={{ marginBottom: '20px' }}>
-                {/* Navigation Controls Bar with Shop Switcher */}
-                <div className="staff-nav-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <header style={{ width: '100%', maxWidth: '680px', margin: '0 auto 18px' }}>
+                {/* Navigation Controls Bar with Shop Identity Badge */}
+                <div className="staff-nav-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', width: '100%' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
                     <button
                       onClick={() => {
                         setAuthenticatedBarber(null);
@@ -170,20 +170,15 @@ export function App() {
                         handleResetKiosk();
                       }}
                       className="back-pill-btn"
-                      style={{ padding: '8px 14px', fontSize: '0.82rem', whiteSpace: 'nowrap' }}
+                      style={{ padding: '8px 14px', fontSize: '0.82rem', whiteSpace: 'nowrap', flexShrink: 0 }}
                       title="Exit to Customer Kiosk"
                     >
                       <ArrowLeft size={15} />
                       <span>Kiosk</span>
                     </button>
 
-                    {/* Multi-Shop Switcher Dropdown */}
-                    <ShopSwitcherBar
-                      currentShop={activeShop}
-                      shops={shops}
-                      onSwitchShop={switchShop}
-                      onNavigateTab={setCurrentTab}
-                    />
+                    {/* Isolated Shop Badge (No dropdown or leakage of other shops) */}
+                    <ShopSwitcherBar currentShop={activeShop} />
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

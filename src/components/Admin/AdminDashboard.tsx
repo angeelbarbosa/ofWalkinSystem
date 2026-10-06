@@ -151,7 +151,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   return (
-    <div className="pop-in" style={{ paddingBottom: 'max(100px, env(safe-area-inset-bottom, 28px))' }}>
+    <div className="pop-in" style={{ width: '100%', maxWidth: '680px', margin: '0 auto', paddingBottom: 'max(120px, env(safe-area-inset-bottom, 32px))' }}>
       {/* Top Banner & Sub-Tabs */}
       <div className="portal-header-banner" style={{ background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderRadius: '24px', padding: '18px 20px', marginBottom: 20 }}>
         <div style={{ marginBottom: 14 }}>

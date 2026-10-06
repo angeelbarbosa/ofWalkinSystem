@@ -168,7 +168,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
   };
 
   return (
-    <div className="pop-in" style={{ position: 'relative', width: '100%', maxWidth: 860, margin: '0 auto' }}>
+    <div className="pop-in" style={{ position: 'relative', width: '100%', maxWidth: 680, margin: '0 auto' }}>
       {/* Floating In-App Arrival Toast Banner */}
       {activeToast && (
         <div
