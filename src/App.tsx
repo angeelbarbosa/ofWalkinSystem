@@ -378,45 +378,28 @@ export function App() {
               />
             )}
 
-            {/* Separated Staff & Super Admin Access Buttons on Kiosk Screen */}
+            {/* Staff Access Buttons on Customer Kiosk Screen (Only for this specific shop) */}
             {currentTab === 'kiosk' && (
-              <div className="staff-bottom-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', maxWidth: '640px', margin: '0 auto' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <button
-                    onClick={() => {
-                      setAuthenticatedBarber(null);
-                      setCurrentTab('barber_portal');
-                    }}
-                    className="staff-trigger-pill barber-btn"
-                    title="Barber Station Hub & Booth Rent"
-                  >
-                    <Scissors size={14} />
-                    <span>Barber Hub</span>
-                  </button>
-
-                  <button
-                    onClick={() => handleOpenStaffModal('admin')}
-                    className="staff-trigger-pill owner-btn"
-                    title="Shop Owner Admin & Rent Ledger"
-                  >
-                    <Lock size={13} />
-                    <span>Owner Admin</span>
-                  </button>
-                </div>
-
-                {/* Master Super Admin Quick Access Button */}
+              <div className="staff-bottom-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
                 <button
-                  onClick={() => setCurrentTab('super_admin')}
-                  className="staff-trigger-pill"
-                  style={{
-                    background: 'rgba(234, 179, 8, 0.1)',
-                    border: '1px solid rgba(234, 179, 8, 0.3)',
-                    color: '#F59E0B'
+                  onClick={() => {
+                    setAuthenticatedBarber(null);
+                    setCurrentTab('barber_portal');
                   }}
-                  title="Master Platform Hub (Super Admin)"
+                  className="staff-trigger-pill barber-btn"
+                  title="Barber Station Hub & Booth Rent"
                 >
-                  <Shield size={13} />
-                  <span>Platform Hub</span>
+                  <Scissors size={14} />
+                  <span>Barber Hub</span>
+                </button>
+
+                <button
+                  onClick={() => handleOpenStaffModal('admin')}
+                  className="staff-trigger-pill owner-btn"
+                  title="Shop Owner Admin & Rent Ledger"
+                >
+                  <Lock size={13} />
+                  <span>Owner Admin</span>
                 </button>
               </div>
             )}
