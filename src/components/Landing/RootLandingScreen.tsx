@@ -27,6 +27,7 @@ export const RootLandingScreen: React.FC<RootLandingScreenProps> = ({
   const [searchCode, setSearchCode] = useState('');
   const [searchError, setSearchError] = useState('');
   const [activeTheme, setActiveTheme] = useState<'clean_studio' | 'obsidian_noir'>('obsidian_noir');
+  const [targetMode, setTargetMode] = useState<'kiosk' | 'barber_portal' | 'admin'>('kiosk');
 
   const handleToggleTheme = () => {
     const nextTheme: ThemeId = activeTheme === 'clean_studio' ? 'obsidian_noir' : 'clean_studio';
@@ -38,16 +39,16 @@ export const RootLandingScreen: React.FC<RootLandingScreenProps> = ({
     e.preventDefault();
     const query = searchCode.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
     if (!query) {
-      setSearchError('Please enter a barbershop code');
+      setSearchError('Please enter your barbershop code');
       return;
     }
 
     const found = shops.find(s => s.slug.toLowerCase() === query || s.name.toLowerCase().includes(query));
     if (found) {
       setSearchError('');
-      onSelectShop(found.slug, 'kiosk');
+      onSelectShop(found.slug, targetMode);
     } else {
-      setSearchError(`No barbershop found with code "${query}". Check your direct link.`);
+      setSearchError(`No barbershop found matching code "${query}". Please check your link.`);
     }
   };
 
@@ -57,7 +58,7 @@ export const RootLandingScreen: React.FC<RootLandingScreenProps> = ({
       width: '100%',
       background: 'var(--bg-main)',
       color: 'var(--text-primary)',
-      padding: 'max(48px, calc(env(safe-area-inset-top, 0px) + 20px)) 16px max(80px, env(safe-area-inset-bottom, 32px)) 16px',
+      padding: 'max(48px, calc(env(safe-area-inset-top, 0px) + 20px)) 16px max(60px, env(safe-area-inset-bottom, 32px)) 16px',
       boxSizing: 'border-box',
       display: 'flex',
       flexDirection: 'column',
@@ -68,11 +69,11 @@ export const RootLandingScreen: React.FC<RootLandingScreenProps> = ({
       {/* Top Header Bar */}
       <div style={{
         width: '100%',
-        maxWidth: '580px',
+        maxWidth: '480px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: '28px'
+        marginBottom: '20px'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{
@@ -144,22 +145,21 @@ export const RootLandingScreen: React.FC<RootLandingScreenProps> = ({
         </div>
       </div>
 
-      {/* Main Content Card Container */}
+      {/* Centered Single Access Card */}
       <div style={{
         width: '100%',
-        maxWidth: '580px',
+        maxWidth: '480px',
+        margin: 'auto 0',
         display: 'flex',
         flexDirection: 'column',
-        gap: '20px',
-        margin: 'auto 0'
+        gap: '16px'
       }}>
-        {/* Welcome Banner Card */}
         <div style={{
           background: 'var(--surface-card)',
           border: '1px solid var(--border-subtle)',
-          borderRadius: '24px',
-          padding: '24px 20px',
-          boxShadow: 'var(--shadow-sm)',
+          borderRadius: '26px',
+          padding: '30px 22px',
+          boxShadow: 'var(--shadow-bubble)',
           textAlign: 'center',
           boxSizing: 'border-box'
         }}>
@@ -174,47 +174,132 @@ export const RootLandingScreen: React.FC<RootLandingScreenProps> = ({
             color: 'var(--pastel-amber)',
             fontSize: '11px',
             fontWeight: 800,
-            marginBottom: '12px'
+            marginBottom: '14px'
           }}>
             <Sparkles size={12} />
-            <span>Kiosk & Barber Station Portal</span>
+            <span>Private Barbershop Access</span>
           </div>
 
           <h2 style={{ fontSize: '22px', fontWeight: 900, letterSpacing: '-0.02em', margin: '0 0 8px', color: 'var(--text-primary)' }}>
-            Welcome to WalkinApp
+            Enter Barbershop Code
           </h2>
-          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 20px', lineHeight: 1.5 }}>
-            Each barbershop has a dedicated private link. Enter your shop code below or select your location to jump into your kiosk.
+          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 24px', lineHeight: 1.5 }}>
+            Please enter your barbershop code below to access your digital kiosk or staff station.
           </p>
 
-          {/* Shop Code Search Input */}
-          <form onSubmit={handleSearchSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {/* Mode Selector Pill (Kiosk / Barber Station / Admin) */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            background: 'var(--surface-pill)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: '14px',
+            padding: '4px',
+            marginBottom: '18px',
+            gap: '4px'
+          }}>
+            <button
+              type="button"
+              onClick={() => setTargetMode('kiosk')}
+              style={{
+                flex: 1,
+                padding: '8px 10px',
+                borderRadius: '10px',
+                border: 'none',
+                background: targetMode === 'kiosk' ? 'var(--accent-primary)' : 'transparent',
+                color: targetMode === 'kiosk' ? 'var(--bg-main)' : 'var(--text-secondary)',
+                fontSize: '12px',
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '5px',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <Store size={13} />
+              <span>Kiosk</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setTargetMode('barber_portal')}
+              style={{
+                flex: 1,
+                padding: '8px 10px',
+                borderRadius: '10px',
+                border: 'none',
+                background: targetMode === 'barber_portal' ? 'var(--accent-primary)' : 'transparent',
+                color: targetMode === 'barber_portal' ? 'var(--bg-main)' : 'var(--text-secondary)',
+                fontSize: '12px',
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '5px',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <Scissors size={13} />
+              <span>Barbers</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setTargetMode('admin')}
+              style={{
+                flex: 1,
+                padding: '8px 10px',
+                borderRadius: '10px',
+                border: 'none',
+                background: targetMode === 'admin' ? 'var(--accent-primary)' : 'transparent',
+                color: targetMode === 'admin' ? 'var(--bg-main)' : 'var(--text-secondary)',
+                fontSize: '12px',
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '5px',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <Lock size={12} />
+              <span>Admin</span>
+            </button>
+          </div>
+
+          {/* Search Form */}
+          <form onSubmit={handleSearchSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
+              gap: '10px',
               background: 'var(--surface-pill)',
-              border: '1px solid var(--border-subtle)',
+              border: searchError ? '2px solid var(--pastel-red)' : '1px solid var(--border-subtle)',
               borderRadius: '16px',
-              padding: '6px 6px 6px 14px',
+              padding: '6px 6px 6px 16px',
               boxSizing: 'border-box'
             }}>
-              <Search size={16} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+              <Search size={18} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
               <input
                 type="text"
-                placeholder="Enter shop code (e.g. 'of' or 'fademasters')"
+                placeholder="Enter code (e.g. of)"
                 value={searchCode}
                 onChange={(e) => {
                   setSearchCode(e.target.value);
                   setSearchError('');
                 }}
+                autoFocus
                 style={{
                   flex: 1,
                   background: 'transparent',
                   border: 'none',
                   color: 'var(--text-primary)',
-                  fontSize: '14px',
-                  fontWeight: 600,
+                  fontSize: '15px',
+                  fontWeight: 700,
                   outline: 'none',
                   minWidth: 0
                 }}
@@ -222,7 +307,7 @@ export const RootLandingScreen: React.FC<RootLandingScreenProps> = ({
               <button
                 type="submit"
                 style={{
-                  padding: '10px 18px',
+                  padding: '12px 20px',
                   background: 'var(--accent-primary)',
                   color: 'var(--bg-main)',
                   borderRadius: '12px',
@@ -232,7 +317,7 @@ export const RootLandingScreen: React.FC<RootLandingScreenProps> = ({
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '5px',
+                  gap: '6px',
                   flexShrink: 0
                 }}
               >
@@ -248,149 +333,17 @@ export const RootLandingScreen: React.FC<RootLandingScreenProps> = ({
             )}
           </form>
         </div>
-
-        {/* Quick Launch Locations Section */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px' }}>
-            <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.05em' }}>
-              Active Barbershop Locations ({shops.length})
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {shops.map((shop) => (
-              <div
-                key={shop.id}
-                style={{
-                  background: 'var(--surface-card)',
-                  border: '1px solid var(--border-subtle)',
-                  borderRadius: '18px',
-                  padding: '12px 14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '10px',
-                  boxShadow: 'var(--shadow-sm)'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
-                  {shop.logoUrl ? (
-                    <img
-                      src={shop.logoUrl}
-                      alt={shop.name}
-                      style={{
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '10px',
-                        objectFit: 'contain',
-                        background: '#FFFFFF',
-                        padding: '2px',
-                        border: '1px solid var(--border-subtle)',
-                        flexShrink: 0
-                      }}
-                    />
-                  ) : (
-                    <div style={{
-                      width: '36px',
-                      height: '36px',
-                      borderRadius: '10px',
-                      background: 'var(--surface-pill)',
-                      border: '1px solid var(--border-subtle)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 800,
-                      fontSize: '13px',
-                      color: 'var(--text-primary)',
-                      flexShrink: 0
-                    }}>
-                      {shop.name.substring(0, 2).toUpperCase()}
-                    </div>
-                  )}
-
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <h3 style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {shop.name}
-                      </h3>
-                      {shop.slug === 'of' && (
-                        <span style={{
-                          fontSize: '8px',
-                          padding: '2px 5px',
-                          borderRadius: '4px',
-                          background: 'var(--pastel-amber-bg)',
-                          color: 'var(--pastel-amber)',
-                          fontWeight: 800,
-                          flexShrink: 0
-                        }}>
-                          FLAGSHIP
-                        </span>
-                      )}
-                    </div>
-                    <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '1px 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      Code: ?shop={shop.slug} • {shop.barbers?.length || 0} Barbers
-                    </p>
-                  </div>
-                </div>
-
-                {/* Quick Action Buttons */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                  <button
-                    onClick={() => onSelectShop(shop.slug, 'kiosk')}
-                    style={{
-                      padding: '8px 12px',
-                      background: 'var(--accent-primary)',
-                      color: 'var(--bg-main)',
-                      borderRadius: '10px',
-                      border: 'none',
-                      fontSize: '11px',
-                      fontWeight: 800,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px'
-                    }}
-                  >
-                    <Store size={12} />
-                    <span>Kiosk</span>
-                  </button>
-
-                  <button
-                    onClick={() => onSelectShop(shop.slug, 'barber_portal')}
-                    style={{
-                      padding: '8px 10px',
-                      background: 'var(--surface-pill)',
-                      border: '1px solid var(--border-subtle)',
-                      color: 'var(--text-primary)',
-                      borderRadius: '10px',
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px'
-                    }}
-                  >
-                    <Scissors size={12} />
-                    <span>Staff</span>
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
 
-      {/* Discreet Bottom Bar: Platform HQ Entry */}
+      {/* Discreet Platform HQ Link */}
       <div style={{
         width: '100%',
-        maxWidth: '580px',
+        maxWidth: '480px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        paddingTop: '20px',
-        borderTop: '1px solid var(--border-subtle)',
-        marginTop: '20px'
+        paddingTop: '16px',
+        borderTop: '1px solid var(--border-subtle)'
       }}>
         <button
           onClick={onOpenSuperAdmin}
