@@ -484,7 +484,8 @@ export function useLiveSystem() {
     feeCovered: boolean = true
   ): Promise<RentPaymentRecord> => {
     const baseAmount = barber.weeklyRent || config.defaultWeeklyRent || 200;
-    const fee = feeCovered ? Number(((baseAmount * 0.029) + 0.30).toFixed(2)) : 0;
+    const isZeroFeeMethod = method === 'cash' || method === 'zelle' || method === 'manual';
+    const fee = isZeroFeeMethod ? 0 : (feeCovered ? Number(((baseAmount * 0.029) + 0.30).toFixed(2)) : 0);
     const total = baseAmount + fee;
 
     const newRecord = storage.recordRentPayment({

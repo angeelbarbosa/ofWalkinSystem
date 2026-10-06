@@ -9,11 +9,14 @@ import {
   Download, 
   Check,
   DollarSign,
-  HelpCircle
+  HelpCircle,
+  CreditCard,
+  Lock
 } from 'lucide-react';
-import type { Barber, CheckInRecord, ShopConfig, RentPaymentRecord, Shop, SupportMessage } from '../../types';
+import type { Barber, CheckInRecord, ShopConfig, RentPaymentRecord, Shop, SupportMessage, SubscriptionPaymentMethod } from '../../types';
 import { RentLedgerDashboard } from './RentLedgerDashboard';
 import { SupportChatDrawer } from '../Shared/SupportChatDrawer';
+import { ShopSubscriptionModal } from './ShopSubscriptionModal';
 
 interface AdminDashboardProps {
   currentShop?: Shop | null;
@@ -27,6 +30,7 @@ interface AdminDashboardProps {
   onSaveConfig: (config: ShopConfig) => void;
   onSendSupportMessage?: (text: string) => void;
   onMarkSupportRead?: () => void;
+  onPayShopSubscription?: (paymentMethod: SubscriptionPaymentMethod) => void;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
@@ -40,10 +44,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onSaveBarbers,
   onSaveConfig,
   onSendSupportMessage = () => {},
-  onMarkSupportRead = () => {}
+  onMarkSupportRead = () => {},
+  onPayShopSubscription = () => {}
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'roster' | 'rent' | 'settings' | 'sms' | 'history'>('rent');
+  const [activeSubTab, setActiveSubTab] = useState<'roster' | 'rent' | 'settings' | 'sms' | 'history' | 'subscription'>('rent');
   const [isSupportOpen, setIsSupportOpen] = useState(false);
+  const [isPaySubscriptionOpen, setIsPaySubscriptionOpen] = useState(false);
   
   // Barbers Management State
   const [isAddingBarber, setIsAddingBarber] = useState(false);
@@ -209,6 +215,40 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           >
             <MessageSquare size={15} />
             <span>SMS Backup</span>
+          </button>
+
+          <button
+            onClick={() => setActiveSubTab('subscription')}
+            className={`barber-tab-chip ${activeSubTab === 'subscription' ? 'active' : ''}`}
+            style={{ 
+              padding: '8px 14px', 
+              borderRadius: 9999, 
+              fontSize: '0.82rem', 
+              fontWeight: 750, 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 6, 
+              background: activeSubTab === 'subscription' ? 'var(--accent-primary)' : 'var(--surface-pill)', 
+              color: activeSubTab === 'subscription' ? 'var(--bg-main)' : 'var(--text-primary)', 
+              border: '1px solid var(--border-subtle)', 
+              cursor: 'pointer' 
+            }}
+          >
+            <CreditCard size={15} />
+            <span>Subscription & Billing</span>
+            {currentShop?.subscriptionStatus === 'past_due' && (
+              <span style={{
+                background: 'var(--pastel-red)',
+                color: '#FFFFFF',
+                fontSize: '10px',
+                fontWeight: 900,
+                padding: '1px 6px',
+                borderRadius: 9999,
+                boxShadow: '0 0 8px rgba(239, 68, 68, 0.6)'
+              }}>
+                Due
+              </span>
+            )}
           </button>
 
           <button
@@ -663,6 +703,121 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       )}
 
+      {/* Sub-Tab 5: Subscription & Billing */}
+      {activeSubTab === 'subscription' && currentShop && (
+        <div className="admin-card slide-up" style={{ background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderRadius: '24px', padding: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14, marginBottom: 24 }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--accent-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Platform SaaS Billing
+                </span>
+                <span style={{
+                  padding: '2px 8px',
+                  borderRadius: 9999,
+                  fontSize: '0.72rem',
+                  fontWeight: 800,
+                  background: currentShop.subscriptionStatus === 'active' 
+                    ? 'rgba(16, 185, 129, 0.15)' 
+                    : currentShop.subscriptionStatus === 'past_due' 
+                    ? 'rgba(239, 68, 68, 0.15)' 
+                    : 'rgba(59, 130, 246, 0.15)',
+                  color: currentShop.subscriptionStatus === 'active' 
+                    ? 'var(--pastel-green, #10B981)' 
+                    : currentShop.subscriptionStatus === 'past_due' 
+                    ? 'var(--pastel-red, #EF4444)' 
+                    : 'var(--pastel-blue, #3B82F6)',
+                  border: '1px solid currentColor'
+                }}>
+                  {currentShop.subscriptionStatus ? currentShop.subscriptionStatus.toUpperCase() : 'ACTIVE'}
+                </span>
+              </div>
+              <h3 style={{ fontSize: '1.35rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0 }}>
+                {currentShop.name} License
+              </h3>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: '2px 0 0' }}>
+                Your dedicated walk-in kiosk, booth rent tracking, and barber station software
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsPaySubscriptionOpen(true)}
+              className="choice-card-action-btn"
+              style={{ width: 'auto', padding: '10px 20px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: 8 }}
+            >
+              <CreditCard size={16} />
+              <span>Pay with Stripe / Apple Pay</span>
+            </button>
+          </div>
+
+          {/* Pricing & Renewal Metric Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 24 }}>
+            <div style={{ background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', borderRadius: 18, padding: '16px' }}>
+              <span style={{ fontSize: '0.74rem', fontWeight: 750, color: 'var(--text-secondary)' }}>Base Subscription</span>
+              <div style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--text-primary)', marginTop: 4 }}>
+                ${(currentShop.subscriptionMonthlyFee ?? currentShop.monthlyPlanPrice ?? 49).toFixed(2)}
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}> / month</span>
+              </div>
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Billed monthly</span>
+            </div>
+
+            <div style={{ background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', borderRadius: 18, padding: '16px' }}>
+              <span style={{ fontSize: '0.74rem', fontWeight: 750, color: 'var(--text-secondary)' }}>Next Billing Renewal</span>
+              <div style={{ fontSize: '1.25rem', fontWeight: 850, color: 'var(--text-primary)', marginTop: 4 }}>
+                {currentShop.subscriptionNextBillingDate || 'Nov 1, 2026'}
+              </div>
+              <span style={{ fontSize: '0.7rem', color: currentShop.subscriptionStatus === 'past_due' ? 'var(--pastel-red)' : 'var(--pastel-green)' }}>
+                {currentShop.subscriptionStatus === 'past_due' ? 'Past Due - Please Renew' : 'Active Through Cycle'}
+              </span>
+            </div>
+
+            <div style={{ background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', borderRadius: 18, padding: '16px' }}>
+              <span style={{ fontSize: '0.74rem', fontWeight: 750, color: 'var(--text-secondary)' }}>Last Payment Method</span>
+              <div style={{ fontSize: '1.15rem', fontWeight: 850, color: 'var(--accent-primary)', marginTop: 4, textTransform: 'capitalize' }}>
+                {currentShop.subscriptionPaymentMethod === 'apple_pay' ? ' Apple Pay' : currentShop.subscriptionPaymentMethod === 'card' || currentShop.subscriptionPaymentMethod === 'stripe' ? '💳 Stripe Card' : currentShop.subscriptionPaymentMethod || 'Stripe'}
+              </div>
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                Paid on {currentShop.subscriptionLastPaidDate || 'Oct 1, 2026'}
+              </span>
+            </div>
+          </div>
+
+          {/* Stripe Fee Transparency Banner */}
+          <div style={{ background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', borderRadius: 18, padding: '18px', marginBottom: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, color: 'var(--text-primary)', fontWeight: 800, fontSize: '0.92rem' }}>
+              <Lock size={15} color="var(--pastel-green)" />
+              <span>Stripe Processing Fee Transparency</span>
+            </div>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
+              All online transactions are securely encrypted and processed directly via Stripe at standard network interchange rates (<strong>2.9% + 30¢</strong>). When paying your $49.00/mo subscription, the $1.72 fee is included in your checkout total ($50.72) with no hidden platform markups.
+            </p>
+          </div>
+
+          {/* Features Included List */}
+          <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: 20 }}>
+            <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 12px' }}>
+              What's Included In Your Shop License:
+            </h4>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 10 }}>
+              {[
+                'Unlimited Client Walk-In & Appointment Queue Check-Ins',
+                'Dedicated Barber Station Hubs with Personal PINs',
+                'Automated Weekly Booth Rent Collection & Ledgers',
+                'Live Multi-Device Cloud Sync (iPhone, iPad, Mac)',
+                'Direct In-App Platform Support Line to Platform HQ',
+                'Twilio SMS Automated Arrival Alert System'
+              ].map((feat, idx) => (
+                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                  <Check size={14} style={{ color: 'var(--pastel-green)', flexShrink: 0 }} />
+                  <span>{feat}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Direct In-App Support Chat Drawer */}
       <SupportChatDrawer
         isOpen={isSupportOpen}
@@ -677,6 +832,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         }}
         onMarkRead={onMarkSupportRead}
       />
+
+      {/* Shop Owner Subscription Payment Modal */}
+      {isPaySubscriptionOpen && currentShop && (
+        <ShopSubscriptionModal
+          shop={currentShop}
+          onPaySubscription={(paymentMethod) => {
+            onPayShopSubscription(paymentMethod);
+          }}
+          onClose={() => setIsPaySubscriptionOpen(false)}
+        />
+      )}
     </div>
   );
 };

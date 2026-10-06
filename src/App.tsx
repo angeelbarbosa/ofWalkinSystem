@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Lock, ArrowLeft, Scissors, Shield } from 'lucide-react';
-import type { Barber, CheckInRecord, MainNavTab } from './types';
+import type { Barber, CheckInRecord, MainNavTab, SubscriptionPaymentMethod } from './types';
 import { useLiveSystem } from './utils/liveSync';
 import { notificationManager } from './utils/notifications';
 import { updatePwaBranding } from './utils/pwaBranding';
@@ -209,6 +209,12 @@ export function App() {
       markSupportMessagesRead(activeShop.slug, 'shop');
     }
   }, [activeShop, markSupportMessagesRead]);
+
+  const handlePayShopSubscription = useCallback((paymentMethod: SubscriptionPaymentMethod) => {
+    if (activeShop) {
+      markShopSubscriptionPaid(activeShop.slug, paymentMethod);
+    }
+  }, [activeShop, markShopSubscriptionPaid]);
 
   // Real-time unread messages from Platform HQ for the active shop
   const activeShopCleanSlug = (activeShop?.slug || 'of').toLowerCase().trim();
@@ -556,6 +562,7 @@ export function App() {
                 onSaveConfig={saveConfig}
                 onSendSupportMessage={handleSendSupportMessage}
                 onMarkSupportRead={handleMarkSupportRead}
+                onPayShopSubscription={handlePayShopSubscription}
               />
             )}
 

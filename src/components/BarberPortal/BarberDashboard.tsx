@@ -869,6 +869,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
       {isRentModalOpen && onPayRent && (
         <BarberRentModal
           barber={assignedBarber}
+          existingRecord={myRentRecord}
           onPayRent={onPayRent}
           onClose={() => setIsRentModalOpen(false)}
         />
