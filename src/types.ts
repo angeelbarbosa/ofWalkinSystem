@@ -75,6 +75,7 @@ export interface ShopConfig {
   vibrateEnabled: boolean;
   pinCode: string;
   allowWalkinsWithoutAppointment: boolean;
+  enableShoppingMode?: boolean; // true = Only for supply store kiosk; false = standard walkin + appointment barbershop
   // Booth Rent Shop Settings
   rentEnabled?: boolean;
   defaultWeeklyRent?: number; // e.g. 200

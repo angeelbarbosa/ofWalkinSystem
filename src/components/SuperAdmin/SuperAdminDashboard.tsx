@@ -717,24 +717,9 @@ export function SuperAdminDashboard({
                     )}
 
                     <div style={{ minWidth: 0, flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <h3 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {shop.name}
-                        </h3>
-                        {shop.slug === 'of' && (
-                          <span style={{
-                            fontSize: '9px',
-                            padding: '2px 5px',
-                            borderRadius: '4px',
-                            background: 'var(--pastel-amber-bg)',
-                            color: 'var(--pastel-amber)',
-                            fontWeight: 800,
-                            flexShrink: 0
-                          }}>
-                            FLAGSHIP
-                          </span>
-                        )}
-                      </div>
+                      <h3 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {shop.name}
+                      </h3>
                       <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '1px 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {shop.address || 'Address Pending'}
                       </p>
@@ -1575,7 +1560,7 @@ export function SuperAdminDashboard({
               Factory Reset Platform?
             </h3>
             <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.4, margin: '0 0 18px' }}>
-              This will wipe all test shops and mock check-in records, leaving only <strong>OF Supply & Lounge</strong> ready for fresh sales presentations.
+              This will wipe test check-in records and restore your default fleet configurations.
             </p>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>

@@ -33,7 +33,7 @@ export const KioskHome: React.FC<KioskHomeProps> = ({
   onSelectAppointment,
   onJoinWalkInDirect
 }) => {
-  const isOfSupply = shopSlug === 'of' || config.shopName.toLowerCase().includes('of supply');
+  const isShoppingShop = config.enableShoppingMode === true || shopSlug === 'of' || config.shopName.toLowerCase().includes('of supply');
 
   // Walk-In Fast Modal State
   const [showWalkInModal, setShowWalkInModal] = useState(false);
@@ -66,7 +66,7 @@ export const KioskHome: React.FC<KioskHomeProps> = ({
     <div className="kiosk-home-container pop-in" style={{ width: '100%', maxWidth: '980px', margin: '0 auto', padding: '0 12px' }}>
       {/* Brand Header / Logo Area */}
       <div className="kiosk-logo-wrapper" style={{ textAlign: 'center', marginBottom: '28px' }}>
-        {isOfSupply ? (
+        {isShoppingShop ? (
           <img
             src="/logo.png"
             alt={config.shopName}
@@ -96,8 +96,8 @@ export const KioskHome: React.FC<KioskHomeProps> = ({
               <div style={{
                 padding: '5px',
                 borderRadius: '8px',
-                background: 'var(--accent-primary-light, rgba(245,158,11,0.15))',
-                color: 'var(--accent-primary, #F59E0B)'
+                background: 'var(--accent-primary-light, rgba(255,255,255,0.12))',
+                color: 'var(--accent-primary, #FAFAFA)'
               }}>
                 <ImageIcon size={16} />
               </div>
@@ -106,9 +106,9 @@ export const KioskHome: React.FC<KioskHomeProps> = ({
                 fontWeight: 800,
                 letterSpacing: '0.12em',
                 textTransform: 'uppercase',
-                color: 'var(--accent-primary, #F59E0B)'
+                color: 'var(--text-muted)'
               }}>
-                YOUR LOGO HERE
+                {config.shopName}
               </span>
             </div>
             <h1 style={{
@@ -134,8 +134,8 @@ export const KioskHome: React.FC<KioskHomeProps> = ({
       </div>
 
       {/* ================= EXACTLY TWO BIG HERO CHOICE CARDS ================= */}
-      {isOfSupply ? (
-        /* OF Supply Mode (Store + Haircuts) */
+      {isShoppingShop ? (
+        /* OF Supply Mode (Store Supplies + Scheduled Haircuts) */
         <div className="choice-cards-grid">
           {/* Card 1: Here to Shop */}
           <div className="bubbly-choice-card shopping-card-split">
@@ -238,12 +238,12 @@ export const KioskHome: React.FC<KioskHomeProps> = ({
             <div
               className="card-icon-bubble"
               style={{
-                background: 'linear-gradient(135deg, var(--accent-primary, #F59E0B) 0%, var(--accent-primary-hover, #D97706) 100%)',
-                color: '#000000',
-                boxShadow: '0 10px 28px rgba(245, 158, 11, 0.4)'
+                background: 'var(--pastel-amber-bg)',
+                color: 'var(--pastel-amber)',
+                border: '1px solid var(--pastel-amber-border)'
               }}
             >
-              <Flame size={48} strokeWidth={2.4} />
+              <Flame size={46} strokeWidth={2.4} />
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
@@ -260,16 +260,16 @@ export const KioskHome: React.FC<KioskHomeProps> = ({
               <button
                 className="choice-card-action-btn"
                 style={{
-                  padding: '18px 24px',
-                  fontSize: '1.12rem',
-                  background: 'linear-gradient(135deg, var(--accent-primary, #F59E0B) 0%, var(--accent-primary-hover, #D97706) 100%)',
-                  color: '#000000',
-                  boxShadow: '0 8px 24px rgba(245, 158, 11, 0.35)'
+                  padding: '16px 22px',
+                  fontSize: '1.05rem',
+                  background: 'var(--accent-primary)',
+                  color: 'var(--bg-main)',
+                  boxShadow: 'var(--shadow-md)'
                 }}
               >
-                <Flame size={22} />
+                <Flame size={20} />
                 <span>Join Walk-In Line</span>
-                <ChevronRight size={22} />
+                <ChevronRight size={20} />
               </button>
             </div>
           </div>

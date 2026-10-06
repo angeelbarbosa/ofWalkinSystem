@@ -146,6 +146,7 @@ export const DEFAULT_OF_CONFIG: ShopConfig = {
   vibrateEnabled: true,
   pinCode: '1234',
   allowWalkinsWithoutAppointment: false,
+  enableShoppingMode: true,
   rentEnabled: true,
   defaultWeeklyRent: 200,
   defaultRentDueDay: 'Monday',
@@ -271,6 +272,8 @@ export const SEED_SHOPS: Shop[] = [
       tagline: 'Precision Fades & Luxury Grooming',
       welcomeShoppingTitle: 'Welcome to Fade Masters',
       welcomeShoppingBody: 'Check in for your appointment or sign in for walk-in rotation.',
+      allowWalkinsWithoutAppointment: true,
+      enableShoppingMode: false,
       defaultWeeklyRent: 250
     },
     barbers: [
@@ -358,6 +361,8 @@ export const SEED_SHOPS: Shop[] = [
       tagline: 'Classic Gentlemen Barbershop',
       welcomeShoppingTitle: 'Welcome to Royal Cuts',
       welcomeShoppingBody: 'Please check in with your barber on arrival.',
+      allowWalkinsWithoutAppointment: true,
+      enableShoppingMode: false,
       defaultWeeklyRent: 200
     },
     barbers: [
@@ -444,18 +449,25 @@ export const storage = {
         return SEED_SHOPS;
       }
       const parsed: Shop[] = JSON.parse(data);
+      
+      // Ensure shopping mode is only enabled for OF Supply, and walk-in system is default for all other shops
+      parsed.forEach(s => {
+        if (s.slug === 'of' || s.name.toLowerCase().includes('of supply')) {
+          s.config.enableShoppingMode = true;
+          s.config.allowWalkinsWithoutAppointment = false;
+        } else {
+          s.config.enableShoppingMode = false;
+          s.config.allowWalkinsWithoutAppointment = true;
+        }
+      });
+
       // Ensure 'of' exists
       if (!parsed.some(s => s.slug === 'of')) {
         const merged = [...SEED_SHOPS.filter(s => s.slug === 'of'), ...parsed];
         localStorage.setItem(SHOPS_KEY, JSON.stringify(merged));
         return merged;
       }
-      // Upgrade default theme if it was old midnight_gold
-      const ofShop = parsed.find(s => s.slug === 'of');
-      if (ofShop && ofShop.themeId === ('midnight_gold' as any)) {
-        ofShop.themeId = 'obsidian_emerald';
-        localStorage.setItem(SHOPS_KEY, JSON.stringify(parsed));
-      }
+      localStorage.setItem(SHOPS_KEY, JSON.stringify(parsed));
       return parsed;
     } catch {
       return SEED_SHOPS;
@@ -514,7 +526,8 @@ export const storage = {
         voiceAnnouncementsEnabled: false,
         vibrateEnabled: true,
         pinCode: shopData.pinCode || '1234',
-        allowWalkinsWithoutAppointment: false,
+        allowWalkinsWithoutAppointment: true,
+        enableShoppingMode: false,
         rentEnabled: true,
         defaultWeeklyRent: 200,
         defaultRentDueDay: 'Monday',

@@ -429,7 +429,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           <form onSubmit={handleSaveShopSettings}>
             <div className="form-group" style={{ marginBottom: 14 }}>
-              <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Shopping Welcome Message</label>
+              <label className="form-label" style={{ color: 'var(--text-secondary)' }}>
+                {config.enableShoppingMode ? 'Shopping Welcome Message' : 'Kiosk Welcome Greeting'}
+              </label>
               <textarea
                 rows={3}
                 value={welcomeShoppingBody}
@@ -440,15 +442,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12 }}>
-              <div className="form-group">
-                <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Shopping Reset (s)</label>
-                <input
-                  type="number"
-                  value={autoResetShoppingSec}
-                  onChange={e => setAutoResetShoppingSec(Number(e.target.value))}
-                  className="bubbly-input"
-                />
-              </div>
+              {config.enableShoppingMode && (
+                <div className="form-group">
+                  <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Shopping Reset (s)</label>
+                  <input
+                    type="number"
+                    value={autoResetShoppingSec}
+                    onChange={e => setAutoResetShoppingSec(Number(e.target.value))}
+                    className="bubbly-input"
+                  />
+                </div>
+              )}
 
               <div className="form-group">
                 <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Check-in Reset (s)</label>
