@@ -111,9 +111,12 @@ export function updatePwaBranding(shop: Shop, currentTab?: string) {
 
   const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
   const portalParam = urlParams.get('portal');
-  const isSuperAdmin = currentTab === 'super_admin' || portalParam === 'super_admin' || portalParam === 'superadmin';
-  const isBarberPortal = currentTab === 'barber_portal' || portalParam === 'barber' || portalParam === 'barber_portal';
-  const isOwnerAdmin = currentTab === 'admin' || portalParam === 'admin';
+  const savedPortal = typeof localStorage !== 'undefined' ? localStorage.getItem('walkin_pwa_portal') : null;
+  const activePortal = currentTab || portalParam || savedPortal;
+
+  const isSuperAdmin = activePortal === 'super_admin' || activePortal === 'superadmin' || activePortal === 'hq';
+  const isBarberPortal = activePortal === 'barber_portal' || activePortal === 'barber';
+  const isOwnerAdmin = activePortal === 'admin';
 
   let title = `${shop.name} — WalkinApp`;
   let appName = shop.name;

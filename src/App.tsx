@@ -21,20 +21,58 @@ import { ShopSwitcherBar } from './components/Shared/ShopSwitcherBar';
 import './App.css';
 
 export function App() {
-  // Check URL query parameters for direct staff access e.g., ?portal=barber or ?portal=admin or ?portal=super_admin
+  // Check URL query parameters, pathname, and standalone PWA launcher state
   const getInitialTab = (): MainNavTab => {
     if (typeof window !== 'undefined') {
+      const pathname = window.location.pathname.toLowerCase();
+      if (pathname === '/hq' || pathname.startsWith('/hq/') || pathname === '/super_admin') return 'super_admin';
+      if (pathname === '/admin' || pathname.startsWith('/admin/')) return 'admin';
+      if (pathname === '/barber' || pathname.startsWith('/barber/')) return 'barber_portal';
+
       const params = new URLSearchParams(window.location.search);
       const portal = params.get('portal');
-      if (portal === 'super_admin' || portal === 'superadmin') return 'super_admin';
+      if (portal === 'super_admin' || portal === 'superadmin' || portal === 'hq') return 'super_admin';
       if (portal === 'barber' || portal === 'barber_portal') return 'barber_portal';
       if (portal === 'admin') return 'admin';
+
+      // Check if standalone PWA mode was launched from an HQ bookmark
+      const isStandalone = (
+        window.matchMedia('(display-mode: standalone)').matches ||
+        (window.navigator as any).standalone === true ||
+        document.referrer.includes('ios-app://')
+      );
+      const savedPortal = localStorage.getItem('walkin_pwa_portal');
+      if (isStandalone && savedPortal === 'super_admin') {
+        return 'super_admin';
+      }
     }
     return 'kiosk';
   };
 
   // Navigation State
   const [currentTab, setCurrentTab] = useState<MainNavTab>(getInitialTab);
+
+  // Keep URL query parameter and localStorage in sync with active portal
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Save active portal for standalone PWA icon launch
+    localStorage.setItem('walkin_pwa_portal', currentTab);
+
+    // Update browser URL without reloading
+    const currentUrl = new URL(window.location.href);
+    if (currentTab === 'super_admin') {
+      currentUrl.searchParams.set('portal', 'super_admin');
+      currentUrl.searchParams.delete('shop');
+    } else if (currentTab === 'admin') {
+      currentUrl.searchParams.set('portal', 'admin');
+    } else if (currentTab === 'barber_portal') {
+      currentUrl.searchParams.set('portal', 'barber');
+    } else {
+      currentUrl.searchParams.delete('portal');
+    }
+    window.history.replaceState({}, '', currentUrl.toString());
+  }, [currentTab]);
   const [kioskStep, setKioskStep] = useState<'home' | 'shopping_browsing' | 'shopping_checkout' | 'barber_select' | 'live_queue' | 'confirmed'>('home');
   const [checkInMode, setCheckInMode] = useState<'appointment' | 'walkin'>('appointment');
   const [isCheckInModalOpen, setIsCheckInModalOpen] = useState(false);
