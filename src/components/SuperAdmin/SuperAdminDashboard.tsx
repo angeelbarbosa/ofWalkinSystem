@@ -64,7 +64,8 @@ export function SuperAdminDashboard({
   const [newName, setNewName] = useState('');
   const [newSlug, setNewSlug] = useState('');
   const [newAddress, setNewAddress] = useState('');
-  const [newTheme, setNewTheme] = useState<ThemeId>('midnight_gold');
+  const [newLogoUrl, setNewLogoUrl] = useState('');
+  const [newTheme, setNewTheme] = useState<ThemeId>('obsidian_emerald');
   const [newPin, setNewPin] = useState('1234');
   const [newMonthlyPrice, setNewMonthlyPrice] = useState(49);
   const [formError, setFormError] = useState('');
@@ -114,6 +115,7 @@ export function SuperAdminDashboard({
         name: newName.trim(),
         slug: newSlug.trim(),
         address: newAddress.trim(),
+        logoUrl: newLogoUrl.trim(),
         themeId: newTheme,
         pinCode: newPin.trim() || '1234',
         monthlyPlanPrice: newMonthlyPrice
@@ -125,6 +127,7 @@ export function SuperAdminDashboard({
       setNewName('');
       setNewSlug('');
       setNewAddress('');
+      setNewLogoUrl('');
       setFormError('');
       showToast(`Created & launched ${created.name}!`);
     } catch (err: any) {
@@ -1003,6 +1006,64 @@ export function SuperAdminDashboard({
                 />
               </div>
 
+              {/* Field 3B: Custom Logo Image (Home Screen Icon & Kiosk Logo) */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#D4D4D8', marginBottom: '5px' }}>
+                  Custom Shop Logo (Home Screen Icon & Kiosk)
+                </label>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <input
+                    type="text"
+                    placeholder="Paste logo URL or upload image below"
+                    value={newLogoUrl}
+                    onChange={(e) => setNewLogoUrl(e.target.value)}
+                    style={{
+                      flex: 1,
+                      padding: '12px 14px',
+                      background: '#09090B',
+                      border: '1px solid #3F3F46',
+                      borderRadius: '12px',
+                      color: '#FAFAFA',
+                      fontSize: '13px',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                  <label
+                    style={{
+                      padding: '12px 14px',
+                      background: '#27272A',
+                      border: '1px solid #3F3F46',
+                      borderRadius: '12px',
+                      color: '#FAFAFA',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    Upload File
+                    <input
+                      type="file"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setNewLogoUrl(reader.result as string);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+                <p style={{ fontSize: '11px', color: '#71717A', margin: '4px 0 0' }}>
+                  If left blank, an icon with the shop's initials and theme colors is auto-generated!
+                </p>
+              </div>
+
               {/* Field 4: Curated Colorways Picker */}
               <div>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#D4D4D8', marginBottom: '6px' }}>
@@ -1216,6 +1277,85 @@ export function SuperAdminDashboard({
                   </button>
                 );
               })}
+            </div>
+
+            {/* Custom Logo Upload for this Barbershop */}
+            <div style={{ marginBottom: '20px', padding: '14px', background: '#09090B', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px' }}>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, color: '#D4D4D8', marginBottom: '6px' }}>
+                Custom Shop Logo (Home Screen App Icon & Kiosk)
+              </label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input
+                  type="text"
+                  placeholder="Paste image URL"
+                  value={themeModalShop.logoUrl || ''}
+                  onChange={(e) => {
+                    const newUrl = e.target.value;
+                    onUpdateShop(themeModalShop.slug, { logoUrl: newUrl });
+                    setThemeModalShop({ ...themeModalShop, logoUrl: newUrl });
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: '10px 12px',
+                    background: '#18181B',
+                    border: '1px solid #3F3F46',
+                    borderRadius: '10px',
+                    color: '#FAFAFA',
+                    fontSize: '12px'
+                  }}
+                />
+                <label
+                  style={{
+                    padding: '10px 14px',
+                    background: '#27272A',
+                    border: '1px solid #3F3F46',
+                    borderRadius: '10px',
+                    color: '#FAFAFA',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  Upload File
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          const base64 = reader.result as string;
+                          onUpdateShop(themeModalShop.slug, { logoUrl: base64 });
+                          setThemeModalShop({ ...themeModalShop, logoUrl: base64 });
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+              {themeModalShop.logoUrl && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
+                  <img
+                    src={themeModalShop.logoUrl}
+                    alt="Logo preview"
+                    style={{ width: '36px', height: '36px', objectFit: 'contain', borderRadius: '8px', background: '#FFFFFF', padding: '2px' }}
+                  />
+                  <span style={{ fontSize: '11px', color: '#10B981', fontWeight: 700 }}>Custom Home Screen Icon Active</span>
+                  <button
+                    onClick={() => {
+                      onUpdateShop(themeModalShop.slug, { logoUrl: '' });
+                      setThemeModalShop({ ...themeModalShop, logoUrl: '' });
+                    }}
+                    style={{ fontSize: '11px', color: '#EF4444', background: 'none', border: 'none', cursor: 'pointer', marginLeft: 'auto' }}
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
             </div>
 
             <button

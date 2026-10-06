@@ -5,6 +5,7 @@ import { storage } from './storage';
 import { notificationManager } from './notifications';
 import { convexClient } from './convexClient';
 import { applyTheme, type ThemeId } from './themes';
+import { updatePwaBranding } from './pwaBranding';
 
 export { convexClient };
 
@@ -22,12 +23,15 @@ export function useLiveSystem() {
   const knownCheckInIdsRef = useRef<Set<string>>(new Set());
   const isInitialCheckInsLoadRef = useRef<boolean>(true);
 
-  // Apply active shop's theme whenever active shop changes
+  // Apply active shop's theme and dynamic PWA app icon whenever active shop changes
   useEffect(() => {
     const current = storage.getActiveShop();
     setActiveShop(current);
-    if (current && current.themeId) {
-      applyTheme(current.themeId);
+    if (current) {
+      if (current.themeId) {
+        applyTheme(current.themeId);
+      }
+      updatePwaBranding(current);
     }
   }, [activeShopSlug, shops]);
 
