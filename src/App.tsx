@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Lock, ArrowLeft, Scissors, Shield } from 'lucide-react';
+import { Lock, ArrowLeft, Scissors, Shield, X } from 'lucide-react';
 import type { Barber, CheckInRecord, MainNavTab, SubscriptionPaymentMethod } from './types';
 import { useLiveSystem } from './utils/liveSync';
 import { notificationManager } from './utils/notifications';
@@ -75,6 +75,7 @@ export function App() {
 
   // Global In-App Support Chat Drawer State (Accessible from Kiosk, Barber Hub, Admin, or Live Toast)
   const [isGlobalSupportChatOpen, setIsGlobalSupportChatOpen] = useState(false);
+  const [dismissedToastMsgId, setDismissedToastMsgId] = useState<string | null>(null);
 
   // Real-time Cloud + Multi-Shop Live System
   const {
@@ -227,23 +228,23 @@ export function App() {
 
   return (
     <div className="app-container">
-      {/* Live Incoming Support Message Floating Toast (Visible on Kiosk / Barber Hub / Admin) */}
-      {latestUnreadHqMsg && !isGlobalSupportChatOpen && currentTab !== 'super_admin' && (
+      {/* Live Incoming Support Message Floating Toast (Visible on Kiosk / Barber Hub / Admin at Bottom) */}
+      {latestUnreadHqMsg && latestUnreadHqMsg.id !== dismissedToastMsgId && !isGlobalSupportChatOpen && currentTab !== 'super_admin' && (
         <div 
           className="slide-up"
           style={{
             position: 'fixed',
-            top: 'max(14px, env(safe-area-inset-top, 14px))',
+            bottom: 'max(24px, calc(env(safe-area-inset-bottom, 14px) + 14px))',
             left: '50%',
             transform: 'translateX(-50%)',
             zIndex: 99990,
             maxWidth: '92%',
             width: '420px',
-            background: 'rgba(20, 20, 24, 0.94)',
+            background: 'rgba(20, 20, 24, 0.96)',
             border: '1px solid var(--accent-primary)',
-            borderRadius: '18px',
-            padding: '10px 14px',
-            boxShadow: '0 12px 36px rgba(0,0,0,0.6)',
+            borderRadius: '20px',
+            padding: '12px 16px',
+            boxShadow: '0 16px 40px rgba(0,0,0,0.8), 0 0 20px rgba(245, 158, 11, 0.2)',
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
             display: 'flex',
@@ -255,53 +256,78 @@ export function App() {
           }}
           onClick={() => setIsGlobalSupportChatOpen(true)}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0, flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
             <div style={{
-              width: '30px',
-              height: '30px',
-              borderRadius: '9px',
+              width: '34px',
+              height: '34px',
+              borderRadius: '11px',
               background: 'var(--accent-primary)',
-              color: 'var(--bg-main)',
+              color: '#000000',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0
             }}>
-              <Shield size={16} />
+              <Shield size={18} />
             </div>
             <div style={{ minWidth: 0, flex: 1 }}>
               <div style={{ fontSize: '11px', fontWeight: 850, color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '5px' }}>
                 <span>Platform HQ Message</span>
                 <span style={{ fontSize: '9px', background: 'var(--pastel-red)', color: '#fff', padding: '1px 5px', borderRadius: '9999px', fontWeight: 900 }}>New</span>
               </div>
-              <p style={{ fontSize: '12px', color: 'var(--text-primary)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <p style={{ fontSize: '12px', color: 'var(--text-primary)', margin: '2px 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {latestUnreadHqMsg.text}
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            style={{
-              padding: '6px 12px',
-              borderRadius: '9999px',
-              background: 'var(--accent-primary)',
-              color: 'var(--bg-main)',
-              fontSize: '11px',
-              fontWeight: 800,
-              border: 'none',
-              cursor: 'pointer',
-              flexShrink: 0
-            }}
-          >
-            Reply
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+            <button
+              type="button"
+              style={{
+                padding: '6px 12px',
+                borderRadius: '9999px',
+                background: 'var(--accent-primary)',
+                color: '#000000',
+                fontSize: '11px',
+                fontWeight: 800,
+                border: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              Reply
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setDismissedToastMsgId(latestUnreadHqMsg.id);
+              }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-muted, #71717A)',
+                cursor: 'pointer',
+                padding: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              title="Dismiss toast"
+            >
+              <X size={16} />
+            </button>
+          </div>
         </div>
       )}
 
       <div 
         className="content-wrapper" 
         style={{ 
-          padding: (currentTab === 'super_admin' || currentTab === 'landing') ? 0 : currentTab === 'kiosk' ? 'max(24px, env(safe-area-inset-top, 24px)) 16px 20px' : 'max(16px, env(safe-area-inset-top, 16px)) 16px 20px' 
+          padding: (currentTab === 'super_admin' || currentTab === 'landing') 
+            ? 0 
+            : currentTab === 'kiosk' 
+            ? 'max(36px, calc(env(safe-area-inset-top, 24px) + 14px)) 16px max(32px, calc(env(safe-area-inset-bottom, 16px) + 16px))' 
+            : 'max(68px, calc(env(safe-area-inset-top, 24px) + 36px)) 16px max(36px, calc(env(safe-area-inset-bottom, 16px) + 20px))' 
         }}
       >
         
