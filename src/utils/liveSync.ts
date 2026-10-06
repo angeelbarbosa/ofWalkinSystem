@@ -214,6 +214,46 @@ export function useLiveSystem() {
     window.addEventListener('shop_switched', handleShopSwitched);
     window.addEventListener('support_messages_updated', handleSupportUpdate);
 
+    // 3. Cross-Tab Real-time BroadcastChannel Sync
+    let crossTabChannel: BroadcastChannel | null = null;
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      try {
+        crossTabChannel = new BroadcastChannel('of_system_sync_broadcast_v1');
+        crossTabChannel.onmessage = (event) => {
+          const { eventType, detail } = event.data || {};
+          if (eventType === 'support_messages_updated') {
+            handleSupportUpdate();
+          } else if (eventType === 'shops_updated') {
+            handleShopsUpdate();
+          } else if (eventType === 'shop_switched') {
+            handleShopSwitched({ detail });
+          } else if (eventType === 'barbers_updated') {
+            handleBarbersUpdate();
+          } else if (eventType === 'checkins_updated') {
+            handleCheckInsUpdate();
+          } else if (eventType === 'rent_updated') {
+            handleRentUpdate();
+          } else if (eventType === 'config_updated') {
+            handleConfigUpdate();
+          }
+        };
+      } catch (e) {
+        console.warn('Cross-tab sync channel warning:', e);
+      }
+    }
+
+    // 4. Fallback Native Storage Event for other tabs/windows
+    const handleStorageEvent = (e: StorageEvent) => {
+      if (e.key?.includes('support_messages')) {
+        handleSupportUpdate();
+      } else if (e.key?.includes('shops')) {
+        handleShopsUpdate();
+      } else if (e.key?.includes('active_shop')) {
+        handleShopSwitched({ detail: { slug: storage.getActiveShopSlug() } });
+      }
+    };
+    window.addEventListener('storage', handleStorageEvent);
+
     notificationManager.onMessage((data: any) => {
       if (data?.type === 'NEW_CHECKIN') {
         handleCheckInsUpdate();
@@ -236,6 +276,10 @@ export function useLiveSystem() {
       window.removeEventListener('shops_updated', handleShopsUpdate);
       window.removeEventListener('shop_switched', handleShopSwitched);
       window.removeEventListener('support_messages_updated', handleSupportUpdate);
+      window.removeEventListener('storage', handleStorageEvent);
+      if (crossTabChannel) {
+        crossTabChannel.close();
+      }
     };
   }, [refreshActiveShopData]);
 

@@ -15,6 +15,32 @@ const ACTIVE_SHOP_KEY = 'walkin_active_shop_slug';
 const MASTER_PIN_KEY = 'walkin_master_pin';
 const SUPPORT_MESSAGES_KEY = 'walkin_support_messages_v1';
 
+// Real-time cross-tab & cross-window sync broadcaster
+const SYNC_BROADCAST_CHANNEL = 'of_system_sync_broadcast_v1';
+let syncChannel: BroadcastChannel | null = null;
+if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+  try {
+    syncChannel = new BroadcastChannel(SYNC_BROADCAST_CHANNEL);
+  } catch (e) {
+    console.warn('BroadcastChannel init warning:', e);
+  }
+}
+
+export function broadcastSystemEvent(eventType: string, detail?: any) {
+  if (typeof window === 'undefined') return;
+  // 1. Same-tab event
+  window.dispatchEvent(new CustomEvent(eventType, { detail }));
+  
+  // 2. Cross-tab event
+  if (syncChannel) {
+    try {
+      syncChannel.postMessage({ eventType, detail, timestamp: Date.now() });
+    } catch (e) {
+      console.warn('Broadcast error:', e);
+    }
+  }
+}
+
 // Default Master Super Admin PIN (For platform owner)
 export const DEFAULT_MASTER_PIN = '9999';
 
@@ -511,7 +537,7 @@ export const storage = {
   setActiveShopSlug(slug: string) {
     if (typeof window !== 'undefined') {
       localStorage.setItem(ACTIVE_SHOP_KEY, slug.toLowerCase());
-      window.dispatchEvent(new CustomEvent('shop_switched', { detail: { slug } }));
+      broadcastSystemEvent('shop_switched', { slug });
     }
   },
 
@@ -562,7 +588,7 @@ export const storage = {
 
   saveShops(shops: Shop[]) {
     localStorage.setItem(SHOPS_KEY, JSON.stringify(shops));
-    window.dispatchEvent(new Event('shops_updated'));
+    broadcastSystemEvent('shops_updated');
   },
 
   getActiveShop(): Shop {
@@ -722,16 +748,16 @@ export const storage = {
     localStorage.setItem(SHOPS_KEY, JSON.stringify([cleanOF]));
     localStorage.setItem(ACTIVE_SHOP_KEY, 'of');
     localStorage.setItem(MASTER_PIN_KEY, DEFAULT_MASTER_PIN);
-    window.dispatchEvent(new Event('shops_updated'));
-    window.dispatchEvent(new CustomEvent('shop_switched', { detail: { slug: 'of' } }));
+    broadcastSystemEvent('shops_updated');
+    broadcastSystemEvent('shop_switched', { slug: 'of' });
   },
 
   // 🎲 Load Demo Fleet: Re-seeds OF, Fade Masters, and Royal Cuts for live testing
   loadDemoFleet() {
     localStorage.setItem(SHOPS_KEY, JSON.stringify(SEED_SHOPS));
     localStorage.setItem(ACTIVE_SHOP_KEY, 'of');
-    window.dispatchEvent(new Event('shops_updated'));
-    window.dispatchEvent(new CustomEvent('shop_switched', { detail: { slug: 'of' } }));
+    broadcastSystemEvent('shops_updated');
+    broadcastSystemEvent('shop_switched', { slug: 'of' });
   },
 
   // -------------------------------------------------------------
@@ -746,7 +772,7 @@ export const storage = {
   saveBarbers(barbers: Barber[]) {
     const shop = this.getActiveShop();
     this.updateShop(shop.slug, { barbers });
-    window.dispatchEvent(new Event('barbers_updated'));
+    broadcastSystemEvent('barbers_updated');
   },
 
   getConfig(): ShopConfig {
@@ -763,7 +789,7 @@ export const storage = {
       pinCode: config.pinCode,
       config
     });
-    window.dispatchEvent(new Event('config_updated'));
+    broadcastSystemEvent('config_updated');
   },
 
   getCheckIns(): CheckInRecord[] {
@@ -774,7 +800,7 @@ export const storage = {
   saveCheckIns(records: CheckInRecord[]) {
     const shop = this.getActiveShop();
     this.updateShop(shop.slug, { checkIns: records });
-    window.dispatchEvent(new Event('checkins_updated'));
+    broadcastSystemEvent('checkins_updated');
   },
 
   addCheckIn(record: Omit<CheckInRecord, 'id' | 'checkInTime' | 'status'>): CheckInRecord {
@@ -812,7 +838,7 @@ export const storage = {
   saveRentRecords(records: RentPaymentRecord[]) {
     const shop = this.getActiveShop();
     this.updateShop(shop.slug, { rentRecords: records });
-    window.dispatchEvent(new Event('rent_updated'));
+    broadcastSystemEvent('rent_updated');
   },
 
   recordRentPayment(record: Omit<RentPaymentRecord, 'id' | 'receiptNumber'>): RentPaymentRecord {
@@ -892,7 +918,7 @@ export const storage = {
     };
     const updated = [...allMessages, newMessage];
     localStorage.setItem(SUPPORT_MESSAGES_KEY, JSON.stringify(updated));
-    window.dispatchEvent(new CustomEvent('support_messages_updated', { detail: { shopSlug: cleanSlug, message: newMessage } }));
+    broadcastSystemEvent('support_messages_updated', { shopSlug: cleanSlug, message: newMessage });
     return newMessage;
   },
 
@@ -915,7 +941,7 @@ export const storage = {
     });
     if (changed) {
       localStorage.setItem(SUPPORT_MESSAGES_KEY, JSON.stringify(updated));
-      window.dispatchEvent(new CustomEvent('support_messages_updated', { detail: { shopSlug: cleanSlug } }));
+      broadcastSystemEvent('support_messages_updated', { shopSlug: cleanSlug });
     }
   },
 

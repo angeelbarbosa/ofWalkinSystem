@@ -37,7 +37,7 @@ export const SupportChatDrawer: React.FC<SupportChatDrawerProps> = ({
   userRole = 'shop_owner'
 }) => {
   const [inputText, setInputText] = useState('');
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const onMarkReadRef = useRef(onMarkRead);
   onMarkReadRef.current = onMarkRead;
 
@@ -50,6 +50,17 @@ export const SupportChatDrawer: React.FC<SupportChatDrawerProps> = ({
   const isHqUser = userRole === 'platform_hq';
   const hasUnread = shopMessages.some(m => isHqUser ? !m.readByHq : !m.readByShop);
 
+  // Lock background window scroll when drawer is open
+  useEffect(() => {
+    if (isOpen) {
+      const originalStyle = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalStyle;
+      };
+    }
+  }, [isOpen]);
+
   // Mark unread messages as read ONLY when open and unread messages actually exist
   useEffect(() => {
     if (isOpen && hasUnread) {
@@ -57,13 +68,11 @@ export const SupportChatDrawer: React.FC<SupportChatDrawerProps> = ({
     }
   }, [isOpen, hasUnread]);
 
-  // Smooth scroll to bottom on open or new messages
+  // Direct internal container scroll (NEVER scrolls background window or page)
   useEffect(() => {
-    if (isOpen) {
-      const timer = setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 50);
-      return () => clearTimeout(timer);
+    if (isOpen && messagesContainerRef.current) {
+      const container = messagesContainerRef.current;
+      container.scrollTop = container.scrollHeight;
     }
   }, [isOpen, shopMessages.length]);
 
@@ -75,10 +84,21 @@ export const SupportChatDrawer: React.FC<SupportChatDrawerProps> = ({
     if (!clean) return;
     onSendMessage(clean);
     setInputText('');
+    // Ensure container stays at bottom after local submit
+    setTimeout(() => {
+      if (messagesContainerRef.current) {
+        messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+      }
+    }, 20);
   };
 
   const handleQuickPrompt = (prompt: string) => {
     onSendMessage(prompt);
+    setTimeout(() => {
+      if (messagesContainerRef.current) {
+        messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+      }
+    }, 20);
   };
 
   const formatTime = (isoString: string) => {
@@ -94,17 +114,15 @@ export const SupportChatDrawer: React.FC<SupportChatDrawerProps> = ({
     <div 
       style={{
         position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: 'rgba(0, 0, 0, 0.75)',
-        backdropFilter: 'blur(10px)',
-        WebkitBackdropFilter: 'blur(10px)',
-        zIndex: 9999,
+        inset: 0,
+        background: 'rgba(0, 0, 0, 0.7)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+        zIndex: 99999,
         display: 'flex',
         justifyContent: 'flex-end',
-        alignItems: 'stretch'
+        alignItems: 'stretch',
+        overflow: 'hidden'
       }}
       onClick={onClose}
     >
@@ -112,32 +130,35 @@ export const SupportChatDrawer: React.FC<SupportChatDrawerProps> = ({
         className="slide-up"
         style={{
           width: '100%',
-          maxWidth: '460px',
+          maxWidth: '430px',
+          height: '100%',
+          maxHeight: '100dvh',
           background: 'var(--surface-card, #141417)',
           borderLeft: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
           display: 'flex',
           flexDirection: 'column',
-          height: '100%',
           boxShadow: 'var(--shadow-lg)',
-          boxSizing: 'border-box'
+          boxSizing: 'border-box',
+          overflow: 'hidden'
         }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Drawer Header */}
         <div style={{
-          padding: 'max(20px, calc(env(safe-area-inset-top, 0px) + 16px)) 18px 16px',
+          padding: 'max(16px, calc(env(safe-area-inset-top, 0px) + 12px)) 16px 14px',
           background: 'var(--surface-pill, #1C1C21)',
           borderBottom: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: '12px'
+          gap: '12px',
+          flexShrink: 0
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
             <div style={{
-              width: '42px',
-              height: '42px',
-              borderRadius: '14px',
+              width: '38px',
+              height: '38px',
+              borderRadius: '12px',
               background: 'var(--accent-primary)',
               color: 'var(--bg-main)',
               display: 'flex',
@@ -145,17 +166,17 @@ export const SupportChatDrawer: React.FC<SupportChatDrawerProps> = ({
               justifyContent: 'center',
               flexShrink: 0
             }}>
-              <Shield size={22} />
+              <Shield size={20} />
             </div>
             <div style={{ minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <h3 style={{ fontSize: '15px', fontWeight: 850, color: 'var(--text-primary)', margin: 0 }}>
+                <h3 style={{ fontSize: '14px', fontWeight: 850, color: 'var(--text-primary)', margin: 0 }}>
                   {isHqUser ? `Chat: ${currentShop.name}` : 'Platform HQ Support'}
                 </h3>
                 <span style={{
                   display: 'inline-block',
-                  width: '8px',
-                  height: '8px',
+                  width: '7px',
+                  height: '7px',
                   borderRadius: '50%',
                   background: 'var(--pastel-green, #34D399)',
                   boxShadow: '0 0 8px rgba(52, 211, 153, 0.6)'
@@ -164,15 +185,16 @@ export const SupportChatDrawer: React.FC<SupportChatDrawerProps> = ({
               <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '1px 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {isHqUser 
                   ? `Direct message line with ${currentShop.ownerContactName || 'Shop Owner'}` 
-                  : 'Direct line to your system administrator'}
+                  : 'Direct line to system administrator'}
               </p>
             </div>
           </div>
 
           <button
+            type="button"
             onClick={onClose}
             style={{
-              padding: '8px',
+              padding: '7px',
               borderRadius: '50%',
               background: 'var(--surface-card)',
               border: '1px solid var(--border-subtle)',
@@ -183,37 +205,42 @@ export const SupportChatDrawer: React.FC<SupportChatDrawerProps> = ({
               justifyContent: 'center'
             }}
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
 
-        {/* Messages Body */}
-        <div style={{
-          flex: 1,
-          overflowY: 'auto',
-          padding: '16px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '12px',
-          boxSizing: 'border-box'
-        }}>
+        {/* Messages Body (Self-contained scrollable container) */}
+        <div 
+          ref={messagesContainerRef}
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: '14px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+            boxSizing: 'border-box',
+            WebkitOverflowScrolling: 'touch'
+          }}
+        >
           {/* Welcome Banner */}
           <div style={{
             background: 'var(--surface-pill)',
             border: '1px solid var(--border-subtle)',
-            borderRadius: '16px',
-            padding: '12px 14px',
+            borderRadius: '14px',
+            padding: '10px 12px',
             textAlign: 'center',
-            marginBottom: '4px'
+            marginBottom: '2px',
+            flexShrink: 0
           }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--accent-primary)', fontSize: '12px', fontWeight: 800 }}>
-              <Sparkles size={14} />
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--accent-primary)', fontSize: '11px', fontWeight: 800 }}>
+              <Sparkles size={13} />
               <span>Direct Support Channel</span>
             </div>
-            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '4px 0 0', lineHeight: 1.4 }}>
+            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '3px 0 0', lineHeight: 1.4 }}>
               {isHqUser
                 ? `Replying as Platform Admin to ${currentShop.name}.`
-                : `Need help with your kiosk, booth rent, or settings? Message us below for assistance.`}
+                : `Need help with your kiosk, booth rent, or settings? Message us below.`}
             </p>
           </div>
 
@@ -221,10 +248,10 @@ export const SupportChatDrawer: React.FC<SupportChatDrawerProps> = ({
             <div style={{
               margin: 'auto 0',
               textAlign: 'center',
-              padding: '30px 16px',
+              padding: '24px 14px',
               color: 'var(--text-muted)'
             }}>
-              <MessageSquare size={36} style={{ margin: '0 auto 10px', opacity: 0.4 }} />
+              <MessageSquare size={32} style={{ margin: '0 auto 8px', opacity: 0.4 }} />
               <p style={{ fontSize: '13px', fontWeight: 700, margin: '0 0 4px', color: 'var(--text-primary)' }}>
                 No messages yet
               </p>
@@ -234,7 +261,6 @@ export const SupportChatDrawer: React.FC<SupportChatDrawerProps> = ({
             </div>
           ) : (
             shopMessages.map((msg) => {
-              // Is this message from ME (the current logged in user role)?
               const isMine = isHqUser 
                 ? msg.sender === 'platform_hq' 
                 : msg.sender === 'shop_owner';
@@ -254,15 +280,15 @@ export const SupportChatDrawer: React.FC<SupportChatDrawerProps> = ({
                     fontSize: '10px',
                     fontWeight: 750,
                     color: 'var(--text-muted)',
-                    marginBottom: '3px',
+                    marginBottom: '2px',
                     padding: '0 4px'
                   }}>
                     {isMine ? 'You' : msg.senderName || (msg.sender === 'platform_hq' ? 'Platform HQ' : 'Shop Owner')}
                   </div>
 
                   <div style={{
-                    padding: '10px 14px',
-                    borderRadius: isMine ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                    padding: '9px 13px',
+                    borderRadius: isMine ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
                     background: isMine 
                       ? 'var(--accent-primary)' 
                       : 'var(--surface-pill)',
@@ -273,7 +299,7 @@ export const SupportChatDrawer: React.FC<SupportChatDrawerProps> = ({
                       ? 'none' 
                       : '1px solid var(--border-subtle)',
                     fontSize: '13px',
-                    lineHeight: 1.45,
+                    lineHeight: 1.4,
                     fontWeight: 500,
                     wordBreak: 'break-word',
                     boxShadow: 'var(--shadow-sm)'
@@ -287,10 +313,10 @@ export const SupportChatDrawer: React.FC<SupportChatDrawerProps> = ({
                     gap: '4px',
                     fontSize: '9px',
                     color: 'var(--text-light)',
-                    marginTop: '3px',
+                    marginTop: '2px',
                     padding: '0 4px'
                   }}>
-                    <Clock size={10} />
+                    <Clock size={9} />
                     <span>{formatTime(msg.createdAt)}</span>
                     {isMine && <CheckCheck size={11} style={{ color: 'var(--pastel-green)' }} />}
                   </div>
@@ -298,19 +324,19 @@ export const SupportChatDrawer: React.FC<SupportChatDrawerProps> = ({
               );
             })
           )}
-          <div ref={messagesEndRef} />
         </div>
 
         {/* Quick Suggestion Chips (Only for Shop Owners) */}
         {!isHqUser && (
           <div style={{
-            padding: '8px 14px',
+            padding: '7px 12px',
             display: 'flex',
             gap: '6px',
             overflowX: 'auto',
             background: 'var(--surface-card)',
             borderTop: '1px solid var(--border-subtle)',
-            scrollbarWidth: 'none'
+            scrollbarWidth: 'none',
+            flexShrink: 0
           }}>
             {QUICK_PROMPTS.map((prompt, idx) => (
               <button
@@ -318,12 +344,12 @@ export const SupportChatDrawer: React.FC<SupportChatDrawerProps> = ({
                 type="button"
                 onClick={() => handleQuickPrompt(prompt)}
                 style={{
-                  padding: '5px 10px',
+                  padding: '4px 10px',
                   borderRadius: '9999px',
                   background: 'var(--surface-pill)',
                   border: '1px solid var(--border-subtle)',
                   color: 'var(--text-secondary)',
-                  fontSize: '11px',
+                  fontSize: '10.5px',
                   fontWeight: 650,
                   whiteSpace: 'nowrap',
                   cursor: 'pointer',
@@ -340,13 +366,14 @@ export const SupportChatDrawer: React.FC<SupportChatDrawerProps> = ({
         <form 
           onSubmit={handleSend}
           style={{
-            padding: '12px 16px max(16px, env(safe-area-inset-bottom, 16px)) 16px',
+            padding: '10px 14px max(14px, env(safe-area-inset-bottom, 14px)) 14px',
             background: 'var(--surface-pill)',
             borderTop: '1px solid var(--border-subtle)',
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            boxSizing: 'border-box'
+            boxSizing: 'border-box',
+            flexShrink: 0
           }}
         >
           <input
@@ -356,10 +383,10 @@ export const SupportChatDrawer: React.FC<SupportChatDrawerProps> = ({
             onChange={(e) => setInputText(e.target.value)}
             style={{
               flex: 1,
-              padding: '12px 14px',
+              padding: '10px 12px',
               background: 'var(--surface-card)',
               border: '1px solid var(--border-subtle)',
-              borderRadius: '16px',
+              borderRadius: '14px',
               color: 'var(--text-primary)',
               fontSize: '13px',
               outline: 'none',
@@ -371,9 +398,9 @@ export const SupportChatDrawer: React.FC<SupportChatDrawerProps> = ({
             type="submit"
             disabled={!inputText.trim()}
             style={{
-              width: '42px',
-              height: '42px',
-              borderRadius: '14px',
+              width: '38px',
+              height: '38px',
+              borderRadius: '12px',
               background: inputText.trim() ? 'var(--accent-primary)' : 'var(--surface-card)',
               color: inputText.trim() ? 'var(--bg-main)' : 'var(--text-muted)',
               border: '1px solid var(--border-subtle)',
@@ -385,7 +412,7 @@ export const SupportChatDrawer: React.FC<SupportChatDrawerProps> = ({
               transition: 'all 0.2s ease'
             }}
           >
-            <Send size={16} />
+            <Send size={15} />
           </button>
         </form>
       </div>

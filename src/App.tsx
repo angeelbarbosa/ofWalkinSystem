@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Lock, ArrowLeft, Scissors } from 'lucide-react';
+import { Lock, ArrowLeft, Scissors, Shield } from 'lucide-react';
 import type { Barber, CheckInRecord, MainNavTab } from './types';
 import { useLiveSystem } from './utils/liveSync';
 import { notificationManager } from './utils/notifications';
@@ -18,6 +18,7 @@ import { PinModal } from './components/Admin/PinModal';
 import { SuperAdminDashboard } from './components/SuperAdmin/SuperAdminDashboard';
 import { ShopSwitcherBar } from './components/Shared/ShopSwitcherBar';
 import { RootLandingScreen } from './components/Landing/RootLandingScreen';
+import { SupportChatDrawer } from './components/Shared/SupportChatDrawer';
 
 import './App.css';
 
@@ -71,6 +72,9 @@ export function App() {
   // Security / Admin kiosk lock
   const [showPinModal, setShowPinModal] = useState(false);
   const [targetTabAfterUnlock, setTargetTabAfterUnlock] = useState<MainNavTab>('barber_portal');
+
+  // Global In-App Support Chat Drawer State (Accessible from Kiosk, Barber Hub, Admin, or Live Toast)
+  const [isGlobalSupportChatOpen, setIsGlobalSupportChatOpen] = useState(false);
 
   // Real-time Cloud + Multi-Shop Live System
   const {
@@ -206,8 +210,88 @@ export function App() {
     }
   }, [activeShop, markSupportMessagesRead]);
 
+  // Real-time unread messages from Platform HQ for the active shop
+  const activeShopCleanSlug = (activeShop?.slug || 'of').toLowerCase().trim();
+  const unreadHqMessages = supportMessages.filter(
+    m => (m.shopSlug || '').toLowerCase().trim() === activeShopCleanSlug &&
+         !m.readByShop &&
+         m.sender === 'platform_hq'
+  );
+  const latestUnreadHqMsg = unreadHqMessages[unreadHqMessages.length - 1];
+
   return (
     <div className="app-container">
+      {/* Live Incoming Support Message Floating Toast (Visible on Kiosk / Barber Hub / Admin) */}
+      {latestUnreadHqMsg && !isGlobalSupportChatOpen && currentTab !== 'super_admin' && (
+        <div 
+          className="slide-up"
+          style={{
+            position: 'fixed',
+            top: 'max(14px, env(safe-area-inset-top, 14px))',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 99990,
+            maxWidth: '92%',
+            width: '420px',
+            background: 'rgba(20, 20, 24, 0.94)',
+            border: '1px solid var(--accent-primary)',
+            borderRadius: '18px',
+            padding: '10px 14px',
+            boxShadow: '0 12px 36px rgba(0,0,0,0.6)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '10px',
+            cursor: 'pointer',
+            boxSizing: 'border-box'
+          }}
+          onClick={() => setIsGlobalSupportChatOpen(true)}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0, flex: 1 }}>
+            <div style={{
+              width: '30px',
+              height: '30px',
+              borderRadius: '9px',
+              background: 'var(--accent-primary)',
+              color: 'var(--bg-main)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <Shield size={16} />
+            </div>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ fontSize: '11px', fontWeight: 850, color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <span>Platform HQ Message</span>
+                <span style={{ fontSize: '9px', background: 'var(--pastel-red)', color: '#fff', padding: '1px 5px', borderRadius: '9999px', fontWeight: 900 }}>New</span>
+              </div>
+              <p style={{ fontSize: '12px', color: 'var(--text-primary)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {latestUnreadHqMsg.text}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            style={{
+              padding: '6px 12px',
+              borderRadius: '9999px',
+              background: 'var(--accent-primary)',
+              color: 'var(--bg-main)',
+              fontSize: '11px',
+              fontWeight: 800,
+              border: 'none',
+              cursor: 'pointer',
+              flexShrink: 0
+            }}
+          >
+            Reply
+          </button>
+        </div>
+      )}
+
       <div 
         className="content-wrapper" 
         style={{ 
@@ -494,15 +578,41 @@ export function App() {
                   onClick={() => handleOpenStaffModal('admin')}
                   className="staff-trigger-pill owner-btn"
                   title="Shop Owner Admin & Rent Ledger"
+                  style={{ position: 'relative' }}
                 >
                   <Lock size={13} />
                   <span>Owner Admin</span>
+                  {unreadHqMessages.length > 0 && (
+                    <span style={{
+                      background: 'var(--pastel-red, #EF4444)',
+                      color: '#FFFFFF',
+                      fontSize: '10px',
+                      fontWeight: 900,
+                      padding: '1px 6px',
+                      borderRadius: 9999,
+                      marginLeft: '2px',
+                      boxShadow: '0 0 8px rgba(239, 68, 68, 0.6)'
+                    }}>
+                      {unreadHqMessages.length}
+                    </span>
+                  )}
                 </button>
               </div>
             )}
           </>
         )}
       </div>
+
+      {/* Global In-App Support Chat Drawer (Triggered by toast or in-app buttons) */}
+      <SupportChatDrawer
+        isOpen={isGlobalSupportChatOpen}
+        onClose={() => setIsGlobalSupportChatOpen(false)}
+        currentShop={activeShop}
+        messages={supportMessages}
+        userRole="shop_owner"
+        onSendMessage={handleSendSupportMessage}
+        onMarkRead={handleMarkSupportRead}
+      />
 
       {/* Security PIN Modal */}
       {showPinModal && (
