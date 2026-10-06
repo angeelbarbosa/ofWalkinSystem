@@ -1189,7 +1189,8 @@ export function SuperAdminDashboard({
           justifyContent: 'center',
           zIndex: 100,
           padding: '16px',
-          boxSizing: 'border-box'
+          boxSizing: 'border-box',
+          overflowY: 'auto'
         }}>
           <div style={{
             width: '100%',
@@ -1198,6 +1199,8 @@ export function SuperAdminDashboard({
             border: '1px solid var(--border-subtle)',
             borderRadius: '26px',
             padding: '24px 20px',
+            maxHeight: '90vh',
+            overflowY: 'auto',
             boxShadow: 'var(--shadow-bubble)',
             boxSizing: 'border-box'
           }}>
@@ -1438,7 +1441,9 @@ export function SuperAdminDashboard({
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 100,
-          padding: '16px'
+          padding: '16px',
+          boxSizing: 'border-box',
+          overflowY: 'auto'
         }}>
           <div style={{
             width: '100%',
@@ -1447,8 +1452,11 @@ export function SuperAdminDashboard({
             border: '1px solid var(--pastel-red-border)',
             borderRadius: '24px',
             padding: '24px 20px',
+            maxHeight: '90vh',
+            overflowY: 'auto',
             boxShadow: 'var(--shadow-bubble)',
-            textAlign: 'center'
+            textAlign: 'center',
+            boxSizing: 'border-box'
           }}>
             <div style={{
               width: '48px',
@@ -1532,7 +1540,9 @@ export function SuperAdminDashboard({
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 100,
-          padding: '16px'
+          padding: '16px',
+          boxSizing: 'border-box',
+          overflowY: 'auto'
         }}>
           <div style={{
             width: '100%',
@@ -1541,8 +1551,11 @@ export function SuperAdminDashboard({
             border: '1px solid var(--pastel-red-border)',
             borderRadius: '26px',
             padding: '26px 20px',
+            maxHeight: '90vh',
+            overflowY: 'auto',
             boxShadow: 'var(--shadow-bubble)',
-            textAlign: 'center'
+            textAlign: 'center',
+            boxSizing: 'border-box'
           }}>
             <div style={{
               width: '50px',
