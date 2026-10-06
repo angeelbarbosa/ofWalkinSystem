@@ -11,10 +11,12 @@ import {
   DollarSign,
   HelpCircle,
   CreditCard,
+  Building2,
   Lock
 } from 'lucide-react';
 import type { Barber, CheckInRecord, ShopConfig, RentPaymentRecord, Shop, SupportMessage, SubscriptionPaymentMethod } from '../../types';
 import { RentLedgerDashboard } from './RentLedgerDashboard';
+import { ShopPayoutSettings } from './ShopPayoutSettings';
 import { SupportChatDrawer } from '../Shared/SupportChatDrawer';
 import { ShopSubscriptionModal } from './ShopSubscriptionModal';
 
@@ -47,7 +49,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onMarkSupportRead = () => {},
   onPayShopSubscription = () => {}
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'roster' | 'rent' | 'settings' | 'sms' | 'history' | 'subscription'>('rent');
+  const [activeSubTab, setActiveSubTab] = useState<'roster' | 'rent' | 'payouts' | 'settings' | 'sms' | 'history' | 'subscription'>('rent');
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isPaySubscriptionOpen, setIsPaySubscriptionOpen] = useState(false);
   
@@ -188,6 +190,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           >
             <DollarSign size={15} />
             <span>Booth Rent Ledger</span>
+          </button>
+
+          <button
+            onClick={() => setActiveSubTab('payouts')}
+            className={`barber-tab-chip ${activeSubTab === 'payouts' ? 'active' : ''}`}
+            style={{ padding: '8px 14px', borderRadius: 9999, fontSize: '0.82rem', fontWeight: 750, display: 'flex', alignItems: 'center', gap: 6, background: activeSubTab === 'payouts' ? 'var(--accent-primary)' : 'var(--surface-pill)', color: activeSubTab === 'payouts' ? 'var(--bg-main)' : 'var(--text-primary)', border: '1px solid var(--border-subtle)', cursor: 'pointer' }}
+          >
+            <Building2 size={15} />
+            <span>Payout Banking</span>
           </button>
 
           <button
@@ -500,6 +511,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           )}
         </div>
+      )}
+
+      {/* Sub-Tab: Payout Banking & Stripe Connect */}
+      {activeSubTab === 'payouts' && (
+        <ShopPayoutSettings
+          config={config}
+          onSaveConfig={onSaveConfig}
+        />
       )}
 
       {/* Sub-Tab 2: Settings */}

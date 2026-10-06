@@ -13,10 +13,11 @@ import {
   Copy
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import type { Barber, RentPaymentRecord } from '../../types';
+import type { Barber, RentPaymentRecord, ShopConfig } from '../../types';
 
 interface BarberRentModalProps {
   barber: Barber;
+  config?: ShopConfig;
   existingRecord?: RentPaymentRecord | null;
   onPayRent: (barber: Barber, method: RentPaymentRecord['paymentMethod'], feeCovered: boolean) => Promise<RentPaymentRecord>;
   onClose: () => void;
@@ -24,6 +25,7 @@ interface BarberRentModalProps {
 
 export const BarberRentModal: React.FC<BarberRentModalProps> = ({
   barber,
+  config,
   existingRecord,
   onPayRent,
   onClose
@@ -368,7 +370,14 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
                 }}
               >
                 <div style={{ fontWeight: 800, color: '#60A5FA', marginBottom: 2 }}>⚡ Direct Zelle Transfer ($0 Fee)</div>
-                <div>Send <strong>${baseRent.toFixed(2)}</strong> directly to Shop Owner account. Clicking Confirm will generate your verified receipt in the shop rent ledger.</div>
+                <div>
+                  Send <strong>${baseRent.toFixed(2)}</strong> via Zelle to{' '}
+                  <strong style={{ color: 'var(--text-primary)' }}>
+                    {config?.zelleRecipientPhone || config?.zelleRecipientEmail || 'Shop Owner account'}
+                  </strong>
+                  {config?.zelleRecipientEmail && config?.zelleRecipientPhone ? ` or ${config.zelleRecipientEmail}` : ''}.
+                  Clicking Confirm logs your receipt into the shop rent ledger.
+                </div>
               </div>
             )}
 

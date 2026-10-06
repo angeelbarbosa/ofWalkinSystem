@@ -82,6 +82,13 @@ export interface ShopConfig {
   defaultRentDueDay?: string; // 'Monday'
   passFeesToBarber?: boolean; // true = Barber pays 2.9% + $0.30 fee
   stripeConnectActive?: boolean;
+  stripeAccountId?: string; // e.g. 'acct_1Nx48291...'
+  stripePaymentLink?: string; // e.g. 'https://buy.stripe.com/...'
+  payoutBankName?: string; // e.g. 'Chase Business •••• 4821'
+  payoutStatus?: 'connected' | 'pending' | 'unlinked';
+  payoutSchedule?: 'instant' | 'daily' | 'weekly';
+  zelleRecipientPhone?: string;
+  zelleRecipientEmail?: string;
   twilioConfig: {
     enabled: boolean;
     accountSid: string;
