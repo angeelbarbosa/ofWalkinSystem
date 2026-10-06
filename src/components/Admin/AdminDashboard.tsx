@@ -794,7 +794,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div style={{ background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', borderRadius: 18, padding: '16px' }}>
               <span style={{ fontSize: '0.74rem', fontWeight: 750, color: 'var(--text-secondary)' }}>Last Payment Method</span>
               <div style={{ fontSize: '1.15rem', fontWeight: 850, color: 'var(--accent-primary)', marginTop: 4, textTransform: 'capitalize' }}>
-                {currentShop.subscriptionPaymentMethod === 'apple_pay' ? ' Apple Pay' : currentShop.subscriptionPaymentMethod === 'card' || currentShop.subscriptionPaymentMethod === 'stripe' ? '💳 Stripe Card' : currentShop.subscriptionPaymentMethod || 'Stripe'}
+                {currentShop.subscriptionPaymentMethod === 'apple_pay' ? 'Apple Pay' : currentShop.subscriptionPaymentMethod === 'card' || currentShop.subscriptionPaymentMethod === 'stripe' ? 'Stripe Card' : currentShop.subscriptionPaymentMethod || 'Stripe'}
               </div>
               <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
                 Paid on {currentShop.subscriptionLastPaidDate || 'Oct 1, 2026'}

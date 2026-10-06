@@ -211,7 +211,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
             </div>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--accent-primary, #F59E0B)', fontWeight: 800 }}>
-                🔔 Client Arrived
+                Client Arrived
               </div>
               <div style={{ fontSize: '0.98rem', fontWeight: 850, color: 'var(--text-primary, #FAFAFA)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {activeToast.clientName} is here!
@@ -652,7 +652,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                           textTransform: 'uppercase'
                         }}
                       >
-                        {index === 0 ? '🔥 Next Up' : `#${index + 1} in line`}
+                        {index === 0 ? 'Next Up' : `#${index + 1} in line`}
                       </span>
                       <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                         {record.appointmentTime || 'Walk-In'}
@@ -777,7 +777,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                       textTransform: 'uppercase'
                     }}
                   >
-                    ✂️ In Service
+                    In Service
                   </span>
                   <h4 style={{ fontSize: '1.35rem', fontWeight: 900, color: 'var(--text-primary)', margin: 0 }}>
                     {record.clientName}

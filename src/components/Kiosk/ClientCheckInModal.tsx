@@ -97,7 +97,7 @@ export const ClientCheckInModal: React.FC<ClientCheckInModalProps> = ({
               padding: '3px 10px',
               borderRadius: 9999
             }}>
-              {checkInType === 'walkin' ? '🔥 Walk-In Check-In' : '📅 Appointment Check-In'}
+              {checkInType === 'walkin' ? 'Walk-In Check-In' : 'Appointment Check-In'}
             </span>
             <h3 style={{ fontSize: '1.3rem', fontWeight: 850, color: 'var(--text-primary)', marginTop: 4, margin: 0 }}>
               {selectedBarber.id === 'first_available' ? 'First Available Chair' : `With ${selectedBarber.name}`}

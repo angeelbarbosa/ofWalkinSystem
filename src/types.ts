@@ -97,7 +97,7 @@ export interface ShopConfig {
   };
 }
 
-export type SubscriptionStatus = 'active' | 'trial' | 'past_due' | 'comped' | 'unpaid';
+export type SubscriptionStatus = 'active' | 'past_due' | 'comped' | 'unpaid';
 export type SubscriptionPaymentMethod = 'zelle' | 'cash' | 'card' | 'stripe' | 'apple_pay' | 'manual';
 
 export interface Shop {
@@ -113,11 +113,11 @@ export interface Shop {
   barbers: Barber[];
   checkIns: CheckInRecord[];
   rentRecords: RentPaymentRecord[];
-  status: 'active' | 'trial' | 'suspended';
+  status: 'active' | 'suspended';
   monthlyPlanPrice?: number; // e.g. 49
   
   // Platform Subscription & Owner Contact (Who pays YOU)
-  subscriptionStatus?: SubscriptionStatus; // 'active' (Paid), 'past_due', 'trial', 'comped'
+  subscriptionStatus?: SubscriptionStatus; // 'active' (Paid), 'past_due', 'comped', 'unpaid'
   subscriptionMonthlyFee?: number; // e.g. 49
   subscriptionNextBillingDate?: string; // YYYY-MM-DD e.g. "2026-11-01"
   subscriptionLastPaidDate?: string; // YYYY-MM-DD e.g. "2026-10-01"

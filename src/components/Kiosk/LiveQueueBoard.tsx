@@ -438,7 +438,7 @@ export const LiveQueueBoard: React.FC<LiveQueueBoardProps> = ({
                       fontWeight: 700,
                       color: isNextUp ? '#F59E0B' : 'var(--text-muted)'
                     }}>
-                      {item.status === 'called' ? '📢 Called' : 'Waiting in Lobby'}
+                      {item.status === 'called' ? 'Called' : 'Waiting in Lobby'}
                     </span>
                   </div>
                 );
@@ -538,7 +538,7 @@ export const LiveQueueBoard: React.FC<LiveQueueBoardProps> = ({
                     fontWeight: 600
                   }}
                 >
-                  <option value="first_available">⚡ First Available (Shortest Wait)</option>
+                  <option value="first_available">First Available (Shortest Wait)</option>
                   {activeBarbers.map(b => (
                     <option key={b.id} value={b.id}>
                       {b.name} (Station #{b.stationNumber})

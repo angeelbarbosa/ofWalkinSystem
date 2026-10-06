@@ -232,7 +232,7 @@ export const ShopSubscriptionModal: React.FC<ShopSubscriptionModalProps> = ({
                     cursor: 'pointer'
                   }}
                 >
-                  <span style={{ fontSize: '1.15rem' }}></span>
+                  <CreditCard size={18} />
                   <span>Apple Pay</span>
                 </button>
 

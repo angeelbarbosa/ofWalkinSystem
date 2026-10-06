@@ -125,7 +125,7 @@ export const BarberSelect: React.FC<BarberSelectProps> = ({
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-primary)', margin: 0 }}>
-                  ⚡ First Available Barber (Fastest Wait)
+                  First Available Barber (Fastest Wait)
                 </h3>
                 <span style={{
                   fontSize: '10px',

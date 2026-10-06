@@ -74,7 +74,7 @@ export function SuperAdminDashboard({
 
   // Top HQ Tab: 'fleet' vs 'messages'
   const [hqActiveTab, setHqActiveTab] = useState<'fleet' | 'messages'>('fleet');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'past_due' | 'trial'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'past_due'>('all');
 
   // Modals & Drawers
   const [isNewShopModalOpen, setIsNewShopModalOpen] = useState(false);
@@ -297,11 +297,14 @@ export function SuperAdminDashboard({
   };
 
   // Calculations
-  const totalPayingShops = shops.filter(s => s.subscriptionStatus === 'active' && (s.subscriptionMonthlyFee || 0) > 0);
-  const totalMRR = totalPayingShops.reduce((acc, s) => acc + (s.subscriptionMonthlyFee || s.monthlyPlanPrice || 49), 0);
-  const paidCount = shops.filter(s => s.subscriptionStatus === 'active').length;
+  const paidCount = shops.filter(s => s.subscriptionStatus === 'active' || s.subscriptionStatus === 'comped').length;
   const pastDueCount = shops.filter(s => s.subscriptionStatus === 'past_due' || s.subscriptionStatus === 'unpaid').length;
-  const trialCount = shops.filter(s => s.subscriptionStatus === 'trial').length;
+  const totalMRR = shops.reduce((acc, s) => {
+    if (s.subscriptionStatus === 'active') {
+      return acc + (s.subscriptionMonthlyFee || s.monthlyPlanPrice || 49);
+    }
+    return acc;
+  }, 0);
   const totalChairs = shops.reduce((acc, s) => acc + (s.barbers?.length || 0), 0);
   const totalUnreadMessages = supportMessages.filter(m => !m.readByHq && m.sender === 'shop_owner').length;
 
@@ -310,7 +313,6 @@ export function SuperAdminDashboard({
     if (statusFilter === 'all') return true;
     if (statusFilter === 'active') return s.subscriptionStatus === 'active' || s.subscriptionStatus === 'comped';
     if (statusFilter === 'past_due') return s.subscriptionStatus === 'past_due' || s.subscriptionStatus === 'unpaid';
-    if (statusFilter === 'trial') return s.subscriptionStatus === 'trial';
     return true;
   });
 
@@ -879,13 +881,13 @@ export function SuperAdminDashboard({
                     borderRadius: '9999px',
                     fontSize: '11px',
                     fontWeight: 750,
-                    background: statusFilter === 'active' ? 'var(--pastel-green)' : 'var(--surface-pill)',
-                    color: statusFilter === 'active' ? '#FFFFFF' : 'var(--text-secondary)',
-                    border: '1px solid var(--border-subtle)',
+                    background: statusFilter === 'active' ? 'var(--pastel-green)' : 'rgba(16, 185, 129, 0.12)',
+                    color: statusFilter === 'active' ? '#000000' : 'var(--pastel-green)',
+                    border: '1px solid rgba(16, 185, 129, 0.35)',
                     cursor: 'pointer'
                   }}
                 >
-                  🟢 Paid ({paidCount})
+                  Paid & Active ({paidCount})
                 </button>
                 <button
                   onClick={() => setStatusFilter('past_due')}
@@ -894,28 +896,13 @@ export function SuperAdminDashboard({
                     borderRadius: '9999px',
                     fontSize: '11px',
                     fontWeight: 750,
-                    background: statusFilter === 'past_due' ? 'var(--pastel-red)' : 'var(--surface-pill)',
-                    color: statusFilter === 'past_due' ? '#FFFFFF' : 'var(--text-secondary)',
-                    border: '1px solid var(--border-subtle)',
+                    background: statusFilter === 'past_due' ? 'var(--pastel-red)' : 'rgba(239, 68, 68, 0.12)',
+                    color: statusFilter === 'past_due' ? '#FFFFFF' : 'var(--pastel-red)',
+                    border: '1px solid rgba(239, 68, 68, 0.35)',
                     cursor: 'pointer'
                   }}
                 >
-                  🔴 Past Due ({pastDueCount})
-                </button>
-                <button
-                  onClick={() => setStatusFilter('trial')}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: '9999px',
-                    fontSize: '11px',
-                    fontWeight: 750,
-                    background: statusFilter === 'trial' ? 'var(--pastel-amber)' : 'var(--surface-pill)',
-                    color: statusFilter === 'trial' ? '#000000' : 'var(--text-secondary)',
-                    border: '1px solid var(--border-subtle)',
-                    cursor: 'pointer'
-                  }}
-                >
-                  🟡 Trial ({trialCount})
+                  Past Due ({pastDueCount})
                 </button>
               </div>
             </div>
@@ -1038,8 +1025,12 @@ export function SuperAdminDashboard({
 
                     {/* ================= SUBSCRIPTION BILLING BOX ================= */}
                     <div style={{
-                      background: 'var(--surface-pill)',
-                      border: '1px solid var(--border-subtle)',
+                      background: isComped 
+                        ? 'rgba(59, 130, 246, 0.08)' 
+                        : isPaid 
+                          ? 'rgba(16, 185, 129, 0.08)' 
+                          : 'rgba(239, 68, 68, 0.08)',
+                      border: `1px solid ${isComped ? 'rgba(59, 130, 246, 0.25)' : isPaid ? 'rgba(16, 185, 129, 0.25)' : 'rgba(239, 68, 68, 0.25)'}`,
                       borderRadius: '14px',
                       padding: '10px 12px',
                       display: 'flex',
@@ -1051,32 +1042,27 @@ export function SuperAdminDashboard({
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{
                             fontSize: '11px',
-                            fontWeight: 850,
-                            padding: '3px 8px',
-                            borderRadius: '6px',
+                            fontWeight: 800,
+                            padding: '3px 10px',
+                            borderRadius: '9999px',
+                            letterSpacing: '0.02em',
                             background: isComped 
-                              ? 'rgba(255,255,255,0.08)' 
+                              ? 'rgba(59, 130, 246, 0.15)' 
                               : isPaid 
-                                ? 'var(--pastel-green-bg)' 
-                                : isPastDue 
-                                  ? 'var(--pastel-red-bg)' 
-                                  : 'var(--pastel-amber-bg)',
+                                ? 'rgba(16, 185, 129, 0.15)' 
+                                : 'rgba(239, 68, 68, 0.15)',
                             color: isComped 
-                              ? 'var(--text-secondary)' 
+                              ? 'var(--pastel-blue, #60A5FA)' 
                               : isPaid 
-                                ? 'var(--pastel-green)' 
-                                : isPastDue 
-                                  ? 'var(--pastel-red)' 
-                                  : 'var(--pastel-amber)',
-                            border: `1px solid ${isComped ? 'var(--border-subtle)' : isPaid ? 'var(--pastel-green-border)' : isPastDue ? 'var(--pastel-red-border)' : 'var(--pastel-amber-border)'}`
+                                ? 'var(--pastel-green, #10B981)' 
+                                : 'var(--pastel-red, #EF4444)',
+                            border: `1px solid ${isComped ? 'rgba(59, 130, 246, 0.35)' : isPaid ? 'rgba(16, 185, 129, 0.35)' : 'rgba(239, 68, 68, 0.35)'}`
                           }}>
                             {isComped 
-                              ? '⚪ COMPED / INTERNAL' 
+                              ? 'COMPED / FLAGSHIP' 
                               : isPaid 
-                                ? `🟢 PAID ($${shop.subscriptionMonthlyFee || 49}/mo)` 
-                                : isPastDue 
-                                  ? `🔴 PAST DUE ($${shop.subscriptionMonthlyFee || 49} OVERDUE)` 
-                                  : `🟡 TRIAL (${shop.subscriptionMonthlyFee || 49}/mo)`}
+                                ? `ACTIVE & PAID ($${shop.subscriptionMonthlyFee || 49}/mo)` 
+                                : `PAST DUE ($${shop.subscriptionMonthlyFee || 49} OVERDUE)`}
                           </span>
 
                           <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
@@ -1917,10 +1903,10 @@ export function SuperAdminDashboard({
                   onChange={(e) => setSubStatus(e.target.value as SubscriptionStatus)}
                   style={{ width: '100%', padding: '12px', background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', borderRadius: '12px', color: 'var(--text-primary)', fontSize: '13px', marginTop: '4px', boxSizing: 'border-box' }}
                 >
-                  <option value="active">🟢 Active & Paid</option>
-                  <option value="past_due">🔴 Past Due / Overdue</option>
-                  <option value="trial">🟡 Free Trial</option>
-                  <option value="comped">⚪ Comped / Internal Shop ($0)</option>
+                  <option value="active">Active (Paid)</option>
+                  <option value="past_due">Past Due / Overdue</option>
+                  <option value="comped">Comped / Flagship ($0)</option>
+                  <option value="unpaid">Unpaid</option>
                 </select>
               </div>
 

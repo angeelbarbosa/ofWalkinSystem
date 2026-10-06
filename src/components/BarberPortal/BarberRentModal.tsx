@@ -206,7 +206,7 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
                     cursor: 'pointer'
                   }}
                 >
-                  <span style={{ fontSize: '1.15rem' }}></span>
+                  <CreditCard size={18} />
                   <span>Apple Pay</span>
                 </button>
 
@@ -369,7 +369,7 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
                   color: 'var(--text-secondary)'
                 }}
               >
-                <div style={{ fontWeight: 800, color: '#60A5FA', marginBottom: 2 }}>⚡ Direct Zelle Transfer ($0 Fee)</div>
+                <div style={{ fontWeight: 800, color: '#60A5FA', marginBottom: 2 }}>Direct Zelle Transfer ($0 Fee)</div>
                 <div>
                   Send <strong>${baseRent.toFixed(2)}</strong> via Zelle to{' '}
                   <strong style={{ color: 'var(--text-primary)' }}>
@@ -395,7 +395,7 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
                   color: 'var(--text-secondary)'
                 }}
               >
-                <div style={{ fontWeight: 800, color: '#34D399', marginBottom: 2 }}>💵 Handing Cash to Shop Owner</div>
+                <div style={{ fontWeight: 800, color: '#34D399', marginBottom: 2 }}>Handing Cash to Shop Owner</div>
                 <div>Hand <strong>${baseRent.toFixed(2)}</strong> cash to the shop manager. Clicking Confirm logs this payment and issues your instant receipt.</div>
               </div>
             )}

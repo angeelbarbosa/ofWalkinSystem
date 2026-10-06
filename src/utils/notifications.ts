@@ -224,7 +224,7 @@ export class NotificationManager {
 
     // 3. Web Push / OS Lockscreen Notification
     if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-      const title = `🔔 ${clientName} is here for ${barberName || 'you'}!`;
+      const title = `${clientName} is here for ${barberName || 'you'}!`;
       const body = appointmentTime 
         ? `Appointment at ${appointmentTime} • Waiting in lobby.` 
         : `Arrival • Waiting in lobby.`;

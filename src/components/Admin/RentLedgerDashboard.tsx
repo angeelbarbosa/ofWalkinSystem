@@ -235,7 +235,7 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
 
               {latestPayment && isPaid ? (
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', background: 'var(--surface-card)', padding: '7px 10px', borderRadius: 10, border: '1px solid var(--border-subtle)' }}>
-                  Paid via <strong>{latestPayment.paymentMethod === 'apple_pay' ? ' Apple Pay' : latestPayment.paymentMethod?.toUpperCase()}</strong> • {new Date(latestPayment.paidAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  Paid via <strong>{latestPayment.paymentMethod === 'apple_pay' ? 'Apple Pay' : latestPayment.paymentMethod?.toUpperCase()}</strong> • {new Date(latestPayment.paidAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </div>
               ) : (
                 <div style={{ fontSize: '0.78rem', color: 'var(--pastel-red)', background: 'var(--pastel-red-bg)', padding: '7px 10px', borderRadius: 10, border: '1px solid var(--pastel-red-border)' }}>
@@ -453,7 +453,7 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
                     ${r.totalPaid.toFixed(2)}
                   </td>
                   <td style={{ textTransform: 'capitalize' }}>
-                    {r.paymentMethod === 'apple_pay' ? ' Apple Pay' : r.paymentMethod || 'Card'}
+                    {r.paymentMethod === 'apple_pay' ? 'Apple Pay' : r.paymentMethod || 'Card'}
                   </td>
                   <td>
                     {new Date(r.paidAt || r.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}

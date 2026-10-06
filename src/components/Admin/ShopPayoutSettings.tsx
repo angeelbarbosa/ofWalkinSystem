@@ -111,7 +111,7 @@ export const ShopPayoutSettings: React.FC<ShopPayoutSettingsProps> = ({
                   fontWeight: 800
                 }}
               >
-                {payoutStatus === 'connected' ? '✓ Payouts Active' : 'Setup Required'}
+                {payoutStatus === 'connected' ? 'Payouts Active' : 'Setup Required'}
               </span>
             </div>
             <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: '4px 0 0' }}>
@@ -379,7 +379,7 @@ export const ShopPayoutSettings: React.FC<ShopPayoutSettingsProps> = ({
 
           {isSaved && (
             <span className="pop-in" style={{ fontSize: '0.84rem', color: '#10B981', fontWeight: 800 }}>
-              ✓ Payout settings synced across fleet
+              Payout settings synced across fleet
             </span>
           )}
         </div>
