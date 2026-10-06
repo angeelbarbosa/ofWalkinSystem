@@ -8,10 +8,13 @@ import {
   Shield, 
   Sparkles, 
   Calendar,
-  AlertCircle
+  AlertCircle,
+  ExternalLink
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import type { Shop, SubscriptionPaymentMethod } from '../../types';
+
+export const PLATFORM_STRIPE_PAYMENT_URL = 'https://buy.stripe.com/7sY00lgIz1vi7HC4PUefC00';
 
 interface ShopSubscriptionModalProps {
   shop: Shop;
@@ -44,6 +47,15 @@ export const ShopSubscriptionModal: React.FC<ShopSubscriptionModalProps> = ({
   const handleProcessPayment = async () => {
     setIsProcessing(true);
 
+    // If paying with Apple Pay / Stripe Card, open the live Stripe Checkout page
+    if (paymentMethod === 'apple_pay' || paymentMethod === 'card') {
+      try {
+        window.open(PLATFORM_STRIPE_PAYMENT_URL, '_blank', 'noopener,noreferrer');
+      } catch (err) {
+        console.error('Failed to open Stripe URL', err);
+      }
+    }
+
     setTimeout(() => {
       onPaySubscription(paymentMethod);
       setIsProcessing(false);
@@ -55,7 +67,7 @@ export const ShopSubscriptionModal: React.FC<ShopSubscriptionModalProps> = ({
         invoiceNumber: 'INV-' + Math.floor(100000 + Math.random() * 900000),
         paidAt: new Date().toISOString(),
         totalPaid: totalAmount,
-        method: paymentMethod === 'apple_pay' ? 'Apple Pay' : paymentMethod === 'card' ? 'Stripe Card' : 'Zelle Transfer',
+        method: paymentMethod === 'apple_pay' ? 'Apple Pay (Stripe)' : paymentMethod === 'card' ? 'Stripe Card' : 'Zelle Transfer',
         nextBillingDate: nextDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
       });
 
@@ -304,7 +316,7 @@ export const ShopSubscriptionModal: React.FC<ShopSubscriptionModalProps> = ({
               }}
             >
               {isProcessing ? (
-                <span>Processing Payment...</span>
+                <span>Opening Stripe Checkout...</span>
               ) : (
                 <>
                   <span>Pay ${totalAmount.toFixed(2)} with {paymentMethod === 'apple_pay' ? 'Apple Pay' : paymentMethod === 'card' ? 'Stripe Card' : 'Zelle'}</span>
@@ -312,6 +324,27 @@ export const ShopSubscriptionModal: React.FC<ShopSubscriptionModalProps> = ({
                 </>
               )}
             </button>
+
+            {(paymentMethod === 'apple_pay' || paymentMethod === 'card') && (
+              <div style={{ textAlign: 'center', marginTop: 10 }}>
+                <a
+                  href={PLATFORM_STRIPE_PAYMENT_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    fontSize: '0.78rem',
+                    color: 'var(--text-secondary)',
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4
+                  }}
+                >
+                  <span>Open direct Stripe checkout link</span>
+                  <ExternalLink size={12} />
+                </a>
+              </div>
+            )}
           </div>
         ) : (
           /* Payment Receipt Screen */
