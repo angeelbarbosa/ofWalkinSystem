@@ -81,6 +81,7 @@ export function App() {
     config,
     checkIns,
     rentRecords,
+    supportMessages,
     switchShop,
     createShop,
     updateShop,
@@ -92,7 +93,10 @@ export function App() {
     saveBarbers,
     saveConfig,
     payBoothRent,
-    markRentPaidOffline
+    markRentPaidOffline,
+    sendSupportMessage,
+    markSupportMessagesRead,
+    markShopSubscriptionPaid
   } = useLiveSystem();
 
   // Keep URL query parameter and localStorage in sync with active portal
@@ -211,6 +215,7 @@ export function App() {
           <SuperAdminDashboard
             shops={shops}
             activeShopSlug={activeShopSlug}
+            supportMessages={supportMessages}
             onSwitchShop={switchShop}
             onCreateShop={createShop}
             onUpdateShop={updateShop}
@@ -218,6 +223,9 @@ export function App() {
             onFactoryReset={factoryReset}
             onLoadDemoFleet={loadDemoFleet}
             onNavigateTab={setCurrentTab}
+            onSendSupportMessage={sendSupportMessage}
+            onMarkSupportRead={markSupportMessagesRead}
+            onMarkSubscriptionPaid={markShopSubscriptionPaid}
           />
         ) : (
           <>
@@ -436,13 +444,25 @@ export function App() {
             {/* Tab 3: ADMIN & SHOP SETTINGS */}
             {currentTab === 'admin' && (
               <AdminDashboard
+                currentShop={activeShop}
                 barbers={barbers}
                 config={config}
                 checkIns={checkIns}
                 rentRecords={rentRecords}
+                supportMessages={supportMessages}
                 onMarkPaidOffline={markRentPaidOffline}
                 onSaveBarbers={saveBarbers}
                 onSaveConfig={saveConfig}
+                onSendSupportMessage={(text) => {
+                  if (activeShop) {
+                    sendSupportMessage(activeShop.slug, text, 'shop_owner', `${activeShop.ownerContactName || 'Owner'} (${activeShop.name})`);
+                  }
+                }}
+                onMarkSupportRead={() => {
+                  if (activeShop) {
+                    markSupportMessagesRead(activeShop.slug, 'shop');
+                  }
+                }}
               />
             )}
 

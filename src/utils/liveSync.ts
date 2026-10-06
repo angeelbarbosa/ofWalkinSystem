@@ -1,6 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '../../convex/_generated/api';
-import type { Barber, CheckInRecord, ShopConfig, RentPaymentRecord, Shop } from '../types';
+import type { 
+  Barber, 
+  CheckInRecord, 
+  ShopConfig, 
+  RentPaymentRecord, 
+  Shop, 
+  SupportMessage, 
+  SubscriptionPaymentMethod 
+} from '../types';
 import { storage } from './storage';
 import { notificationManager } from './notifications';
 import { convexClient } from './convexClient';
@@ -18,6 +26,7 @@ export function useLiveSystem() {
   const [config, setConfig] = useState<ShopConfig>(() => storage.getConfig());
   const [checkIns, setCheckIns] = useState<CheckInRecord[]>(() => storage.getCheckIns());
   const [rentRecords, setRentRecords] = useState<RentPaymentRecord[]>(() => storage.getRentRecords());
+  const [supportMessages, setSupportMessages] = useState<SupportMessage[]>(() => storage.getSupportMessages());
   const [isCloudConnected, setIsCloudConnected] = useState<boolean>(!!convexClient);
 
   const knownCheckInIdsRef = useRef<Set<string>>(new Set());
@@ -193,12 +202,17 @@ export function useLiveSystem() {
       refreshActiveShopData();
     };
 
+    const handleSupportUpdate = () => {
+      setSupportMessages(storage.getSupportMessages());
+    };
+
     window.addEventListener('barbers_updated', handleBarbersUpdate);
     window.addEventListener('config_updated', handleConfigUpdate);
     window.addEventListener('checkins_updated', handleCheckInsUpdate);
     window.addEventListener('rent_updated', handleRentUpdate);
     window.addEventListener('shops_updated', handleShopsUpdate);
     window.addEventListener('shop_switched', handleShopSwitched);
+    window.addEventListener('support_messages_updated', handleSupportUpdate);
 
     notificationManager.onMessage((data: any) => {
       if (data?.type === 'NEW_CHECKIN') {
@@ -221,6 +235,7 @@ export function useLiveSystem() {
       window.removeEventListener('rent_updated', handleRentUpdate);
       window.removeEventListener('shops_updated', handleShopsUpdate);
       window.removeEventListener('shop_switched', handleShopSwitched);
+      window.removeEventListener('support_messages_updated', handleSupportUpdate);
     };
   }, [refreshActiveShopData]);
 
@@ -457,6 +472,29 @@ export function useLiveSystem() {
     syncToConvexCloud(updated);
   };
 
+  const sendSupportMessage = (
+    shopSlug: string,
+    text: string,
+    sender: 'shop_owner' | 'platform_hq',
+    senderName: string
+  ): SupportMessage => {
+    const msg = storage.sendSupportMessage(shopSlug, text, sender, senderName);
+    setSupportMessages(storage.getSupportMessages());
+    return msg;
+  };
+
+  const markSupportMessagesRead = (shopSlug: string, reader: 'hq' | 'shop') => {
+    storage.markSupportMessagesRead(shopSlug, reader);
+    setSupportMessages(storage.getSupportMessages());
+  };
+
+  const markShopSubscriptionPaid = (slug: string, paymentMethod: SubscriptionPaymentMethod = 'zelle') => {
+    storage.markShopSubscriptionPaid(slug, paymentMethod);
+    const updatedFleet = storage.getShops();
+    setShops(updatedFleet);
+    syncToConvexCloud(updatedFleet);
+  };
+
   return {
     activeShopSlug,
     activeShop,
@@ -465,6 +503,7 @@ export function useLiveSystem() {
     config,
     checkIns,
     rentRecords,
+    supportMessages,
     isCloudConnected,
     switchShop,
     createShop,
@@ -479,6 +518,9 @@ export function useLiveSystem() {
     payBoothRent,
     markRentPaidOffline,
     updateRentStatus,
+    sendSupportMessage,
+    markSupportMessagesRead,
+    markShopSubscriptionPaid,
     refreshActiveShopData
   };
 }

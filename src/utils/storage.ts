@@ -1,9 +1,19 @@
-import type { Barber, CheckInRecord, ShopConfig, RentPaymentRecord, Shop } from '../types';
+import type { 
+  Barber, 
+  CheckInRecord, 
+  ShopConfig, 
+  RentPaymentRecord, 
+  Shop, 
+  SupportMessage, 
+  SubscriptionPaymentMethod, 
+  SubscriptionStatus 
+} from '../types';
 import type { ThemeId } from './themes';
 
 const SHOPS_KEY = 'walkin_shops_v3';
 const ACTIVE_SHOP_KEY = 'walkin_active_shop_slug';
 const MASTER_PIN_KEY = 'walkin_master_pin';
+const SUPPORT_MESSAGES_KEY = 'walkin_support_messages_v1';
 
 // Default Master Super Admin PIN (For platform owner)
 export const DEFAULT_MASTER_PIN = '9999';
@@ -239,6 +249,40 @@ export const INITIAL_OF_RENT: RentPaymentRecord[] = [
   }
 ];
 
+// Initial Seed Support Messages
+export const INITIAL_SUPPORT_MESSAGES: SupportMessage[] = [
+  {
+    id: 'msg-1',
+    shopSlug: 'fademasters',
+    sender: 'shop_owner',
+    senderName: 'Marcus (Fade Masters)',
+    text: 'Hey Angel! Loving the new kiosk setup. Quick question, how do I change my station rent due day to Tuesday?',
+    createdAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
+    readByHq: false,
+    readByShop: true
+  },
+  {
+    id: 'msg-2',
+    shopSlug: 'royalcuts',
+    sender: 'shop_owner',
+    senderName: 'Dominic (Royal Cuts)',
+    text: 'Everything looks great on our iPad! Sent over our monthly subscription payment on Zelle.',
+    createdAt: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
+    readByHq: true,
+    readByShop: true
+  },
+  {
+    id: 'msg-3',
+    shopSlug: 'royalcuts',
+    sender: 'platform_hq',
+    senderName: 'Angel (Platform HQ)',
+    text: 'Awesome Dominic! Received and marked your shop active through November 1st. Let me know if you need anything else!',
+    createdAt: new Date(Date.now() - 1000 * 60 * 150).toISOString(),
+    readByHq: true,
+    readByShop: true
+  }
+];
+
 // Initial Seed Shops
 export const SEED_SHOPS: Shop[] = [
   {
@@ -255,7 +299,12 @@ export const SEED_SHOPS: Shop[] = [
     checkIns: INITIAL_OF_CHECKINS,
     rentRecords: INITIAL_OF_RENT,
     status: 'active',
-    monthlyPlanPrice: 49,
+    monthlyPlanPrice: 0,
+    subscriptionStatus: 'comped',
+    subscriptionMonthlyFee: 0,
+    ownerContactName: 'Angel Barbosa',
+    ownerPhone: '(555) 234-5678',
+    ownerEmail: 'angel@ofsupply.com',
     createdAt: '2026-01-15T00:00:00.000Z'
   },
   {
@@ -266,6 +315,14 @@ export const SEED_SHOPS: Shop[] = [
     address: '420 Broadway Ave, Downtown',
     themeId: 'obsidian_emerald',
     pinCode: '1234',
+    subscriptionStatus: 'active',
+    subscriptionMonthlyFee: 49,
+    subscriptionNextBillingDate: '2026-11-01',
+    subscriptionLastPaidDate: '2026-10-01',
+    subscriptionPaymentMethod: 'zelle',
+    ownerContactName: 'Marcus Rivera',
+    ownerPhone: '(555) 777-1010',
+    ownerEmail: 'marcus@fademasters.com',
     config: {
       ...DEFAULT_OF_CONFIG,
       shopName: 'Fade Masters Downtown',
@@ -405,6 +462,14 @@ export const SEED_SHOPS: Shop[] = [
     rentRecords: [],
     status: 'active',
     monthlyPlanPrice: 49,
+    subscriptionStatus: 'past_due',
+    subscriptionMonthlyFee: 49,
+    subscriptionNextBillingDate: '2026-10-01',
+    subscriptionLastPaidDate: '2026-09-01',
+    subscriptionPaymentMethod: 'cash',
+    ownerContactName: 'Dominic V.',
+    ownerPhone: '(555) 888-1111',
+    ownerEmail: 'dominic@royalcuts.com',
     createdAt: '2026-03-10T00:00:00.000Z'
   }
 ];
@@ -450,14 +515,25 @@ export const storage = {
       }
       const parsed: Shop[] = JSON.parse(data);
       
-      // Ensure shopping mode is only enabled for OF Supply, and walk-in system is default for all other shops
+      // Ensure shopping mode is only enabled for OF Supply, and subscription tracking is initialized
       parsed.forEach(s => {
         if (s.slug === 'of' || s.name.toLowerCase().includes('of supply')) {
           s.config.enableShoppingMode = true;
           s.config.allowWalkinsWithoutAppointment = false;
+          if (!s.subscriptionStatus) s.subscriptionStatus = 'comped';
+          if (s.subscriptionMonthlyFee === undefined) s.subscriptionMonthlyFee = 0;
+          if (!s.ownerContactName) s.ownerContactName = 'Angel Barbosa';
+          if (!s.ownerPhone) s.ownerPhone = '(555) 234-5678';
         } else {
           s.config.enableShoppingMode = false;
           s.config.allowWalkinsWithoutAppointment = true;
+          if (!s.subscriptionStatus) s.subscriptionStatus = s.slug === 'royalcuts' ? 'past_due' : 'active';
+          if (s.subscriptionMonthlyFee === undefined) s.subscriptionMonthlyFee = 49;
+          if (!s.subscriptionNextBillingDate) s.subscriptionNextBillingDate = s.slug === 'royalcuts' ? '2026-10-01' : '2026-11-01';
+          if (!s.subscriptionLastPaidDate) s.subscriptionLastPaidDate = s.slug === 'royalcuts' ? '2026-09-01' : '2026-10-01';
+          if (!s.subscriptionPaymentMethod) s.subscriptionPaymentMethod = s.slug === 'royalcuts' ? 'cash' : 'zelle';
+          if (!s.ownerContactName) s.ownerContactName = s.slug === 'royalcuts' ? 'Dominic V.' : 'Marcus Rivera';
+          if (!s.ownerPhone) s.ownerPhone = s.slug === 'royalcuts' ? '(555) 888-1111' : '(555) 777-1010';
         }
       });
 
@@ -510,7 +586,15 @@ export const storage = {
       themeId: shopData.themeId || 'midnight_gold',
       pinCode: shopData.pinCode || '1234',
       status: 'active',
-      monthlyPlanPrice: 49,
+      monthlyPlanPrice: shopData.subscriptionMonthlyFee !== undefined ? Number(shopData.subscriptionMonthlyFee) : 49,
+      subscriptionStatus: (shopData.subscriptionStatus || 'active') as SubscriptionStatus,
+      subscriptionMonthlyFee: shopData.subscriptionMonthlyFee !== undefined ? Number(shopData.subscriptionMonthlyFee) : 49,
+      subscriptionNextBillingDate: shopData.subscriptionNextBillingDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      subscriptionLastPaidDate: new Date().toISOString().split('T')[0],
+      subscriptionPaymentMethod: shopData.subscriptionPaymentMethod || 'zelle',
+      ownerContactName: shopData.ownerContactName || '',
+      ownerPhone: shopData.ownerPhone || '',
+      ownerEmail: shopData.ownerEmail || '',
       createdAt: new Date().toISOString(),
       config: {
         shopName: shopData.name,
@@ -749,5 +833,101 @@ export const storage = {
       return r;
     });
     this.saveRentRecords(updated);
+  },
+
+  // -------------------------------------------------------------
+  // 💬 IN-APP SUPPORT MESSAGING (Shop Owners ◄► Platform HQ)
+  // -------------------------------------------------------------
+
+  getSupportMessages(shopSlug?: string): SupportMessage[] {
+    try {
+      const data = localStorage.getItem(SUPPORT_MESSAGES_KEY);
+      if (!data) {
+        localStorage.setItem(SUPPORT_MESSAGES_KEY, JSON.stringify(INITIAL_SUPPORT_MESSAGES));
+        return shopSlug 
+          ? INITIAL_SUPPORT_MESSAGES.filter(m => m.shopSlug === shopSlug)
+          : INITIAL_SUPPORT_MESSAGES;
+      }
+      const parsed: SupportMessage[] = JSON.parse(data);
+      return shopSlug ? parsed.filter(m => m.shopSlug === shopSlug) : parsed;
+    } catch {
+      return INITIAL_SUPPORT_MESSAGES;
+    }
+  },
+
+  sendSupportMessage(
+    shopSlug: string, 
+    text: string, 
+    sender: 'shop_owner' | 'platform_hq', 
+    senderName: string
+  ): SupportMessage {
+    const allMessages = this.getSupportMessages();
+    const newMessage: SupportMessage = {
+      id: 'msg-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+      shopSlug,
+      sender,
+      senderName,
+      text: text.trim(),
+      createdAt: new Date().toISOString(),
+      readByHq: sender === 'platform_hq',
+      readByShop: sender === 'shop_owner'
+    };
+    const updated = [...allMessages, newMessage];
+    localStorage.setItem(SUPPORT_MESSAGES_KEY, JSON.stringify(updated));
+    window.dispatchEvent(new CustomEvent('support_messages_updated', { detail: { shopSlug, message: newMessage } }));
+    return newMessage;
+  },
+
+  markSupportMessagesRead(shopSlug: string, reader: 'hq' | 'shop') {
+    const allMessages = this.getSupportMessages();
+    let changed = false;
+    const updated = allMessages.map(m => {
+      if (m.shopSlug === shopSlug) {
+        if (reader === 'hq' && !m.readByHq) {
+          changed = true;
+          return { ...m, readByHq: true };
+        }
+        if (reader === 'shop' && !m.readByShop) {
+          changed = true;
+          return { ...m, readByShop: true };
+        }
+      }
+      return m;
+    });
+    if (changed) {
+      localStorage.setItem(SUPPORT_MESSAGES_KEY, JSON.stringify(updated));
+      window.dispatchEvent(new CustomEvent('support_messages_updated', { detail: { shopSlug } }));
+    }
+  },
+
+  getUnreadSupportCount(reader: 'hq' | 'shop', shopSlug?: string): number {
+    const messages = this.getSupportMessages(shopSlug);
+    if (reader === 'hq') {
+      return messages.filter(m => !m.readByHq && m.sender === 'shop_owner').length;
+    } else {
+      return messages.filter(m => !m.readByShop && m.sender === 'platform_hq').length;
+    }
+  },
+
+  // -------------------------------------------------------------
+  // 💳 PLATFORM SUBSCRIPTION BILLING ACTIONS (For Platform HQ)
+  // -------------------------------------------------------------
+
+  markShopSubscriptionPaid(slug: string, paymentMethod: SubscriptionPaymentMethod = 'zelle'): Shop {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Compute next billing date (30 days ahead)
+    const nextDate = new Date();
+    nextDate.setDate(nextDate.getDate() + 30);
+    const nextBilling = nextDate.toISOString().split('T')[0];
+
+    const updated = this.updateShop(slug, {
+      subscriptionStatus: 'active',
+      subscriptionLastPaidDate: today,
+      subscriptionNextBillingDate: nextBilling,
+      subscriptionPaymentMethod: paymentMethod
+    });
+
+    return updated;
   }
 };

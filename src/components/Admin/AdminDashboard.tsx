@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
   Plus, 
   Trash2, 
@@ -8,31 +8,42 @@ import {
   MessageSquare, 
   Download, 
   Check,
-  DollarSign
+  DollarSign,
+  HelpCircle
 } from 'lucide-react';
-import type { Barber, CheckInRecord, ShopConfig, RentPaymentRecord } from '../../types';
+import type { Barber, CheckInRecord, ShopConfig, RentPaymentRecord, Shop, SupportMessage } from '../../types';
 import { RentLedgerDashboard } from './RentLedgerDashboard';
+import { SupportChatDrawer } from '../Shared/SupportChatDrawer';
 
 interface AdminDashboardProps {
+  currentShop?: Shop | null;
   barbers: Barber[];
   config: ShopConfig;
   checkIns: CheckInRecord[];
   rentRecords?: RentPaymentRecord[];
+  supportMessages?: SupportMessage[];
   onMarkPaidOffline?: (barber: Barber, method: 'cash' | 'zelle' | 'manual', notes?: string) => void;
   onSaveBarbers: (barbers: Barber[]) => void;
   onSaveConfig: (config: ShopConfig) => void;
+  onSendSupportMessage?: (text: string) => void;
+  onMarkSupportRead?: () => void;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
+  currentShop = null,
   barbers,
   config,
   checkIns,
   rentRecords = [],
+  supportMessages = [],
   onMarkPaidOffline = () => {},
   onSaveBarbers,
-  onSaveConfig
+  onSaveConfig,
+  onSendSupportMessage = () => {},
+  onMarkSupportRead = () => {}
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'roster' | 'rent' | 'settings' | 'sms' | 'history'>('rent');
+  const [isSupportOpen, setIsSupportOpen] = useState(false);
   
   // Barbers Management State
   const [isAddingBarber, setIsAddingBarber] = useState(false);
@@ -207,6 +218,40 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           >
             <Download size={15} />
             <span>Logs ({checkIns.length})</span>
+          </button>
+
+          <button
+            onClick={() => setIsSupportOpen(true)}
+            className="barber-tab-chip"
+            style={{ 
+              padding: '8px 14px', 
+              borderRadius: 9999, 
+              fontSize: '0.82rem', 
+              fontWeight: 750, 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 6, 
+              background: 'var(--pastel-blue-bg)', 
+              color: 'var(--pastel-blue)', 
+              border: '1px solid var(--pastel-blue-border)', 
+              cursor: 'pointer',
+              marginLeft: 'auto'
+            }}
+          >
+            <HelpCircle size={15} />
+            <span>Support Chat</span>
+            {supportMessages.filter(m => m.shopSlug === currentShop?.slug && !m.readByShop && m.sender === 'platform_hq').length > 0 && (
+              <span style={{
+                background: 'var(--pastel-red)',
+                color: '#FFFFFF',
+                fontSize: '10px',
+                fontWeight: 900,
+                padding: '1px 6px',
+                borderRadius: 9999
+              }}>
+                {supportMessages.filter(m => m.shopSlug === currentShop?.slug && !m.readByShop && m.sender === 'platform_hq').length}
+              </span>
+            )}
           </button>
         </div>
       </div>
@@ -617,6 +662,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         </div>
       )}
+
+      {/* Direct In-App Support Chat Drawer */}
+      <SupportChatDrawer
+        isOpen={isSupportOpen}
+        onClose={() => setIsSupportOpen(false)}
+        currentShop={currentShop}
+        messages={supportMessages}
+        userRole="shop_owner"
+        onSendMessage={(text) => {
+          if (currentShop) {
+            onSendSupportMessage(text);
+          }
+        }}
+        onMarkRead={onMarkSupportRead}
+      />
     </div>
   );
 };

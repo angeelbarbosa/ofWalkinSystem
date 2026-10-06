@@ -90,6 +90,9 @@ export interface ShopConfig {
   };
 }
 
+export type SubscriptionStatus = 'active' | 'trial' | 'past_due' | 'comped' | 'unpaid';
+export type SubscriptionPaymentMethod = 'zelle' | 'cash' | 'card' | 'stripe' | 'apple_pay' | 'manual';
+
 export interface Shop {
   id: string; // e.g. 'shop-of'
   slug: string; // e.g. 'of' (used for URL: ?shop=of)
@@ -105,7 +108,29 @@ export interface Shop {
   rentRecords: RentPaymentRecord[];
   status: 'active' | 'trial' | 'suspended';
   monthlyPlanPrice?: number; // e.g. 49
+  
+  // Platform Subscription & Owner Contact (Who pays YOU)
+  subscriptionStatus?: SubscriptionStatus; // 'active' (Paid), 'past_due', 'trial', 'comped'
+  subscriptionMonthlyFee?: number; // e.g. 49
+  subscriptionNextBillingDate?: string; // YYYY-MM-DD e.g. "2026-11-01"
+  subscriptionLastPaidDate?: string; // YYYY-MM-DD e.g. "2026-10-01"
+  subscriptionPaymentMethod?: SubscriptionPaymentMethod;
+  ownerContactName?: string; // e.g. "Marcus Rivera"
+  ownerPhone?: string; // e.g. "(555) 777-1010"
+  ownerEmail?: string; // e.g. "marcus@fademasters.com"
+  
   createdAt: string;
+}
+
+export interface SupportMessage {
+  id: string;
+  shopSlug: string;
+  sender: 'shop_owner' | 'platform_hq';
+  senderName: string; // e.g. "Marcus (Fade Masters)" or "Platform Support"
+  text: string;
+  createdAt: string; // ISO string
+  readByHq: boolean;
+  readByShop: boolean;
 }
 
 export type MainNavTab = 'landing' | 'kiosk' | 'barber_portal' | 'admin' | 'super_admin' | 'shop_select';

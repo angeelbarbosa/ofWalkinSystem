@@ -4,29 +4,40 @@ import {
   Store, 
   Users, 
   DollarSign, 
-  TrendingUp, 
   Plus, 
   Palette, 
   Copy, 
   Check, 
   Scissors, 
   Lock, 
-  Sparkles, 
   Trash2, 
   LogOut, 
   RotateCcw, 
-  RefreshCw, 
   AlertTriangle,
   Sun,
-  Moon
+  Moon,
+  MessageSquare,
+  Edit3,
+  CreditCard,
+  Phone,
+  User,
+  Send
 } from 'lucide-react';
-import type { Shop, MainNavTab } from '../../types';
+import type { 
+  Shop, 
+  MainNavTab, 
+  SupportMessage, 
+  SubscriptionPaymentMethod, 
+  SubscriptionStatus 
+} from '../../types';
 import { applyTheme, type ThemeId } from '../../utils/themes';
 import { storage } from '../../utils/storage';
+import { SupportChatDrawer } from '../Shared/SupportChatDrawer';
 
 interface SuperAdminDashboardProps {
   shops: Shop[];
   activeShopSlug: string;
+  supportMessages?: SupportMessage[];
   onSwitchShop: (slug: string) => void;
   onCreateShop: (shopData: Partial<Shop> & { name: string; slug: string; themeId: ThemeId }) => Shop;
   onUpdateShop: (slug: string, updates: Partial<Shop>) => Shop;
@@ -34,18 +45,25 @@ interface SuperAdminDashboardProps {
   onFactoryReset?: () => void;
   onLoadDemoFleet?: () => void;
   onNavigateTab: (tab: MainNavTab) => void;
+  onSendSupportMessage?: (shopSlug: string, text: string, sender: 'shop_owner' | 'platform_hq', senderName: string) => void;
+  onMarkSupportRead?: (shopSlug: string, reader: 'hq' | 'shop') => void;
+  onMarkSubscriptionPaid?: (slug: string, paymentMethod?: SubscriptionPaymentMethod) => void;
 }
 
 export function SuperAdminDashboard({
   shops,
   activeShopSlug,
+  supportMessages = [],
   onSwitchShop,
   onCreateShop,
   onUpdateShop,
   onDeleteShop,
   onFactoryReset,
   onLoadDemoFleet,
-  onNavigateTab
+  onNavigateTab,
+  onSendSupportMessage = () => {},
+  onMarkSupportRead = () => {},
+  onMarkSubscriptionPaid = () => {}
 }: SuperAdminDashboardProps) {
   // Master Super Admin Authentication State
   const [isUnlocked, setIsUnlocked] = useState<boolean>(() => {
@@ -54,11 +72,18 @@ export function SuperAdminDashboard({
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
 
-  // Modals
+  // Top HQ Tab: 'fleet' vs 'messages'
+  const [hqActiveTab, setHqActiveTab] = useState<'fleet' | 'messages'>('fleet');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'past_due' | 'trial'>('all');
+
+  // Modals & Drawers
   const [isNewShopModalOpen, setIsNewShopModalOpen] = useState(false);
   const [isResetConfirmModalOpen, setIsResetConfirmModalOpen] = useState(false);
   const [themeModalShop, setThemeModalShop] = useState<Shop | null>(null);
   const [deleteConfirmShop, setDeleteConfirmShop] = useState<Shop | null>(null);
+  const [editModalShop, setEditModalShop] = useState<Shop | null>(null);
+  const [subscriptionModalShop, setSubscriptionModalShop] = useState<Shop | null>(null);
+  const [chatDrawerShop, setChatDrawerShop] = useState<Shop | null>(null);
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -69,8 +94,30 @@ export function SuperAdminDashboard({
   const [newLogoUrl, setNewLogoUrl] = useState('');
   const [newTheme, setNewTheme] = useState<ThemeId>('obsidian_noir');
   const [newPin, setNewPin] = useState('1234');
-  const [newMonthlyPrice, setNewMonthlyPrice] = useState(49);
+  const [newMonthlyFee, setNewMonthlyFee] = useState(49);
+  const [newOwnerName, setNewOwnerName] = useState('');
+  const [newOwnerPhone, setNewOwnerPhone] = useState('');
+  const [newOwnerEmail, setNewOwnerEmail] = useState('');
   const [formError, setFormError] = useState('');
+
+  // Edit Shop Form State
+  const [editName, setEditName] = useState('');
+  const [editAddress, setEditAddress] = useState('');
+  const [editPin, setEditPin] = useState('');
+  const [editOwnerName, setEditOwnerName] = useState('');
+  const [editOwnerPhone, setEditOwnerPhone] = useState('');
+  const [editOwnerEmail, setEditOwnerEmail] = useState('');
+  const [editWeeklyRent, setEditWeeklyRent] = useState(200);
+
+  // Subscription Edit State
+  const [subFee, setSubFee] = useState(49);
+  const [subStatus, setSubStatus] = useState<SubscriptionStatus>('active');
+  const [subNextBilling, setSubNextBilling] = useState('');
+  const [subPaymentMethod, setSubPaymentMethod] = useState<SubscriptionPaymentMethod>('zelle');
+
+  // Inbox Quick Reply State (for messages tab)
+  const [selectedInboxShopSlug, setSelectedInboxShopSlug] = useState<string>(shops[0]?.slug || 'of');
+  const [inboxReplyText, setInboxReplyText] = useState('');
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -96,7 +143,6 @@ export function SuperAdminDashboard({
     setPinInput('');
   };
 
-  // Auto-generate slug from name
   const handleNameChange = (val: string) => {
     setNewName(val);
     if (!newSlug || newSlug === newName.toLowerCase().replace(/[^a-z0-9]/g, '')) {
@@ -104,7 +150,82 @@ export function SuperAdminDashboard({
     }
   };
 
-  // Submit New Barbershop Creation
+  // Open Edit Modal
+  const handleOpenEditModal = (shop: Shop) => {
+    setEditModalShop(shop);
+    setEditName(shop.name);
+    setEditAddress(shop.address || '');
+    setEditPin(shop.pinCode || '1234');
+    setEditOwnerName(shop.ownerContactName || '');
+    setEditOwnerPhone(shop.ownerPhone || '');
+    setEditOwnerEmail(shop.ownerEmail || '');
+    setEditWeeklyRent(shop.config.defaultWeeklyRent || 200);
+  };
+
+  // Save Edit Modal
+  const handleSaveEditShop = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editModalShop) return;
+
+    onUpdateShop(editModalShop.slug, {
+      name: editName.trim(),
+      address: editAddress.trim(),
+      pinCode: editPin.trim() || '1234',
+      ownerContactName: editOwnerName.trim(),
+      ownerPhone: editOwnerPhone.trim(),
+      ownerEmail: editOwnerEmail.trim(),
+      config: {
+        ...editModalShop.config,
+        shopName: editName.trim(),
+        address: editAddress.trim(),
+        pinCode: editPin.trim() || '1234',
+        defaultWeeklyRent: Number(editWeeklyRent) || 200
+      }
+    });
+
+    showToast(`Updated ${editName.trim()}`);
+    setEditModalShop(null);
+  };
+
+  // Open Subscription Modal
+  const handleOpenSubModal = (shop: Shop) => {
+    setSubscriptionModalShop(shop);
+    setSubFee(shop.subscriptionMonthlyFee !== undefined ? shop.subscriptionMonthlyFee : 49);
+    setSubStatus(shop.subscriptionStatus || 'active');
+    setSubNextBilling(shop.subscriptionNextBillingDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+    setSubPaymentMethod(shop.subscriptionPaymentMethod || 'zelle');
+  };
+
+  // Save Subscription Modal
+  const handleSaveSubscription = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!subscriptionModalShop) return;
+
+    onUpdateShop(subscriptionModalShop.slug, {
+      subscriptionMonthlyFee: Number(subFee),
+      monthlyPlanPrice: Number(subFee),
+      subscriptionStatus: subStatus,
+      subscriptionNextBillingDate: subNextBilling,
+      subscriptionPaymentMethod: subPaymentMethod
+    });
+
+    showToast(`Subscription updated for ${subscriptionModalShop.name}`);
+    setSubscriptionModalShop(null);
+  };
+
+  // 1-Click Mark Paid
+  const handleQuickMarkPaid = (shop: Shop) => {
+    onMarkSubscriptionPaid(shop.slug, 'zelle');
+    showToast(`Marked ${shop.name} as Paid! Next billing advanced 30 days.`);
+  };
+
+  // 1-Tap Jump to Shop's Owner Admin (PIN Bypassed)
+  const handleMasterJumpToAdmin = (shopSlug: string) => {
+    onSwitchShop(shopSlug);
+    onNavigateTab('admin');
+  };
+
+  // Create New Shop Submit
   const handleCreateShopSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName.trim()) {
@@ -120,62 +241,89 @@ export function SuperAdminDashboard({
       const created = onCreateShop({
         name: newName.trim(),
         slug: newSlug.trim(),
-        address: newAddress.trim(),
-        logoUrl: newLogoUrl.trim(),
+        address: newAddress.trim() || '100 Main Street',
+        logoUrl: newLogoUrl.trim() || '',
         themeId: newTheme,
         pinCode: newPin.trim() || '1234',
-        monthlyPlanPrice: newMonthlyPrice
+        subscriptionStatus: 'active',
+        subscriptionMonthlyFee: Number(newMonthlyFee),
+        ownerContactName: newOwnerName.trim(),
+        ownerPhone: newOwnerPhone.trim(),
+        ownerEmail: newOwnerEmail.trim()
       });
 
-      // Switch to new shop
-      onSwitchShop(created.slug);
+      showToast(`Created "${created.name}" successfully!`);
       setIsNewShopModalOpen(false);
+      
+      // Reset form
       setNewName('');
       setNewSlug('');
       setNewAddress('');
       setNewLogoUrl('');
+      setNewTheme('obsidian_noir');
+      setNewPin('1234');
+      setNewMonthlyFee(49);
+      setNewOwnerName('');
+      setNewOwnerPhone('');
+      setNewOwnerEmail('');
       setFormError('');
-      showToast(`Created & launched ${created.name}!`);
     } catch (err: any) {
-      setFormError(err?.message || 'Could not create shop.');
+      setFormError(err.message || 'Failed to create shop.');
     }
   };
 
-  // Copy Kiosk Link
   const handleCopyKioskLink = (slug: string) => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://of-walkin-system.vercel.app';
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
     const link = `${origin}/?shop=${slug}`;
     navigator.clipboard.writeText(link);
     setCopiedSlug(slug);
+    showToast(`Copied Kiosk Link: ${link}`);
     setTimeout(() => setCopiedSlug(null), 2500);
   };
 
-  // Execute Factory Reset
   const handleExecuteFactoryReset = () => {
     if (onFactoryReset) {
       onFactoryReset();
-    } else {
-      storage.factoryResetPlatform();
+      showToast('Platform reset to default demo fleet.');
+      setIsResetConfirmModalOpen(false);
     }
-    setIsResetConfirmModalOpen(false);
-    showToast('Platform reset to clean launch state (OF Supply only).');
   };
 
-  // Execute Demo Fleet Reload
   const handleExecuteDemoFleetReload = () => {
     if (onLoadDemoFleet) {
       onLoadDemoFleet();
-    } else {
-      storage.loadDemoFleet();
+      showToast('Demo fleet reloaded with test barbers & queues.');
     }
-    showToast('Loaded 3 demo test shops (OF Supply, Fade Masters, Royal Cuts).');
   };
 
-  // Calculate Platform Aggregate Metrics
-  const totalShops = shops.length;
-  const totalBarbers = shops.reduce((acc, s) => acc + (s.barbers?.length || 0), 0);
-  const totalWalkInsToday = shops.reduce((acc, s) => acc + (s.checkIns?.length || 0), 0);
-  const totalEstimatedMRR = shops.reduce((acc, s) => acc + (s.monthlyPlanPrice || 49), 0);
+  // Calculations
+  const totalPayingShops = shops.filter(s => s.subscriptionStatus === 'active' && (s.subscriptionMonthlyFee || 0) > 0);
+  const totalMRR = totalPayingShops.reduce((acc, s) => acc + (s.subscriptionMonthlyFee || s.monthlyPlanPrice || 49), 0);
+  const paidCount = shops.filter(s => s.subscriptionStatus === 'active').length;
+  const pastDueCount = shops.filter(s => s.subscriptionStatus === 'past_due' || s.subscriptionStatus === 'unpaid').length;
+  const trialCount = shops.filter(s => s.subscriptionStatus === 'trial').length;
+  const totalChairs = shops.reduce((acc, s) => acc + (s.barbers?.length || 0), 0);
+  const totalUnreadMessages = supportMessages.filter(m => !m.readByHq && m.sender === 'shop_owner').length;
+
+  // Filtered Shops
+  const filteredShops = shops.filter(s => {
+    if (statusFilter === 'all') return true;
+    if (statusFilter === 'active') return s.subscriptionStatus === 'active' || s.subscriptionStatus === 'comped';
+    if (statusFilter === 'past_due') return s.subscriptionStatus === 'past_due' || s.subscriptionStatus === 'unpaid';
+    if (statusFilter === 'trial') return s.subscriptionStatus === 'trial';
+    return true;
+  });
+
+  // Selected Inbox Shop
+  const activeInboxShop = shops.find(s => s.slug === selectedInboxShopSlug) || shops[0];
+  const activeInboxMessages = supportMessages.filter(m => m.shopSlug === activeInboxShop?.slug);
+
+  const handleSendInboxReply = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inboxReplyText.trim() || !activeInboxShop) return;
+    onSendSupportMessage(activeInboxShop.slug, inboxReplyText.trim(), 'platform_hq', 'Platform HQ');
+    setInboxReplyText('');
+  };
 
   // 1. PIN Lock Screen
   if (!isUnlocked) {
@@ -220,7 +368,7 @@ export function SuperAdminDashboard({
             WalkinApp Platform HQ
           </h2>
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '24px', lineHeight: 1.4 }}>
-            Enter your Master PIN to access and manage your barbershop fleet.
+            Enter your Master PIN to manage subscriptions, client shops, and support tickets.
           </p>
 
           <form onSubmit={handleUnlock} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -331,13 +479,13 @@ export function SuperAdminDashboard({
         </div>
       )}
 
-      <div style={{ maxWidth: '680px', width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div style={{ maxWidth: '720px', width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
         {/* Top Header */}
         <div style={{
           display: 'flex',
           flexDirection: 'column',
           gap: '16px',
-          paddingBottom: '20px',
+          paddingBottom: '18px',
           borderBottom: '1px solid var(--border-subtle)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
@@ -358,10 +506,10 @@ export function SuperAdminDashboard({
               </div>
               <div style={{ minWidth: 0 }}>
                 <h1 style={{ fontSize: '20px', fontWeight: 900, letterSpacing: '-0.02em', margin: 0, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  WalkinApp HQ
+                  WalkinApp Platform HQ
                 </h1>
                 <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>
-                  Fleet Management & Kiosk Controls
+                  Client Subscriptions & Direct Shop Support
                 </p>
               </div>
             </div>
@@ -407,499 +555,1008 @@ export function SuperAdminDashboard({
             </div>
           </div>
 
-          {/* Action Buttons: Add Shop, Load Demo Fleet, Factory Reset */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          {/* Top Primary Navigation Switcher: Fleet Hub vs Messages */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '8px',
+            background: 'var(--surface-pill)',
+            padding: '4px',
+            borderRadius: '16px',
+            border: '1px solid var(--border-subtle)'
+          }}>
             <button
-              onClick={() => setIsNewShopModalOpen(true)}
+              onClick={() => setHqActiveTab('fleet')}
               style={{
-                flex: '1 1 auto',
-                minWidth: '130px',
+                padding: '10px 14px',
+                borderRadius: '12px',
+                fontSize: '13px',
+                fontWeight: 800,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '6px',
-                padding: '11px 18px',
-                background: 'var(--accent-primary)',
-                color: 'var(--bg-main)',
-                borderRadius: '14px',
-                fontSize: '13px',
-                fontWeight: 850,
+                gap: '8px',
+                background: hqActiveTab === 'fleet' ? 'var(--surface-card)' : 'transparent',
+                color: hqActiveTab === 'fleet' ? 'var(--text-primary)' : 'var(--text-muted)',
+                boxShadow: hqActiveTab === 'fleet' ? 'var(--shadow-sm)' : 'none',
                 cursor: 'pointer',
-                boxShadow: 'var(--shadow-sm)',
-                border: 'none'
+                transition: 'all 0.2s ease'
               }}
             >
-              <Plus size={16} />
-              <span>Add Barbershop</span>
+              <Store size={16} />
+              <span>Fleet & Subscriptions ({shops.length})</span>
             </button>
 
-            {/* Test Fleet Button */}
             <button
-              onClick={handleExecuteDemoFleetReload}
-              title="Load 3 demo test shops (OF Supply, Fade Masters, Royal Cuts)"
+              onClick={() => setHqActiveTab('messages')}
               style={{
+                padding: '10px 14px',
+                borderRadius: '12px',
+                fontSize: '13px',
+                fontWeight: 800,
                 display: 'flex',
                 alignItems: 'center',
-                gap: '5px',
-                padding: '11px 14px',
-                background: 'var(--surface-pill)',
+                justifyContent: 'center',
+                gap: '8px',
+                background: hqActiveTab === 'messages' ? 'var(--surface-card)' : 'transparent',
+                color: hqActiveTab === 'messages' ? 'var(--text-primary)' : 'var(--text-muted)',
+                boxShadow: hqActiveTab === 'messages' ? 'var(--shadow-sm)' : 'none',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                position: 'relative'
+              }}
+            >
+              <MessageSquare size={16} />
+              <span>Support Messages</span>
+              {totalUnreadMessages > 0 && (
+                <span style={{
+                  background: 'var(--pastel-red)',
+                  color: '#FFFFFF',
+                  fontSize: '10px',
+                  fontWeight: 900,
+                  padding: '2px 7px',
+                  borderRadius: 9999
+                }}>
+                  {totalUnreadMessages}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* ================= TAB 1: FLEET & SUBSCRIPTION DASHBOARD ================= */}
+        {hqActiveTab === 'fleet' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+            {/* SaaS Metrics 4-Grid */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+              gap: '12px',
+              width: '100%',
+              boxSizing: 'border-box'
+            }}>
+              {/* Stat 1: Monthly SaaS MRR (Paying Shops) */}
+              <div style={{
+                background: 'var(--surface-card)',
                 border: '1px solid var(--border-subtle)',
-                color: 'var(--text-primary)',
-                borderRadius: '14px',
-                fontSize: '12px',
-                fontWeight: 700,
-                cursor: 'pointer'
-              }}
-            >
-              <RefreshCw size={13} style={{ color: 'var(--pastel-amber)' }} />
-              <span>Demo Fleet</span>
-            </button>
-
-            {/* Factory Reset for Sales Button */}
-            <button
-              onClick={() => setIsResetConfirmModalOpen(true)}
-              title="Reset platform to clean initial launch state before selling"
-              style={{
+                borderRadius: '18px',
+                padding: '14px 16px',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '5px',
-                padding: '11px 14px',
-                background: 'var(--pastel-red-bg)',
-                border: '1px solid var(--pastel-red-border)',
-                color: 'var(--pastel-red)',
-                borderRadius: '14px',
-                fontSize: '12px',
-                fontWeight: 750,
-                cursor: 'pointer'
-              }}
-            >
-              <RotateCcw size={13} />
-              <span>Clean Slate</span>
-            </button>
-          </div>
-        </div>
-
-        {/* 2x2 Compact KPI Stats Grid (4 columns on desktop) */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(2, 1fr)',
-          gap: '10px',
-          marginBottom: '24px'
-        }}>
-          {/* Stat 1: Active Shops */}
-          <div style={{
-            background: 'var(--surface-card)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: '18px',
-            padding: '14px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            boxShadow: 'var(--shadow-sm)'
-          }}>
-            <div style={{
-              width: '38px',
-              height: '38px',
-              borderRadius: '12px',
-              background: 'var(--pastel-blue-bg)',
-              border: '1px solid var(--pastel-blue-border)',
-              color: 'var(--pastel-blue)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}>
-              <Store size={18} />
-            </div>
-            <div>
-              <p style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', margin: 0 }}>
-                Active Shops
-              </p>
-              <p style={{ fontSize: '20px', fontWeight: 900, color: 'var(--text-primary)', margin: '1px 0 0' }}>
-                {totalShops}
-              </p>
-            </div>
-          </div>
-
-          {/* Stat 2: Total Barbers */}
-          <div style={{
-            background: 'var(--surface-card)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: '18px',
-            padding: '14px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            boxShadow: 'var(--shadow-sm)'
-          }}>
-            <div style={{
-              width: '38px',
-              height: '38px',
-              borderRadius: '12px',
-              background: 'var(--pastel-green-bg)',
-              border: '1px solid var(--pastel-green-border)',
-              color: 'var(--pastel-green)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}>
-              <Users size={18} />
-            </div>
-            <div>
-              <p style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', margin: 0 }}>
-                Total Barbers
-              </p>
-              <p style={{ fontSize: '20px', fontWeight: 900, color: 'var(--text-primary)', margin: '1px 0 0' }}>
-                {totalBarbers}
-              </p>
-            </div>
-          </div>
-
-          {/* Stat 3: SaaS MRR */}
-          <div style={{
-            background: 'var(--surface-card)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: '18px',
-            padding: '14px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            boxShadow: 'var(--shadow-sm)'
-          }}>
-            <div style={{
-              width: '38px',
-              height: '38px',
-              borderRadius: '12px',
-              background: 'var(--pastel-amber-bg)',
-              border: '1px solid var(--pastel-amber-border)',
-              color: 'var(--pastel-amber)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}>
-              <DollarSign size={18} />
-            </div>
-            <div>
-              <p style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', margin: 0 }}>
-                SaaS Revenue
-              </p>
-              <p style={{ fontSize: '20px', fontWeight: 900, color: 'var(--text-primary)', margin: '1px 0 0' }}>
-                ${totalEstimatedMRR} <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>/mo</span>
-              </p>
-            </div>
-          </div>
-
-          {/* Stat 4: Queue Today */}
-          <div style={{
-            background: 'var(--surface-card)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: '18px',
-            padding: '14px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            boxShadow: 'var(--shadow-sm)'
-          }}>
-            <div style={{
-              width: '38px',
-              height: '38px',
-              borderRadius: '12px',
-              background: 'var(--pastel-blue-bg)',
-              border: '1px solid var(--pastel-blue-border)',
-              color: 'var(--pastel-blue)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}>
-              <TrendingUp size={18} />
-            </div>
-            <div>
-              <p style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', margin: 0 }}>
-                Queue Today
-              </p>
-              <p style={{ fontSize: '20px', fontWeight: 900, color: 'var(--text-primary)', margin: '1px 0 0' }}>
-                {totalWalkInsToday}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Barbershop Fleet List Header */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: '14px'
-        }}>
-          <div>
-            <h2 style={{ fontSize: '17px', fontWeight: 850, margin: 0, color: 'var(--text-primary)' }}>
-              Barbershop Fleet ({shops.length})
-            </h2>
-            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '2px 0 0' }}>
-              Select any shop to launch its kiosk, switch colorway, or copy direct link
-            </p>
-          </div>
-        </div>
-
-        {/* Shop Cards List */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr',
-          gap: '14px',
-          width: '100%',
-          boxSizing: 'border-box'
-        }}>
-          {shops.map((shop) => {
-            const isCurrentlyActive = shop.slug === activeShopSlug;
-            const barbersCount = shop.barbers?.length || 0;
-            const walkInsCount = shop.checkIns?.length || 0;
-
-            return (
-              <div
-                key={shop.id}
-                style={{
-                  background: 'var(--surface-card)',
-                  border: isCurrentlyActive 
-                    ? '2px solid var(--text-primary)' 
-                    : '1px solid var(--border-subtle)',
-                  borderRadius: '20px',
-                  padding: '16px',
+                gap: '12px',
+                boxShadow: 'var(--shadow-sm)'
+              }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '12px',
+                  background: 'var(--pastel-green-bg)',
+                  border: '1px solid var(--pastel-green-border)',
+                  color: 'var(--pastel-green)',
                   display: 'flex',
-                  flexDirection: 'column',
-                  gap: '12px',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <DollarSign size={20} />
+                </div>
+                <div>
+                  <p style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', margin: 0 }}>
+                    Software MRR
+                  </p>
+                  <p style={{ fontSize: '20px', fontWeight: 900, color: 'var(--text-primary)', margin: '1px 0 0' }}>
+                    ${totalMRR} <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>/mo</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Stat 2: Active Subscriptions Status */}
+              <div style={{
+                background: 'var(--surface-card)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: '18px',
+                padding: '14px 16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                boxShadow: 'var(--shadow-sm)'
+              }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '12px',
+                  background: 'var(--pastel-blue-bg)',
+                  border: '1px solid var(--pastel-blue-border)',
+                  color: 'var(--pastel-blue)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <CreditCard size={20} />
+                </div>
+                <div>
+                  <p style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', margin: 0 }}>
+                    Paying Shops
+                  </p>
+                  <p style={{ fontSize: '18px', fontWeight: 900, color: 'var(--text-primary)', margin: '1px 0 0' }}>
+                    {paidCount} <span style={{ fontSize: '11px', color: pastDueCount > 0 ? 'var(--pastel-red)' : 'var(--text-muted)', fontWeight: 700 }}>
+                      {pastDueCount > 0 ? `(${pastDueCount} Past Due)` : 'All Current'}
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Stat 3: Total Fleet Barbers */}
+              <div style={{
+                background: 'var(--surface-card)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: '18px',
+                padding: '14px 16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                boxShadow: 'var(--shadow-sm)'
+              }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '12px',
+                  background: 'var(--pastel-amber-bg)',
+                  border: '1px solid var(--pastel-amber-border)',
+                  color: 'var(--pastel-amber)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <Users size={18} />
+                </div>
+                <div>
+                  <p style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', margin: 0 }}>
+                    Fleet Chairs
+                  </p>
+                  <p style={{ fontSize: '20px', fontWeight: 900, color: 'var(--text-primary)', margin: '1px 0 0' }}>
+                    {totalChairs} <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>Active</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Stat 4: Support Tickets / Unread */}
+              <div style={{
+                background: 'var(--surface-card)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: '18px',
+                padding: '14px 16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                boxShadow: 'var(--shadow-sm)'
+              }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '12px',
+                  background: totalUnreadMessages > 0 ? 'var(--pastel-red-bg)' : 'var(--surface-pill)',
+                  border: `1px solid ${totalUnreadMessages > 0 ? 'var(--pastel-red-border)' : 'var(--border-subtle)'}`,
+                  color: totalUnreadMessages > 0 ? 'var(--pastel-red)' : 'var(--text-muted)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <MessageSquare size={18} />
+                </div>
+                <div>
+                  <p style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', margin: 0 }}>
+                    Support Inbox
+                  </p>
+                  <p style={{ fontSize: '18px', fontWeight: 900, color: totalUnreadMessages > 0 ? 'var(--pastel-red)' : 'var(--text-primary)', margin: '1px 0 0' }}>
+                    {totalUnreadMessages} <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>Unread</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Fleet Action Toolbar */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => setIsNewShopModalOpen(true)}
+                style={{
+                  flex: '1 1 auto',
+                  minWidth: '140px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  padding: '11px 18px',
+                  background: 'var(--accent-primary)',
+                  color: 'var(--bg-main)',
+                  borderRadius: '14px',
+                  fontSize: '13px',
+                  fontWeight: 850,
+                  cursor: 'pointer',
                   boxShadow: 'var(--shadow-sm)',
-                  position: 'relative',
-                  width: '100%',
-                  boxSizing: 'border-box',
-                  overflow: 'hidden'
+                  border: 'none'
                 }}
               >
-                {/* Shop Header Row */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', width: '100%', boxSizing: 'border-box' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
-                    {shop.logoUrl ? (
-                      <img 
-                        src={shop.logoUrl} 
-                        alt={shop.name}
+                <Plus size={16} />
+                <span>Add Barbershop</span>
+              </button>
+
+              <button
+                onClick={handleExecuteDemoFleetReload}
+                title="Reload demo test shops"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  padding: '11px 14px',
+                  background: 'var(--surface-pill)',
+                  border: '1px solid var(--border-subtle)',
+                  color: 'var(--text-primary)',
+                  borderRadius: '14px',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                <RotateCcw size={14} />
+                <span>Reload Demo Fleet</span>
+              </button>
+
+              <button
+                onClick={() => setIsResetConfirmModalOpen(true)}
+                title="Reset platform data"
+                style={{
+                  padding: '11px 14px',
+                  background: 'var(--pastel-red-bg)',
+                  border: '1px solid var(--pastel-red-border)',
+                  color: 'var(--pastel-red)',
+                  borderRadius: '14px',
+                  fontSize: '12px',
+                  fontWeight: 750,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px'
+                }}
+              >
+                <Trash2 size={14} />
+                <span>Factory Reset</span>
+              </button>
+            </div>
+
+            {/* Filter Pills */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '8px',
+              flexWrap: 'wrap',
+              marginTop: '4px'
+            }}>
+              <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', scrollbarWidth: 'none' }}>
+                <button
+                  onClick={() => setStatusFilter('all')}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '9999px',
+                    fontSize: '11px',
+                    fontWeight: 750,
+                    background: statusFilter === 'all' ? 'var(--text-primary)' : 'var(--surface-pill)',
+                    color: statusFilter === 'all' ? 'var(--bg-main)' : 'var(--text-secondary)',
+                    border: '1px solid var(--border-subtle)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  All Shops ({shops.length})
+                </button>
+                <button
+                  onClick={() => setStatusFilter('active')}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '9999px',
+                    fontSize: '11px',
+                    fontWeight: 750,
+                    background: statusFilter === 'active' ? 'var(--pastel-green)' : 'var(--surface-pill)',
+                    color: statusFilter === 'active' ? '#FFFFFF' : 'var(--text-secondary)',
+                    border: '1px solid var(--border-subtle)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  🟢 Paid ({paidCount})
+                </button>
+                <button
+                  onClick={() => setStatusFilter('past_due')}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '9999px',
+                    fontSize: '11px',
+                    fontWeight: 750,
+                    background: statusFilter === 'past_due' ? 'var(--pastel-red)' : 'var(--surface-pill)',
+                    color: statusFilter === 'past_due' ? '#FFFFFF' : 'var(--text-secondary)',
+                    border: '1px solid var(--border-subtle)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  🔴 Past Due ({pastDueCount})
+                </button>
+                <button
+                  onClick={() => setStatusFilter('trial')}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '9999px',
+                    fontSize: '11px',
+                    fontWeight: 750,
+                    background: statusFilter === 'trial' ? 'var(--pastel-amber)' : 'var(--surface-pill)',
+                    color: statusFilter === 'trial' ? '#000000' : 'var(--text-secondary)',
+                    border: '1px solid var(--border-subtle)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  🟡 Trial ({trialCount})
+                </button>
+              </div>
+            </div>
+
+            {/* Shop Cards Grid */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr',
+              gap: '14px',
+              width: '100%',
+              boxSizing: 'border-box'
+            }}>
+              {filteredShops.map((shop) => {
+                const isCurrentlyActive = shop.slug === activeShopSlug;
+                const barbersCount = shop.barbers?.length || 0;
+                const walkInsCount = shop.checkIns?.length || 0;
+                const shopUnreadCount = supportMessages.filter(m => m.shopSlug === shop.slug && !m.readByHq && m.sender === 'shop_owner').length;
+                
+                const isComped = shop.subscriptionStatus === 'comped' || (shop.subscriptionMonthlyFee === 0 && shop.slug === 'of');
+                const isPaid = shop.subscriptionStatus === 'active';
+                const isPastDue = shop.subscriptionStatus === 'past_due' || shop.subscriptionStatus === 'unpaid';
+
+                return (
+                  <div
+                    key={shop.id}
+                    style={{
+                      background: 'var(--surface-card)',
+                      border: isCurrentlyActive 
+                        ? '2px solid var(--text-primary)' 
+                        : isPastDue 
+                          ? '1px solid var(--pastel-red-border)' 
+                          : '1px solid var(--border-subtle)',
+                      borderRadius: '22px',
+                      padding: '16px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '12px',
+                      boxShadow: 'var(--shadow-sm)',
+                      position: 'relative',
+                      width: '100%',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    {/* Header Row: Logo, Name, Address, Theme */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', width: '100%', boxSizing: 'border-box' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
+                        {shop.logoUrl ? (
+                          <img 
+                            src={shop.logoUrl} 
+                            alt={shop.name}
+                            style={{
+                              width: '42px',
+                              height: '42px',
+                              borderRadius: '12px',
+                              objectFit: 'contain',
+                              background: '#FFFFFF',
+                              padding: '2px',
+                              border: '1px solid var(--border-subtle)',
+                              flexShrink: 0
+                            }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              width: '42px',
+                              height: '42px',
+                              borderRadius: '12px',
+                              backgroundColor: 'var(--surface-pill)',
+                              border: '1px solid var(--border-subtle)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: 'var(--text-primary)',
+                              fontWeight: 900,
+                              fontSize: '14px',
+                              flexShrink: 0
+                            }}
+                          >
+                            {shop.name.substring(0, 2).toUpperCase()}
+                          </div>
+                        )}
+
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {shop.name}
+                          </h3>
+                          <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '1px 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {shop.address || 'Address Pending'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Theme Toggle Pill */}
+                      <button
+                        onClick={() => setThemeModalShop(shop)}
+                        title="Change Colorway"
                         style={{
-                          width: '40px',
-                          height: '40px',
-                          borderRadius: '12px',
-                          objectFit: 'contain',
-                          background: '#FFFFFF',
-                          padding: '2px',
-                          border: '1px solid var(--border-subtle)',
-                          flexShrink: 0
-                        }}
-                      />
-                    ) : (
-                      <div
-                        style={{
-                          width: '40px',
-                          height: '40px',
-                          borderRadius: '12px',
-                          backgroundColor: 'var(--surface-pill)',
-                          border: '1px solid var(--border-subtle)',
                           display: 'flex',
                           alignItems: 'center',
-                          justifyContent: 'center',
+                          gap: '4px',
+                          padding: '5px 9px',
+                          borderRadius: '9999px',
+                          background: 'var(--surface-pill)',
+                          border: '1px solid var(--border-subtle)',
                           color: 'var(--text-primary)',
-                          fontWeight: 900,
-                          fontSize: '14px',
+                          fontSize: '11px',
+                          fontWeight: 750,
+                          cursor: 'pointer',
                           flexShrink: 0
                         }}
                       >
-                        {shop.name.substring(0, 2).toUpperCase()}
-                      </div>
-                    )}
-
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <h3 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {shop.name}
-                      </h3>
-                      <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '1px 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {shop.address || 'Address Pending'}
-                      </p>
+                        {shop.themeId === 'clean_studio' ? (
+                          <Sun size={12} style={{ color: '#F59E0B' }} />
+                        ) : (
+                          <Moon size={12} style={{ color: 'var(--text-primary)' }} />
+                        )}
+                        <span>{shop.themeId === 'clean_studio' ? 'Light' : 'Dark'}</span>
+                      </button>
                     </div>
-                  </div>
 
-                  {/* Theme Badge (Click to open theme picker) */}
-                  <button
-                    onClick={() => setThemeModalShop(shop)}
-                    title="Change Colorway"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      padding: '5px 9px',
-                      borderRadius: '9999px',
+                    {/* ================= SUBSCRIPTION BILLING BOX ================= */}
+                    <div style={{
                       background: 'var(--surface-pill)',
                       border: '1px solid var(--border-subtle)',
-                      color: 'var(--text-primary)',
-                      fontSize: '11px',
-                      fontWeight: 750,
-                      cursor: 'pointer',
-                      flexShrink: 0
-                    }}
-                  >
-                    {shop.themeId === 'clean_studio' ? (
-                      <Sun size={12} style={{ color: '#F59E0B' }} />
-                    ) : (
-                      <Moon size={12} style={{ color: 'var(--text-primary)' }} />
-                    )}
-                    <span>{shop.themeId === 'clean_studio' ? 'Light' : 'Dark'}</span>
-                  </button>
-                </div>
+                      borderRadius: '14px',
+                      padding: '10px 12px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+                        {/* Subscription Status Tag */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{
+                            fontSize: '11px',
+                            fontWeight: 850,
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            background: isComped 
+                              ? 'rgba(255,255,255,0.08)' 
+                              : isPaid 
+                                ? 'var(--pastel-green-bg)' 
+                                : isPastDue 
+                                  ? 'var(--pastel-red-bg)' 
+                                  : 'var(--pastel-amber-bg)',
+                            color: isComped 
+                              ? 'var(--text-secondary)' 
+                              : isPaid 
+                                ? 'var(--pastel-green)' 
+                                : isPastDue 
+                                  ? 'var(--pastel-red)' 
+                                  : 'var(--pastel-amber)',
+                            border: `1px solid ${isComped ? 'var(--border-subtle)' : isPaid ? 'var(--pastel-green-border)' : isPastDue ? 'var(--pastel-red-border)' : 'var(--pastel-amber-border)'}`
+                          }}>
+                            {isComped 
+                              ? '⚪ COMPED / INTERNAL' 
+                              : isPaid 
+                                ? `🟢 PAID ($${shop.subscriptionMonthlyFee || 49}/mo)` 
+                                : isPastDue 
+                                  ? `🔴 PAST DUE ($${shop.subscriptionMonthlyFee || 49} OVERDUE)` 
+                                  : `🟡 TRIAL (${shop.subscriptionMonthlyFee || 49}/mo)`}
+                          </span>
 
-                {/* Info Pills Row */}
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(3, 1fr)',
-                  gap: '6px',
-                  background: 'var(--surface-pill)',
-                  borderRadius: '12px',
-                  padding: '8px 10px',
-                  width: '100%',
-                  boxSizing: 'border-box'
-                }}>
-                  <div style={{ minWidth: 0 }}>
-                    <p style={{ fontSize: '9px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 800, margin: 0 }}>
-                      Link Code
-                    </p>
-                    <p style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-primary)', margin: '1px 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      ?shop={shop.slug}
-                    </p>
-                  </div>
-                  <div style={{ minWidth: 0 }}>
-                    <p style={{ fontSize: '9px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 800, margin: 0 }}>
-                      Barbers
-                    </p>
-                    <p style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-primary)', margin: '1px 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {barbersCount} Chairs
-                    </p>
-                  </div>
-                  <div style={{ minWidth: 0 }}>
-                    <p style={{ fontSize: '9px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 800, margin: 0 }}>
-                      Queue
-                    </p>
-                    <p style={{ fontSize: '11px', fontWeight: 800, color: 'var(--pastel-green)', margin: '1px 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {walkInsCount} Waiting
-                    </p>
-                  </div>
-                </div>
+                          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                            {isComped 
+                              ? 'No billing' 
+                              : `Next billing: ${shop.subscriptionNextBillingDate || 'Pending'}`}
+                          </span>
+                        </div>
 
-                {/* Actions Grid (Row 1: Primary actions, Row 2: Link + Delete) */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', boxSizing: 'border-box' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', width: '100%' }}>
+                        {/* Quick Mark Paid / Manage Sub Action */}
+                        {!isComped && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            {isPastDue && (
+                              <button
+                                onClick={() => handleQuickMarkPaid(shop)}
+                                style={{
+                                  padding: '4px 9px',
+                                  background: 'var(--pastel-green)',
+                                  color: '#FFFFFF',
+                                  borderRadius: '8px',
+                                  fontSize: '11px',
+                                  fontWeight: 800,
+                                  cursor: 'pointer',
+                                  border: 'none',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '3px'
+                                }}
+                              >
+                                <Check size={12} />
+                                <span>Mark Paid</span>
+                              </button>
+                            )}
+
+                            <button
+                              onClick={() => handleOpenSubModal(shop)}
+                              style={{
+                                padding: '4px 8px',
+                                background: 'var(--surface-card)',
+                                border: '1px solid var(--border-subtle)',
+                                color: 'var(--text-secondary)',
+                                borderRadius: '8px',
+                                fontSize: '11px',
+                                fontWeight: 700,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Billing Settings
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Owner Contact info */}
+                      {(shop.ownerContactName || shop.ownerPhone) && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '11px', color: 'var(--text-secondary)', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '6px', flexWrap: 'wrap' }}>
+                          {shop.ownerContactName && (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 650 }}>
+                              <User size={12} style={{ color: 'var(--text-muted)' }} />
+                              {shop.ownerContactName}
+                            </span>
+                          )}
+                          {shop.ownerPhone && (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <Phone size={12} style={{ color: 'var(--text-muted)' }} />
+                              {shop.ownerPhone}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Info Pills: Chairs & Queue */}
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(3, 1fr)',
+                      gap: '6px',
+                      background: 'var(--surface-pill)',
+                      borderRadius: '12px',
+                      padding: '8px 10px',
+                      width: '100%',
+                      boxSizing: 'border-box'
+                    }}>
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ fontSize: '9px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 800, margin: 0 }}>
+                          Code
+                        </p>
+                        <p style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-primary)', margin: '1px 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          ?shop={shop.slug}
+                        </p>
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ fontSize: '9px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 800, margin: 0 }}>
+                          Chairs
+                        </p>
+                        <p style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-primary)', margin: '1px 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {barbersCount} Chairs
+                        </p>
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ fontSize: '9px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 800, margin: 0 }}>
+                          Live Queue
+                        </p>
+                        <p style={{ fontSize: '11px', fontWeight: 800, color: 'var(--pastel-green)', margin: '1px 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {walkInsCount} Waiting
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Master Action Grid */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', boxSizing: 'border-box' }}>
+                      {/* Row 1: Primary Portals Jump */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '6px', width: '100%' }}>
+                        {/* Master 1-Tap Jump to Owner Admin */}
+                        <button
+                          onClick={() => handleMasterJumpToAdmin(shop.slug)}
+                          style={{
+                            padding: '10px 8px',
+                            background: 'var(--accent-primary)',
+                            color: 'var(--bg-main)',
+                            borderRadius: '12px',
+                            fontSize: '12px',
+                            fontWeight: 850,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '5px',
+                            border: 'none',
+                            boxSizing: 'border-box'
+                          }}
+                        >
+                          <Lock size={13} />
+                          <span>Owner Admin</span>
+                        </button>
+
+                        {/* Kiosk Button */}
+                        <button
+                          onClick={() => {
+                            onSwitchShop(shop.slug);
+                            onNavigateTab('kiosk');
+                          }}
+                          style={{
+                            padding: '10px 8px',
+                            background: 'var(--surface-pill)',
+                            border: '1px solid var(--border-subtle)',
+                            color: 'var(--text-primary)',
+                            borderRadius: '12px',
+                            fontSize: '12px',
+                            fontWeight: 750,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '4px',
+                            boxSizing: 'border-box'
+                          }}
+                        >
+                          <Store size={13} />
+                          <span>Kiosk</span>
+                        </button>
+
+                        {/* Barber Portal Button */}
+                        <button
+                          onClick={() => {
+                            onSwitchShop(shop.slug);
+                            onNavigateTab('barber_portal');
+                          }}
+                          style={{
+                            padding: '10px 8px',
+                            background: 'var(--surface-pill)',
+                            border: '1px solid var(--border-subtle)',
+                            color: 'var(--text-primary)',
+                            borderRadius: '12px',
+                            fontSize: '12px',
+                            fontWeight: 750,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '4px',
+                            boxSizing: 'border-box'
+                          }}
+                        >
+                          <Scissors size={13} />
+                          <span>Barbers</span>
+                        </button>
+                      </div>
+
+                      {/* Row 2: Chat, Edit, Copy Link, Delete */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%', boxSizing: 'border-box' }}>
+                        {/* In-App Direct Chat Button */}
+                        <button
+                          onClick={() => setChatDrawerShop(shop)}
+                          style={{
+                            flex: 1,
+                            padding: '8px 10px',
+                            background: shopUnreadCount > 0 ? 'var(--pastel-red-bg)' : 'var(--surface-pill)',
+                            border: `1px solid ${shopUnreadCount > 0 ? 'var(--pastel-red-border)' : 'var(--border-subtle)'}`,
+                            color: shopUnreadCount > 0 ? 'var(--pastel-red)' : 'var(--text-primary)',
+                            borderRadius: '12px',
+                            fontSize: '11px',
+                            fontWeight: 750,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '5px'
+                          }}
+                        >
+                          <MessageSquare size={13} />
+                          <span>Chat</span>
+                          {shopUnreadCount > 0 && (
+                            <span style={{
+                              background: 'var(--pastel-red)',
+                              color: '#FFFFFF',
+                              fontSize: '9px',
+                              fontWeight: 900,
+                              padding: '1px 5px',
+                              borderRadius: 9999
+                            }}>
+                              {shopUnreadCount}
+                            </span>
+                          )}
+                        </button>
+
+                        {/* Edit Shop Details */}
+                        <button
+                          onClick={() => handleOpenEditModal(shop)}
+                          style={{
+                            padding: '8px 10px',
+                            background: 'var(--surface-pill)',
+                            border: '1px solid var(--border-subtle)',
+                            color: 'var(--text-primary)',
+                            borderRadius: '12px',
+                            fontSize: '11px',
+                            fontWeight: 750,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          <Edit3 size={13} />
+                          <span>Edit</span>
+                        </button>
+
+                        {/* Copy Link */}
+                        <button
+                          onClick={() => handleCopyKioskLink(shop.slug)}
+                          title="Copy direct link"
+                          style={{
+                            padding: '8px 10px',
+                            background: 'var(--surface-pill)',
+                            border: '1px solid var(--border-subtle)',
+                            color: copiedSlug === shop.slug ? 'var(--pastel-green)' : 'var(--text-secondary)',
+                            borderRadius: '12px',
+                            fontSize: '11px',
+                            fontWeight: 750,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          {copiedSlug === shop.slug ? <Check size={13} /> : <Copy size={13} />}
+                          <span>Link</span>
+                        </button>
+
+                        {/* Delete Shop */}
+                        <button
+                          onClick={() => setDeleteConfirmShop(shop)}
+                          title="Delete Barbershop"
+                          style={{
+                            padding: '8px 10px',
+                            background: 'var(--pastel-red-bg)',
+                            border: '1px solid var(--pastel-red-border)',
+                            color: 'var(--pastel-red)',
+                            borderRadius: '12px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0
+                          }}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ================= TAB 2: UNIFIED SUPPORT MESSAGES INBOX ================= */}
+        {hqActiveTab === 'messages' && (
+          <div style={{
+            background: 'var(--surface-card)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: '24px',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: 'var(--shadow-bubble)'
+          }}>
+            {/* Inbox Header & Shop Selector */}
+            <div style={{
+              padding: '16px',
+              background: 'var(--surface-pill)',
+              borderBottom: '1px solid var(--border-subtle)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+              flexWrap: 'wrap'
+            }}>
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: 850, margin: 0, color: 'var(--text-primary)' }}>
+                  Support Conversations
+                </h3>
+                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '1px 0 0' }}>
+                  Live in-app messaging with barbershop owners
+                </p>
+              </div>
+
+              {/* Shop Picker Tabs */}
+              <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', scrollbarWidth: 'none' }}>
+                {shops.map((s) => {
+                  const unread = supportMessages.filter(m => m.shopSlug === s.slug && !m.readByHq && m.sender === 'shop_owner').length;
+                  const isSelected = s.slug === activeInboxShop?.slug;
+
+                  return (
                     <button
+                      key={s.id}
                       onClick={() => {
-                        onSwitchShop(shop.slug);
-                        onNavigateTab('kiosk');
+                        setSelectedInboxShopSlug(s.slug);
+                        onMarkSupportRead(s.slug, 'hq');
                       }}
                       style={{
-                        padding: '10px 12px',
-                        background: 'var(--accent-primary)',
-                        color: 'var(--bg-main)',
-                        borderRadius: '12px',
-                        fontSize: '12px',
-                        fontWeight: 850,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '6px',
-                        border: 'none',
-                        boxSizing: 'border-box',
-                        width: '100%'
-                      }}
-                    >
-                      <Store size={14} />
-                      <span>Launch Kiosk</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        onSwitchShop(shop.slug);
-                        onNavigateTab('barber_portal');
-                      }}
-                      style={{
-                        padding: '10px 12px',
-                        background: 'var(--surface-pill)',
-                        border: '1px solid var(--border-subtle)',
-                        color: 'var(--text-primary)',
-                        borderRadius: '12px',
-                        fontSize: '12px',
-                        fontWeight: 750,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '6px',
-                        boxSizing: 'border-box',
-                        width: '100%'
-                      }}
-                    >
-                      <Scissors size={14} />
-                      <span>Barber Hub</span>
-                    </button>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', boxSizing: 'border-box' }}>
-                    <button
-                      onClick={() => handleCopyKioskLink(shop.slug)}
-                      title="Copy direct link"
-                      style={{
-                        flex: 1,
-                        padding: '8px 12px',
-                        background: 'var(--surface-pill)',
-                        border: '1px solid var(--border-subtle)',
-                        color: copiedSlug === shop.slug ? 'var(--pastel-green)' : 'var(--text-secondary)',
-                        borderRadius: '12px',
+                        padding: '6px 12px',
+                        borderRadius: '9999px',
                         fontSize: '11px',
                         fontWeight: 750,
+                        background: isSelected ? 'var(--accent-primary)' : 'var(--surface-card)',
+                        color: isSelected ? 'var(--bg-main)' : 'var(--text-secondary)',
+                        border: '1px solid var(--border-subtle)',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center',
                         gap: '5px',
-                        boxSizing: 'border-box',
-                        minWidth: 0
+                        whiteSpace: 'nowrap'
                       }}
                     >
-                      {copiedSlug === shop.slug ? <Check size={13} /> : <Copy size={13} />}
-                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {copiedSlug === shop.slug ? 'Link Copied!' : 'Copy Direct Link'}
-                      </span>
+                      <span>{s.name}</span>
+                      {unread > 0 && (
+                        <span style={{
+                          background: 'var(--pastel-red)',
+                          color: '#FFFFFF',
+                          fontSize: '9px',
+                          fontWeight: 900,
+                          padding: '1px 5px',
+                          borderRadius: 9999
+                        }}>
+                          {unread}
+                        </span>
+                      )}
                     </button>
-
-                    <button
-                      onClick={() => setDeleteConfirmShop(shop)}
-                      title="Delete Barbershop"
-                      style={{
-                        padding: '8px 12px',
-                        background: 'var(--pastel-red-bg)',
-                        border: '1px solid var(--pastel-red-border)',
-                        color: 'var(--pastel-red)',
-                        borderRadius: '12px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        boxSizing: 'border-box',
-                        flexShrink: 0
-                      }}
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                </div>
+                  );
+                })}
               </div>
-            );
-          })}
-        </div>
+            </div>
+
+            {/* Conversation Messages View */}
+            <div style={{
+              height: '380px',
+              overflowY: 'auto',
+              padding: '16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px'
+            }}>
+              {activeInboxMessages.length === 0 ? (
+                <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  <MessageSquare size={36} style={{ margin: '0 auto 8px', opacity: 0.4 }} />
+                  <p style={{ fontSize: '13px', fontWeight: 700, margin: 0 }}>No messages yet with {activeInboxShop?.name}</p>
+                </div>
+              ) : (
+                activeInboxMessages.map((msg) => {
+                  const isMine = msg.sender === 'platform_hq';
+                  return (
+                    <div
+                      key={msg.id}
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: isMine ? 'flex-end' : 'flex-start',
+                        maxWidth: '85%',
+                        alignSelf: isMine ? 'flex-end' : 'flex-start'
+                      }}
+                    >
+                      <div style={{ fontSize: '10px', fontWeight: 750, color: 'var(--text-muted)', marginBottom: '3px' }}>
+                        {isMine ? 'You (Platform HQ)' : msg.senderName || `${activeInboxShop?.name} Owner`}
+                      </div>
+
+                      <div style={{
+                        padding: '10px 14px',
+                        borderRadius: isMine ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                        background: isMine ? 'var(--accent-primary)' : 'var(--surface-pill)',
+                        color: isMine ? 'var(--bg-main)' : 'var(--text-primary)',
+                        border: isMine ? 'none' : '1px solid var(--border-subtle)',
+                        fontSize: '13px',
+                        lineHeight: 1.4
+                      }}>
+                        {msg.text}
+                      </div>
+
+                      <span style={{ fontSize: '9px', color: 'var(--text-light)', marginTop: '2px' }}>
+                        {new Date(msg.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Reply Input Bar */}
+            <form
+              onSubmit={handleSendInboxReply}
+              style={{
+                padding: '12px 16px',
+                background: 'var(--surface-pill)',
+                borderTop: '1px solid var(--border-subtle)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              <input
+                type="text"
+                placeholder={`Reply to ${activeInboxShop?.name}...`}
+                value={inboxReplyText}
+                onChange={(e) => setInboxReplyText(e.target.value)}
+                style={{
+                  flex: 1,
+                  padding: '12px 14px',
+                  background: 'var(--surface-card)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '14px',
+                  color: 'var(--text-primary)',
+                  fontSize: '13px',
+                  outline: 'none'
+                }}
+              />
+
+              <button
+                type="submit"
+                disabled={!inboxReplyText.trim()}
+                style={{
+                  padding: '12px 16px',
+                  background: inboxReplyText.trim() ? 'var(--accent-primary)' : 'var(--surface-card)',
+                  color: inboxReplyText.trim() ? 'var(--bg-main)' : 'var(--text-muted)',
+                  borderRadius: '14px',
+                  fontSize: '13px',
+                  fontWeight: 800,
+                  border: '1px solid var(--border-subtle)',
+                  cursor: inboxReplyText.trim() ? 'pointer' : 'default',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <Send size={15} />
+                <span>Send</span>
+              </button>
+            </form>
+          </div>
+        )}
       </div>
 
       {/* ================= MODAL: ADD NEW BARBERSHOP ================= */}
@@ -918,11 +1575,12 @@ export function SuperAdminDashboard({
           justifyContent: 'center',
           zIndex: 100,
           padding: '16px',
-          boxSizing: 'border-box'
+          boxSizing: 'border-box',
+          overflowY: 'auto'
         }}>
           <div style={{
             width: '100%',
-            maxWidth: '460px',
+            maxWidth: '480px',
             background: 'var(--surface-card)',
             border: '1px solid var(--border-subtle)',
             borderRadius: '26px',
@@ -942,7 +1600,7 @@ export function SuperAdminDashboard({
                     Add Barbershop
                   </h3>
                   <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '1px 0 0' }}>
-                    Create a new shop tenant in seconds
+                    Create a new shop tenant with subscription details
                   </p>
                 </div>
               </div>
@@ -955,204 +1613,369 @@ export function SuperAdminDashboard({
             </div>
 
             {formError && (
-              <div style={{ padding: '9px 12px', background: 'var(--pastel-red-bg)', border: '1px solid var(--pastel-red-border)', borderRadius: '12px', color: 'var(--pastel-red)', fontSize: '12px', marginBottom: '12px' }}>
+              <div style={{ padding: '10px', background: 'var(--pastel-red-bg)', border: '1px solid var(--pastel-red-border)', borderRadius: '12px', color: 'var(--pastel-red)', fontSize: '12px', fontWeight: 700, marginBottom: '14px' }}>
                 {formError}
               </div>
             )}
 
             <form onSubmit={handleCreateShopSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                  Business Name *
-                </label>
+                <label style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Shop Name *</label>
                 <input
                   type="text"
-                  placeholder="e.g. Crown & Blade Barber Lounge"
+                  required
+                  placeholder="e.g. Crown Barbershop"
                   value={newName}
                   onChange={(e) => handleNameChange(e.target.value)}
-                  required
-                  style={{
-                    width: '100%',
-                    padding: '11px 13px',
-                    background: 'var(--surface-pill)',
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: '12px',
-                    color: 'var(--text-primary)',
-                    fontSize: '14px',
-                    boxSizing: 'border-box'
-                  }}
+                  style={{ width: '100%', padding: '12px', background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', borderRadius: '12px', color: 'var(--text-primary)', fontSize: '14px', marginTop: '4px', boxSizing: 'border-box' }}
                 />
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                  Link Slug *
-                </label>
-                <div style={{ display: 'flex', alignItems: 'center', background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', borderRadius: '12px', overflow: 'hidden' }}>
-                  <span style={{ padding: '0 10px', color: 'var(--text-muted)', fontSize: '12px', fontWeight: 700 }}>
-                    /?shop=
-                  </span>
+                <label style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>URL Link Code *</label>
+                <div style={{ display: 'flex', alignItems: 'center', background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '0 12px', marginTop: '4px' }}>
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 700 }}>?shop=</span>
                   <input
                     type="text"
-                    placeholder="crownblade"
+                    required
+                    placeholder="crown"
                     value={newSlug}
                     onChange={(e) => setNewSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-_]/g, ''))}
-                    required
-                    style={{
-                      flex: 1,
-                      padding: '11px 13px 11px 0',
-                      background: 'transparent',
-                      border: 'none',
-                      color: 'var(--text-primary)',
-                      fontWeight: 800,
-                      fontSize: '14px'
-                    }}
+                    style={{ flex: 1, padding: '12px 6px', background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: '14px', outline: 'none' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Owner Name</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Marcus Rivera"
+                    value={newOwnerName}
+                    onChange={(e) => setNewOwnerName(e.target.value)}
+                    style={{ width: '100%', padding: '12px', background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', borderRadius: '12px', color: 'var(--text-primary)', fontSize: '13px', marginTop: '4px', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Owner Phone</label>
+                  <input
+                    type="text"
+                    placeholder="(555) 000-0000"
+                    value={newOwnerPhone}
+                    onChange={(e) => setNewOwnerPhone(e.target.value)}
+                    style={{ width: '100%', padding: '12px', background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', borderRadius: '12px', color: 'var(--text-primary)', fontSize: '13px', marginTop: '4px', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Monthly Fee ($/mo)</label>
+                  <input
+                    type="number"
+                    value={newMonthlyFee}
+                    onChange={(e) => setNewMonthlyFee(Number(e.target.value))}
+                    style={{ width: '100%', padding: '12px', background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', borderRadius: '12px', color: 'var(--text-primary)', fontSize: '14px', marginTop: '4px', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Owner PIN</label>
+                  <input
+                    type="text"
+                    maxLength={4}
+                    value={newPin}
+                    onChange={(e) => setNewPin(e.target.value)}
+                    style={{ width: '100%', padding: '12px', background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', borderRadius: '12px', color: 'var(--text-primary)', fontSize: '14px', textAlign: 'center', marginTop: '4px', boxSizing: 'border-box' }}
                   />
                 </div>
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                  Colorway *
-                </label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                  <button
-                    type="button"
-                    onClick={() => setNewTheme('clean_studio')}
-                    style={{
-                      padding: '12px',
-                      borderRadius: '12px',
-                      background: '#FFFFFF',
-                      border: newTheme === 'clean_studio' ? '2px solid #09090B' : '1px solid #E4E4E7',
-                      color: '#09090B',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                      fontSize: '12px',
-                      fontWeight: 800,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <Sun size={14} style={{ color: '#F59E0B' }} />
-                    <span>Studio Light</span>
-                    {newTheme === 'clean_studio' && <Check size={14} />}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setNewTheme('obsidian_noir')}
-                    style={{
-                      padding: '12px',
-                      borderRadius: '12px',
-                      background: '#09090B',
-                      border: newTheme === 'obsidian_noir' ? '2px solid #FAFAFA' : '1px solid #27272A',
-                      color: '#FAFAFA',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                      fontSize: '12px',
-                      fontWeight: 800,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <Moon size={14} />
-                    <span>Obsidian Dark</span>
-                    {newTheme === 'obsidian_noir' && <Check size={14} />}
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                  Location Address
-                </label>
+                <label style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Physical Address</label>
                 <input
                   type="text"
-                  placeholder="e.g. 520 Main Street, Suite 4B"
+                  placeholder="e.g. 1204 Main St, Suite B"
                   value={newAddress}
                   onChange={(e) => setNewAddress(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '11px 13px',
-                    background: 'var(--surface-pill)',
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: '12px',
-                    color: 'var(--text-primary)',
-                    fontSize: '13px',
-                    boxSizing: 'border-box'
-                  }}
+                  style={{ width: '100%', padding: '12px', background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', borderRadius: '12px', color: 'var(--text-primary)', fontSize: '13px', marginTop: '4px', boxSizing: 'border-box' }}
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setIsNewShopModalOpen(false)}
+                  style={{ padding: '12px', background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)', borderRadius: '14px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  style={{ padding: '12px', background: 'var(--accent-primary)', color: 'var(--bg-main)', borderRadius: '14px', fontSize: '13px', fontWeight: 850, border: 'none', cursor: 'pointer' }}
+                >
+                  Create Barbershop
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL: EDIT SHOP DETAILS ================= */}
+      {editModalShop && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 100,
+          padding: '16px',
+          boxSizing: 'border-box',
+          overflowY: 'auto'
+        }}>
+          <div style={{
+            width: '100%',
+            maxWidth: '460px',
+            background: 'var(--surface-card)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: '26px',
+            padding: '24px 20px',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            boxShadow: 'var(--shadow-bubble)',
+            boxSizing: 'border-box'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Edit3 size={18} style={{ color: 'var(--text-primary)' }} />
                 <div>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                    Owner PIN
-                  </label>
+                  <h3 style={{ fontSize: '17px', fontWeight: 850, margin: 0, color: 'var(--text-primary)' }}>
+                    Edit {editModalShop.name}
+                  </h3>
+                  <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '1px 0 0' }}>
+                    Update contact, PIN & default rent
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setEditModalShop(null)}
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '20px', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditShop} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Shop Name</label>
+                <input
+                  type="text"
+                  required
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  style={{ width: '100%', padding: '12px', background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', borderRadius: '12px', color: 'var(--text-primary)', fontSize: '14px', marginTop: '4px', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Address</label>
+                <input
+                  type="text"
+                  value={editAddress}
+                  onChange={(e) => setEditAddress(e.target.value)}
+                  style={{ width: '100%', padding: '12px', background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', borderRadius: '12px', color: 'var(--text-primary)', fontSize: '13px', marginTop: '4px', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Owner Name</label>
                   <input
                     type="text"
-                    maxLength={6}
-                    value={newPin}
-                    onChange={(e) => setNewPin(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '11px 13px',
-                      background: 'var(--surface-pill)',
-                      border: '1px solid var(--border-subtle)',
-                      borderRadius: '12px',
-                      color: 'var(--text-primary)',
-                      fontSize: '13px',
-                      boxSizing: 'border-box'
-                    }}
+                    value={editOwnerName}
+                    onChange={(e) => setEditOwnerName(e.target.value)}
+                    style={{ width: '100%', padding: '12px', background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', borderRadius: '12px', color: 'var(--text-primary)', fontSize: '13px', marginTop: '4px', boxSizing: 'border-box' }}
                   />
                 </div>
-
                 <div>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                    Monthly Plan ($)
-                  </label>
+                  <label style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Owner Phone</label>
                   <input
-                    type="number"
-                    value={newMonthlyPrice}
-                    onChange={(e) => setNewMonthlyPrice(Number(e.target.value))}
-                    style={{
-                      width: '100%',
-                      padding: '11px 13px',
-                      background: 'var(--surface-pill)',
-                      border: '1px solid var(--border-subtle)',
-                      borderRadius: '12px',
-                      color: 'var(--text-primary)',
-                      fontSize: '13px',
-                      boxSizing: 'border-box'
-                    }}
+                    type="text"
+                    value={editOwnerPhone}
+                    onChange={(e) => setEditOwnerPhone(e.target.value)}
+                    style={{ width: '100%', padding: '12px', background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', borderRadius: '12px', color: 'var(--text-primary)', fontSize: '13px', marginTop: '4px', boxSizing: 'border-box' }}
                   />
                 </div>
               </div>
 
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Manager PIN</label>
+                  <input
+                    type="text"
+                    maxLength={4}
+                    value={editPin}
+                    onChange={(e) => setEditPin(e.target.value)}
+                    style={{ width: '100%', padding: '12px', background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', borderRadius: '12px', color: 'var(--text-primary)', fontSize: '14px', textAlign: 'center', marginTop: '4px', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Default Rent ($/wk)</label>
+                  <input
+                    type="number"
+                    value={editWeeklyRent}
+                    onChange={(e) => setEditWeeklyRent(Number(e.target.value))}
+                    style={{ width: '100%', padding: '12px', background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', borderRadius: '12px', color: 'var(--text-primary)', fontSize: '14px', marginTop: '4px', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setEditModalShop(null)}
+                  style={{ padding: '12px', background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)', borderRadius: '14px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  style={{ padding: '12px', background: 'var(--accent-primary)', color: 'var(--bg-main)', borderRadius: '14px', fontSize: '13px', fontWeight: 850, border: 'none', cursor: 'pointer' }}
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL: MANAGE SUBSCRIPTION BILLING ================= */}
+      {subscriptionModalShop && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 100,
+          padding: '16px',
+          boxSizing: 'border-box',
+          overflowY: 'auto'
+        }}>
+          <div style={{
+            width: '100%',
+            maxWidth: '440px',
+            background: 'var(--surface-card)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: '26px',
+            padding: '24px 20px',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            boxShadow: 'var(--shadow-bubble)',
+            boxSizing: 'border-box'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <CreditCard size={18} style={{ color: 'var(--pastel-green)' }} />
+                <div>
+                  <h3 style={{ fontSize: '17px', fontWeight: 850, margin: 0, color: 'var(--text-primary)' }}>
+                    Subscription: {subscriptionModalShop.name}
+                  </h3>
+                  <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '1px 0 0' }}>
+                    Track and manage monthly payments to you
+                  </p>
+                </div>
+              </div>
               <button
-                type="submit"
-                style={{
-                  marginTop: '6px',
-                  padding: '13px',
-                  background: 'var(--accent-primary)',
-                  color: 'var(--bg-main)',
-                  borderRadius: '14px',
-                  fontSize: '14px',
-                  fontWeight: 850,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                  border: 'none',
-                  boxShadow: 'var(--shadow-sm)'
-                }}
+                onClick={() => setSubscriptionModalShop(null)}
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '20px', cursor: 'pointer' }}
               >
-                <Sparkles size={16} />
-                Create Barbershop
+                ✕
               </button>
+            </div>
+
+            <form onSubmit={handleSaveSubscription} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Subscription Status</label>
+                <select
+                  value={subStatus}
+                  onChange={(e) => setSubStatus(e.target.value as SubscriptionStatus)}
+                  style={{ width: '100%', padding: '12px', background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', borderRadius: '12px', color: 'var(--text-primary)', fontSize: '13px', marginTop: '4px', boxSizing: 'border-box' }}
+                >
+                  <option value="active">🟢 Active & Paid</option>
+                  <option value="past_due">🔴 Past Due / Overdue</option>
+                  <option value="trial">🟡 Free Trial</option>
+                  <option value="comped">⚪ Comped / Internal Shop ($0)</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Monthly Rate ($/mo)</label>
+                  <input
+                    type="number"
+                    value={subFee}
+                    onChange={(e) => setSubFee(Number(e.target.value))}
+                    style={{ width: '100%', padding: '12px', background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', borderRadius: '12px', color: 'var(--text-primary)', fontSize: '14px', marginTop: '4px', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Next Billing Date</label>
+                  <input
+                    type="date"
+                    value={subNextBilling}
+                    onChange={(e) => setSubNextBilling(e.target.value)}
+                    style={{ width: '100%', padding: '12px', background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', borderRadius: '12px', color: 'var(--text-primary)', fontSize: '13px', marginTop: '4px', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Payment Method</label>
+                <select
+                  value={subPaymentMethod}
+                  onChange={(e) => setSubPaymentMethod(e.target.value as SubscriptionPaymentMethod)}
+                  style={{ width: '100%', padding: '12px', background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', borderRadius: '12px', color: 'var(--text-primary)', fontSize: '13px', marginTop: '4px', boxSizing: 'border-box' }}
+                >
+                  <option value="zelle">Zelle Transfer</option>
+                  <option value="cash">Cash In-Person</option>
+                  <option value="card">Credit / Debit Card</option>
+                  <option value="stripe">Stripe Subscription</option>
+                  <option value="apple_pay">Apple Pay</option>
+                  <option value="manual">Manual / Comped</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setSubscriptionModalShop(null)}
+                  style={{ padding: '12px', background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)', borderRadius: '14px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  style={{ padding: '12px', background: 'var(--accent-primary)', color: 'var(--bg-main)', borderRadius: '14px', fontSize: '13px', fontWeight: 850, border: 'none', cursor: 'pointer' }}
+                >
+                  Save Subscription
+                </button>
+              </div>
             </form>
           </div>
         </div>
@@ -1216,47 +2039,34 @@ export function SuperAdminDashboard({
                   onUpdateShop(themeModalShop.slug, { themeId: 'clean_studio' });
                   applyTheme('clean_studio');
                   setThemeModalShop({ ...themeModalShop, themeId: 'clean_studio' });
+                  showToast(`Applied Studio Light to ${themeModalShop.name}`);
                 }}
                 style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
                   padding: '14px 16px',
                   borderRadius: '16px',
                   background: '#FFFFFF',
-                  border: themeModalShop.themeId === 'clean_studio' ? '2.5px solid #09090B' : '1px solid #E4E4E7',
                   color: '#09090B',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
+                  border: themeModalShop.themeId === 'clean_studio' ? '2px solid #09090B' : '1px solid rgba(0,0,0,0.1)',
                   cursor: 'pointer',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.06)'
+                  textAlign: 'left'
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '10px',
-                    background: '#F4F4F6',
-                    border: '1px solid #E4E4E7',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#09090B'
-                  }}>
-                    <Sun size={18} style={{ color: '#F59E0B' }} />
-                  </div>
-                  <div style={{ textAlign: 'left' }}>
-                    <p style={{ fontSize: '14px', fontWeight: 800, color: '#09090B', margin: 0 }}>
-                      Studio Light
-                    </p>
-                    <p style={{ fontSize: '11px', color: '#71717A', margin: 0 }}>
-                      Crisp minimal white with deep ink typography
-                    </p>
-                  </div>
+                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#F4F4F5', border: '1px solid #E4E4E7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Sun size={18} style={{ color: '#F59E0B' }} />
+                </div>
+                <div>
+                  <p style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: '#09090B' }}>
+                    Studio Light
+                  </p>
+                  <p style={{ margin: '1px 0 0', fontSize: '11px', color: '#71717A' }}>
+                    Crisp white, frosted glass & pastel accents
+                  </p>
                 </div>
                 {themeModalShop.themeId === 'clean_studio' && (
-                  <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#09090B', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Check size={14} />
-                  </div>
+                  <Check size={18} style={{ marginLeft: 'auto', color: '#09090B' }} />
                 )}
               </button>
 
@@ -1266,129 +2076,36 @@ export function SuperAdminDashboard({
                   onUpdateShop(themeModalShop.slug, { themeId: 'obsidian_noir' });
                   applyTheme('obsidian_noir');
                   setThemeModalShop({ ...themeModalShop, themeId: 'obsidian_noir' });
+                  showToast(`Applied Obsidian Dark to ${themeModalShop.name}`);
                 }}
                 style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
                   padding: '14px 16px',
                   borderRadius: '16px',
                   background: '#09090B',
-                  border: themeModalShop.themeId !== 'clean_studio' ? '2.5px solid #FAFAFA' : '1px solid #27272A',
                   color: '#FAFAFA',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
+                  border: (themeModalShop.themeId === 'obsidian_noir' || themeModalShop.themeId === 'obsidian_emerald') ? '2px solid #FAFAFA' : '1px solid #27272A',
                   cursor: 'pointer',
-                  boxShadow: '0 4px 16px rgba(0,0,0,0.4)'
+                  textAlign: 'left'
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '10px',
-                    background: '#18181B',
-                    border: '1px solid #27272A',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#FAFAFA'
-                  }}>
-                    <Moon size={18} />
-                  </div>
-                  <div style={{ textAlign: 'left' }}>
-                    <p style={{ fontSize: '14px', fontWeight: 800, color: '#FAFAFA', margin: 0 }}>
-                      Obsidian Dark
-                    </p>
-                    <p style={{ fontSize: '11px', color: '#A1A1AA', margin: 0 }}>
-                      Stealth matte black with glowing glass pills
-                    </p>
-                  </div>
+                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#18181B', border: '1px solid #27272A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Moon size={18} style={{ color: '#FAFAFA' }} />
                 </div>
-                {themeModalShop.themeId !== 'clean_studio' && (
-                  <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#FAFAFA', color: '#09090B', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Check size={14} />
-                  </div>
+                <div>
+                  <p style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: '#FAFAFA' }}>
+                    Obsidian Dark
+                  </p>
+                  <p style={{ margin: '1px 0 0', fontSize: '11px', color: '#A1A1AA' }}>
+                    Sleek dark mode with glassmorphism & pastel glow
+                  </p>
+                </div>
+                {(themeModalShop.themeId === 'obsidian_noir' || themeModalShop.themeId === 'obsidian_emerald') && (
+                  <Check size={18} style={{ marginLeft: 'auto', color: '#FAFAFA' }} />
                 )}
               </button>
-            </div>
-
-            {/* Custom Logo Upload */}
-            <div style={{ marginBottom: '16px', padding: '12px', background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', borderRadius: '14px' }}>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                Custom Shop Logo
-              </label>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <input
-                  type="text"
-                  placeholder="Paste image URL"
-                  value={themeModalShop.logoUrl || ''}
-                  onChange={(e) => {
-                    const newUrl = e.target.value;
-                    onUpdateShop(themeModalShop.slug, { logoUrl: newUrl });
-                    setThemeModalShop({ ...themeModalShop, logoUrl: newUrl });
-                  }}
-                  style={{
-                    flex: 1,
-                    padding: '9px 11px',
-                    background: 'var(--surface-card)',
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: '10px',
-                    color: 'var(--text-primary)',
-                    fontSize: '12px'
-                  }}
-                />
-                <label
-                  style={{
-                    padding: '9px 12px',
-                    background: 'var(--surface-card)',
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: '10px',
-                    color: 'var(--text-primary)',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap'
-                  }}
-                >
-                  Upload
-                  <input
-                    type="file"
-                    accept="image/*"
-                    style={{ display: 'none' }}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                          const base64 = reader.result as string;
-                          onUpdateShop(themeModalShop.slug, { logoUrl: base64 });
-                          setThemeModalShop({ ...themeModalShop, logoUrl: base64 });
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    }}
-                  />
-                </label>
-              </div>
-
-              {themeModalShop.logoUrl && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
-                  <img
-                    src={themeModalShop.logoUrl}
-                    alt="Logo preview"
-                    style={{ width: '32px', height: '32px', objectFit: 'contain', borderRadius: '8px', background: '#FFFFFF', padding: '2px' }}
-                  />
-                  <span style={{ fontSize: '11px', color: 'var(--pastel-green)', fontWeight: 700 }}>Custom Logo Active</span>
-                  <button
-                    onClick={() => {
-                      onUpdateShop(themeModalShop.slug, { logoUrl: '' });
-                      setThemeModalShop({ ...themeModalShop, logoUrl: '' });
-                    }}
-                    style={{ fontSize: '11px', color: 'var(--pastel-red)', background: 'none', border: 'none', cursor: 'pointer', marginLeft: 'auto', fontWeight: 700 }}
-                  >
-                    Remove
-                  </button>
-                </div>
-              )}
             </div>
 
             <button
@@ -1396,16 +2113,16 @@ export function SuperAdminDashboard({
               style={{
                 width: '100%',
                 padding: '12px',
-                background: 'var(--accent-primary)',
-                color: 'var(--bg-main)',
-                border: 'none',
-                borderRadius: '12px',
+                background: 'var(--surface-pill)',
+                border: '1px solid var(--border-subtle)',
+                color: 'var(--text-primary)',
+                borderRadius: '14px',
                 fontSize: '13px',
-                fontWeight: 800,
+                fontWeight: 700,
                 cursor: 'pointer'
               }}
             >
-              Done & Save
+              Done
             </button>
           </div>
         </div>
@@ -1593,11 +2310,28 @@ export function SuperAdminDashboard({
                   cursor: 'pointer'
                 }}
               >
-                Reset All
+                Reset Platform
               </button>
             </div>
           </div>
         </div>
+      )}
+
+      {/* ================= IN-APP SUPPORT CHAT DRAWER ================= */}
+      {chatDrawerShop && (
+        <SupportChatDrawer
+          isOpen={!!chatDrawerShop}
+          onClose={() => setChatDrawerShop(null)}
+          currentShop={chatDrawerShop}
+          messages={supportMessages}
+          userRole="platform_hq"
+          onSendMessage={(text) => {
+            onSendSupportMessage(chatDrawerShop.slug, text, 'platform_hq', 'Platform HQ');
+          }}
+          onMarkRead={() => {
+            onMarkSupportRead(chatDrawerShop.slug, 'hq');
+          }}
+        />
       )}
     </div>
   );
