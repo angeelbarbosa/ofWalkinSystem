@@ -104,6 +104,15 @@ export function App() {
     markShopSubscriptionPaid
   } = useLiveSystem();
 
+  // Scroll window to top whenever portal tab changes (e.g. jumping from HQ to Shop Admin)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' as any });
+      document.body.scrollTop = 0;
+      document.documentElement.scrollTop = 0;
+    }
+  }, [currentTab]);
+
   // Keep URL query parameter and localStorage in sync with active portal
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -364,10 +373,41 @@ export function App() {
           <>
             {/* STAFF VIEWS HEADER (Only shown when inside Barber Portal or Admin) */}
             {currentTab !== 'kiosk' && (
-              <header style={{ width: '100%', maxWidth: '680px', margin: '0 auto 18px' }}>
+              <header 
+                style={{ 
+                  width: '100%', 
+                  maxWidth: '680px', 
+                  margin: '0 auto 16px',
+                  paddingTop: 'max(8px, env(safe-area-inset-top, 8px))',
+                  boxSizing: 'border-box'
+                }}
+              >
                 {/* Navigation Controls Bar with Shop Identity Badge */}
-                <div className="staff-nav-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', width: '100%' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                <div className="staff-nav-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', width: '100%', flexWrap: 'nowrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                    {sessionStorage.getItem('walkin_super_admin_unlocked') === 'true' && (
+                      <button
+                        onClick={() => setCurrentTab('super_admin')}
+                        className="back-pill-btn"
+                        style={{ 
+                          padding: '7px 11px', 
+                          fontSize: '0.78rem', 
+                          whiteSpace: 'nowrap', 
+                          flexShrink: 0,
+                          background: 'rgba(245, 158, 11, 0.15)',
+                          border: '1px solid var(--accent-primary)',
+                          color: 'var(--accent-primary)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                        title="Return to Master HQ Fleet"
+                      >
+                        <Shield size={13} />
+                        <span>HQ</span>
+                      </button>
+                    )}
+
                     <button
                       onClick={() => {
                         setAuthenticatedBarber(null);
@@ -375,10 +415,10 @@ export function App() {
                         handleResetKiosk();
                       }}
                       className="back-pill-btn"
-                      style={{ padding: '8px 14px', fontSize: '0.82rem', whiteSpace: 'nowrap', flexShrink: 0 }}
+                      style={{ padding: '7px 12px', fontSize: '0.8rem', whiteSpace: 'nowrap', flexShrink: 0 }}
                       title="Exit to Customer Kiosk"
                     >
-                      <ArrowLeft size={15} />
+                      <ArrowLeft size={14} />
                       <span>Kiosk</span>
                     </button>
 
@@ -386,23 +426,24 @@ export function App() {
                     <ShopSwitcherBar currentShop={activeShop} />
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
                     {currentTab === 'barber_portal' && (
                       <div
                         style={{
                           background: 'var(--surface-card, #09090B)',
                           border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
                           color: 'var(--text-primary, #FFFFFF)',
-                          padding: '6px 14px',
+                          padding: '5px 10px',
                           borderRadius: 9999,
-                          fontSize: '0.82rem',
+                          fontSize: '0.78rem',
                           fontWeight: 800,
                           display: 'flex',
                           alignItems: 'center',
-                          gap: 6
+                          gap: 5,
+                          whiteSpace: 'nowrap'
                         }}
                       >
-                        <Scissors size={14} />
+                        <Scissors size={13} />
                         <span>{authenticatedBarber ? `${authenticatedBarber.name} (#${authenticatedBarber.stationNumber})` : 'Barber Hub'}</span>
                       </div>
                     )}
@@ -413,17 +454,18 @@ export function App() {
                           background: 'var(--surface-card, #09090B)',
                           border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
                           color: 'var(--text-primary, #FFFFFF)',
-                          padding: '6px 14px',
+                          padding: '5px 10px',
                           borderRadius: 9999,
-                          fontSize: '0.82rem',
+                          fontSize: '0.78rem',
                           fontWeight: 800,
                           display: 'flex',
                           alignItems: 'center',
-                          gap: 6
+                          gap: 5,
+                          whiteSpace: 'nowrap'
                         }}
                       >
-                        <Lock size={13} />
-                        <span>Shop Admin</span>
+                        <Lock size={12} />
+                        <span>Admin</span>
                       </div>
                     )}
                   </div>
