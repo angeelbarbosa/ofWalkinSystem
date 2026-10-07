@@ -9,6 +9,7 @@ import {
   X
 } from 'lucide-react';
 import type { Barber, RentPaymentRecord, ShopConfig } from '../../types';
+import { ModalOverlay } from '../Shared/ModalOverlay';
 
 interface RentLedgerDashboardProps {
   barbers: Barber[];
@@ -317,72 +318,186 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
 
       {/* 3. Record Offline Payment Modal */}
       {selectedBarberForCash && (
-        <div className="modal-overlay">
-          <div className="bubbly-modal-card pop-in" style={{ maxWidth: 420, padding: '24px 20px', background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-bubble)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0 }}>
-                Record Rent: {selectedBarberForCash.name}
-              </h3>
-              <button
-                onClick={() => setSelectedBarberForCash(null)}
-                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
-              >
-                <X size={18} />
-              </button>
+        <ModalOverlay onClose={() => setSelectedBarberForCash(null)} maxWidth={420}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0 }}>
+              Record Rent: {selectedBarberForCash.name}
+            </h3>
+            <button
+              onClick={() => setSelectedBarberForCash(null)}
+              style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <form onSubmit={handleRecordOfflinePayment} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div>
+              <label className="form-label">Payment Method</label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+                {(['manual', 'card', 'stripe'] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setCashPaymentMethod(m)}
+                    style={{
+                      padding: '9px',
+                      borderRadius: 12,
+                      border: cashPaymentMethod === m ? '2px solid var(--text-primary)' : '1px solid var(--border-subtle)',
+                      background: cashPaymentMethod === m ? 'var(--surface-pill)' : 'var(--surface-card)',
+                      color: 'var(--text-primary)',
+                      fontWeight: 750,
+                      fontSize: '0.82rem',
+                      textTransform: 'capitalize',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {m === 'manual' ? 'Manual Credit' : m}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <form onSubmit={handleRecordOfflinePayment} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div>
-                <label className="form-label">Payment Method</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
-                  {(['manual', 'card', 'stripe'] as const).map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => setCashPaymentMethod(m)}
-                      style={{
-                        padding: '9px',
-                        borderRadius: 12,
-                        border: cashPaymentMethod === m ? '2px solid var(--text-primary)' : '1px solid var(--border-subtle)',
-                        background: cashPaymentMethod === m ? 'var(--surface-pill)' : 'var(--surface-card)',
-                        color: 'var(--text-primary)',
-                        fontWeight: 750,
-                        fontSize: '0.82rem',
-                        textTransform: 'capitalize',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      {m === 'manual' ? 'Manual Credit' : m}
-                    </button>
-                  ))}
+            <div>
+              <label className="form-label">Amount Paid ($)</label>
+              <input
+                type="number"
+                disabled
+                value={selectedBarberForCash.weeklyRent || 200}
+                className="bubbly-input"
+              />
+            </div>
+
+            <div>
+              <label className="form-label">Notes / Reference (Optional)</label>
+              <input
+                type="text"
+                placeholder="e.g. In-person card payment / shop credit"
+                value={cashNotes}
+                onChange={(e) => setCashNotes(e.target.value)}
+                className="bubbly-input"
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+              <button
+                type="button"
+                onClick={() => setSelectedBarberForCash(null)}
+                className="back-pill-btn"
+                style={{ flex: 1, justifyContent: 'center' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="choice-card-action-btn"
+                style={{ flex: 2, justifyContent: 'center' }}
+              >
+                <Check size={16} />
+                <span>Confirm Paid</span>
+              </button>
+            </div>
+          </form>
+        </ModalOverlay>
+      )}
+
+      {/* 4. Edit Chair Rent Amount Modal */}
+      {editingRentBarber && (
+        <ModalOverlay
+          onClose={() => {
+            setEditingRentBarber(null);
+            setShowRentConfirm(false);
+          }}
+          maxWidth={400}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0 }}>
+              {showRentConfirm ? 'Confirm Rate Change' : `Set Rent: ${editingRentBarber.name}`}
+            </h3>
+            <button
+              onClick={() => {
+                setEditingRentBarber(null);
+                setShowRentConfirm(false);
+              }}
+              style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          {showRentConfirm ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ background: 'var(--surface-pill)', padding: '14px 16px', borderRadius: 14, border: '1px solid var(--border-subtle)' }}>
+                <div style={{ fontSize: '0.88rem', color: 'var(--text-primary)', marginBottom: 10, fontWeight: 750 }}>
+                  Are you sure you want to change rent for <strong>{editingRentBarber.name}</strong>?
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, background: 'var(--surface-card)', padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border-subtle)' }}>
+                  <div>
+                    <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 800 }}>Current Rate</div>
+                    <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-secondary)' }}>
+                      ${editingRentBarber.weeklyRent || config.defaultWeeklyRent || 200}/wk
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>➔</div>
+                  <div>
+                    <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--pastel-green)', fontWeight: 800 }}>New Rate</div>
+                    <div style={{ fontSize: '1.15rem', fontWeight: 900, color: 'var(--pastel-green)' }}>
+                      ${parseFloat(newRentAmount) || 0}/wk
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label className="form-label">Amount Paid ($)</label>
-                <input
-                  type="number"
-                  disabled
-                  value={selectedBarberForCash.weeklyRent || 200}
-                  className="bubbly-input"
-                />
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                This change will update in real-time across all devices and will immediately show on <strong>{editingRentBarber.name}</strong>'s payment screen.
               </div>
 
+              <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+                <button
+                  type="button"
+                  onClick={() => setShowRentConfirm(false)}
+                  className="back-pill-btn"
+                  style={{ flex: 1, justifyContent: 'center' }}
+                >
+                  No, Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmSaveRent}
+                  className="choice-card-action-btn"
+                  style={{ flex: 1.5, justifyContent: 'center' }}
+                >
+                  <Check size={16} />
+                  <span>Yes, Change Rent</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <form onSubmit={handleRequestSaveRent} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
-                <label className="form-label">Notes / Reference (Optional)</label>
+                <label className="form-label">Weekly Booth Rent ($)</label>
                 <input
-                  type="text"
-                  placeholder="e.g. In-person card payment / shop credit"
-                  value={cashNotes}
-                  onChange={(e) => setCashNotes(e.target.value)}
+                  type="number"
+                  required
+                  min="0"
+                  step="any"
+                  placeholder="e.g. 200"
+                  value={newRentAmount}
+                  onChange={(e) => setNewRentAmount(e.target.value)}
                   className="bubbly-input"
                 />
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 6 }}>
+                  Current rate: ${editingRentBarber.weeklyRent || config.defaultWeeklyRent || 200} / week
+                </div>
               </div>
 
               <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
                 <button
                   type="button"
-                  onClick={() => setSelectedBarberForCash(null)}
+                  onClick={() => {
+                    setEditingRentBarber(null);
+                    setShowRentConfirm(false);
+                  }}
                   className="back-pill-btn"
                   style={{ flex: 1, justifyContent: 'center' }}
                 >
@@ -393,124 +508,12 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
                   className="choice-card-action-btn"
                   style={{ flex: 2, justifyContent: 'center' }}
                 >
-                  <Check size={16} />
-                  <span>Confirm Paid</span>
+                  <span>Save Rate</span>
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* 4. Edit Chair Rent Amount Modal */}
-      {editingRentBarber && (
-        <div className="modal-overlay">
-          <div className="bubbly-modal-card pop-in" style={{ maxWidth: 400, padding: '24px 22px', background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-bubble)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0 }}>
-                {showRentConfirm ? 'Confirm Rate Change' : `Set Rent: ${editingRentBarber.name}`}
-              </h3>
-              <button
-                onClick={() => {
-                  setEditingRentBarber(null);
-                  setShowRentConfirm(false);
-                }}
-                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {showRentConfirm ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ background: 'var(--surface-pill)', padding: '14px 16px', borderRadius: 14, border: '1px solid var(--border-subtle)' }}>
-                  <div style={{ fontSize: '0.88rem', color: 'var(--text-primary)', marginBottom: 10, fontWeight: 750 }}>
-                    Are you sure you want to change rent for <strong>{editingRentBarber.name}</strong>?
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, background: 'var(--surface-card)', padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border-subtle)' }}>
-                    <div>
-                      <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 800 }}>Current Rate</div>
-                      <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-secondary)' }}>
-                        ${editingRentBarber.weeklyRent || config.defaultWeeklyRent || 200}/wk
-                      </div>
-                    </div>
-                    <div style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>➔</div>
-                    <div>
-                      <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--pastel-green)', fontWeight: 800 }}>New Rate</div>
-                      <div style={{ fontSize: '1.15rem', fontWeight: 900, color: 'var(--pastel-green)' }}>
-                        ${parseFloat(newRentAmount) || 0}/wk
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
-                  This change will update in real-time across all devices and will immediately show on <strong>{editingRentBarber.name}</strong>'s payment screen.
-                </div>
-
-                <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-                  <button
-                    type="button"
-                    onClick={() => setShowRentConfirm(false)}
-                    className="back-pill-btn"
-                    style={{ flex: 1, justifyContent: 'center' }}
-                  >
-                    No, Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleConfirmSaveRent}
-                    className="choice-card-action-btn"
-                    style={{ flex: 1.5, justifyContent: 'center' }}
-                  >
-                    <Check size={16} />
-                    <span>Yes, Change Rent</span>
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <form onSubmit={handleRequestSaveRent} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <div>
-                  <label className="form-label">Weekly Booth Rent ($)</label>
-                  <input
-                    type="number"
-                    required
-                    min="0"
-                    step="any"
-                    placeholder="e.g. 200"
-                    value={newRentAmount}
-                    onChange={(e) => setNewRentAmount(e.target.value)}
-                    className="bubbly-input"
-                  />
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 6 }}>
-                    Current rate: ${editingRentBarber.weeklyRent || config.defaultWeeklyRent || 200} / week
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingRentBarber(null);
-                      setShowRentConfirm(false);
-                    }}
-                    className="back-pill-btn"
-                    style={{ flex: 1, justifyContent: 'center' }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="choice-card-action-btn"
-                    style={{ flex: 2, justifyContent: 'center' }}
-                  >
-                    <span>Save Rate</span>
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
-        </div>
+          )}
+        </ModalOverlay>
       )}
 
       {/* 5. Historical Payment Ledger Table */}

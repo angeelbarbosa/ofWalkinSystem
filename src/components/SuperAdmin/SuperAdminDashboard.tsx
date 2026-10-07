@@ -33,6 +33,7 @@ import type {
 import { applyTheme, type ThemeId } from '../../utils/themes';
 import { storage } from '../../utils/storage';
 import { SupportChatDrawer } from '../Shared/SupportChatDrawer';
+import { ModalOverlay } from '../Shared/ModalOverlay';
 
 interface SuperAdminDashboardProps {
   shops: Shop[];
@@ -1587,36 +1588,8 @@ export function SuperAdminDashboard({
 
       {/* ================= MODAL: ADD NEW BARBERSHOP ================= */}
       {isNewShopModalOpen && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.75)',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 100,
-          padding: '16px',
-          boxSizing: 'border-box',
-          overflowY: 'auto'
-        }}>
-          <div style={{
-            width: '100%',
-            maxWidth: '480px',
-            background: 'var(--surface-card)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: '26px',
-            padding: '24px 20px',
-            maxHeight: '90vh',
-            overflowY: 'auto',
-            boxShadow: 'var(--shadow-bubble)',
-            boxSizing: 'border-box'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+        <ModalOverlay onClose={() => setIsNewShopModalOpen(false)} maxWidth={480}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <div style={{ padding: '7px', background: 'var(--surface-pill)', color: 'var(--text-primary)', borderRadius: '10px' }}>
                   <Plus size={18} />
@@ -1744,42 +1717,13 @@ export function SuperAdminDashboard({
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {/* ================= MODAL: EDIT SHOP DETAILS ================= */}
       {editModalShop && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.75)',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 100,
-          padding: '16px',
-          boxSizing: 'border-box',
-          overflowY: 'auto'
-        }}>
-          <div style={{
-            width: '100%',
-            maxWidth: '460px',
-            background: 'var(--surface-card)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: '26px',
-            padding: '24px 20px',
-            maxHeight: '90vh',
-            overflowY: 'auto',
-            boxShadow: 'var(--shadow-bubble)',
-            boxSizing: 'border-box'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+        <ModalOverlay onClose={() => setEditModalShop(null)} maxWidth={460}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Edit3 size={18} style={{ color: 'var(--text-primary)' }} />
                 <div>
@@ -1880,43 +1824,14 @@ export function SuperAdminDashboard({
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {/* ================= MODAL: MANAGE SUBSCRIPTION BILLING ================= */}
       {subscriptionModalShop && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.75)',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 100,
-          padding: '16px',
-          boxSizing: 'border-box',
-          overflowY: 'auto'
-        }}>
-          <div style={{
-            width: '100%',
-            maxWidth: '440px',
-            background: 'var(--surface-card)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: '26px',
-            padding: '24px 20px',
-            maxHeight: '90vh',
-            overflowY: 'auto',
-            boxShadow: 'var(--shadow-bubble)',
-            boxSizing: 'border-box'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <ModalOverlay onClose={() => setSubscriptionModalShop(null)} maxWidth={440}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <CreditCard size={18} style={{ color: 'var(--pastel-green)' }} />
                 <div>
                   <h3 style={{ fontSize: '17px', fontWeight: 850, margin: 0, color: 'var(--text-primary)' }}>
@@ -2019,42 +1934,13 @@ export function SuperAdminDashboard({
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {/* ================= MODAL: 2-COLORWAY THEME PICKER ================= */}
       {themeModalShop && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.75)',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 100,
-          padding: '16px',
-          boxSizing: 'border-box',
-          overflowY: 'auto'
-        }}>
-          <div style={{
-            width: '100%',
-            maxWidth: '440px',
-            background: 'var(--surface-card)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: '26px',
-            padding: '24px 20px',
-            maxHeight: '90vh',
-            overflowY: 'auto',
-            boxShadow: 'var(--shadow-bubble)',
-            boxSizing: 'border-box'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+        <ModalOverlay onClose={() => setThemeModalShop(null)} maxWidth={440}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Palette size={18} style={{ color: 'var(--text-primary)' }} />
                 <div>
@@ -2166,197 +2052,136 @@ export function SuperAdminDashboard({
             >
               Done
             </button>
-          </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {/* ================= MODAL: DELETE CONFIRMATION ================= */}
       {deleteConfirmShop && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.75)',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 100,
-          padding: '16px',
-          boxSizing: 'border-box',
-          overflowY: 'auto'
-        }}>
+        <ModalOverlay onClose={() => setDeleteConfirmShop(null)} maxWidth={380} cardStyle={{ textAlign: 'center', border: '1px solid var(--pastel-red-border)' }}>
           <div style={{
-            width: '100%',
-            maxWidth: '380px',
-            background: 'var(--surface-card)',
-            border: '1px solid var(--pastel-red-border)',
-            borderRadius: '24px',
-            padding: '24px 20px',
-            maxHeight: '90vh',
-            overflowY: 'auto',
-            boxShadow: 'var(--shadow-bubble)',
-            textAlign: 'center',
-            boxSizing: 'border-box'
+            width: '48px',
+            height: '48px',
+            borderRadius: '16px',
+            background: 'var(--pastel-red-bg)',
+            color: 'var(--pastel-red)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 12px'
           }}>
-            <div style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '16px',
-              background: 'var(--pastel-red-bg)',
-              color: 'var(--pastel-red)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 12px'
-            }}>
-              <Trash2 size={24} />
-            </div>
-
-            <h3 style={{ fontSize: '18px', fontWeight: 850, color: 'var(--text-primary)', margin: '0 0 6px' }}>
-              Delete "{deleteConfirmShop.name}"?
-            </h3>
-            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.4, margin: '0 0 18px' }}>
-              This will remove the shop and its kiosk URL. This action cannot be undone.
-            </p>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              <button
-                onClick={() => setDeleteConfirmShop(null)}
-                style={{
-                  padding: '11px',
-                  background: 'var(--surface-pill)',
-                  border: '1px solid var(--border-subtle)',
-                  color: 'var(--text-primary)',
-                  borderRadius: '12px',
-                  fontSize: '13px',
-                  fontWeight: 700,
-                  cursor: 'pointer'
-                }}
-              >
-                Cancel
-              </button>
-
-              <button
-                onClick={() => {
-                  if (shops.length <= 1) {
-                    alert('Cannot delete the only shop. Create another first.');
-                    setDeleteConfirmShop(null);
-                    return;
-                  }
-                  onDeleteShop(deleteConfirmShop.slug);
-                  showToast(`Deleted ${deleteConfirmShop.name}`);
-                  setDeleteConfirmShop(null);
-                }}
-                style={{
-                  padding: '11px',
-                  background: 'var(--pastel-red)',
-                  color: '#FFFFFF',
-                  borderRadius: '12px',
-                  fontSize: '13px',
-                  fontWeight: 850,
-                  border: 'none',
-                  cursor: 'pointer'
-                }}
-              >
-                Delete Shop
-              </button>
-            </div>
+            <Trash2 size={24} />
           </div>
-        </div>
+
+          <h3 style={{ fontSize: '18px', fontWeight: 850, color: 'var(--text-primary)', margin: '0 0 6px' }}>
+            Delete "{deleteConfirmShop.name}"?
+          </h3>
+          <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.4, margin: '0 0 18px' }}>
+            This will remove the shop and its kiosk URL. This action cannot be undone.
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            <button
+              onClick={() => setDeleteConfirmShop(null)}
+              style={{
+                padding: '11px',
+                background: 'var(--surface-pill)',
+                border: '1px solid var(--border-subtle)',
+                color: 'var(--text-primary)',
+                borderRadius: '12px',
+                fontSize: '13px',
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
+            >
+              Cancel
+            </button>
+
+            <button
+              onClick={() => {
+                if (shops.length <= 1) {
+                  alert('Cannot delete the only shop. Create another first.');
+                  setDeleteConfirmShop(null);
+                  return;
+                }
+                onDeleteShop(deleteConfirmShop.slug);
+                showToast(`Deleted ${deleteConfirmShop.name}`);
+                setDeleteConfirmShop(null);
+              }}
+              style={{
+                padding: '11px',
+                background: 'var(--pastel-red)',
+                color: '#FFFFFF',
+                borderRadius: '12px',
+                fontSize: '13px',
+                fontWeight: 850,
+                border: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              Delete Shop
+            </button>
+          </div>
+        </ModalOverlay>
       )}
 
       {/* ================= MODAL: FACTORY RESET CONFIRMATION ================= */}
       {isResetConfirmModalOpen && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.75)',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 100,
-          padding: '16px',
-          boxSizing: 'border-box',
-          overflowY: 'auto'
-        }}>
+        <ModalOverlay onClose={() => setIsResetConfirmModalOpen(false)} maxWidth={400} cardStyle={{ textAlign: 'center', border: '1px solid var(--pastel-red-border)' }}>
           <div style={{
-            width: '100%',
-            maxWidth: '400px',
-            background: 'var(--surface-card)',
-            border: '1px solid var(--pastel-red-border)',
-            borderRadius: '26px',
-            padding: '26px 20px',
-            maxHeight: '90vh',
-            overflowY: 'auto',
-            boxShadow: 'var(--shadow-bubble)',
-            textAlign: 'center',
-            boxSizing: 'border-box'
+            width: '50px',
+            height: '50px',
+            borderRadius: '16px',
+            background: 'var(--pastel-red-bg)',
+            color: 'var(--pastel-red)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 12px'
           }}>
-            <div style={{
-              width: '50px',
-              height: '50px',
-              borderRadius: '16px',
-              background: 'var(--pastel-red-bg)',
-              color: 'var(--pastel-red)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 12px'
-            }}>
-              <AlertTriangle size={26} />
-            </div>
-
-            <h3 style={{ fontSize: '18px', fontWeight: 850, color: 'var(--text-primary)', margin: '0 0 6px' }}>
-              Factory Reset Platform?
-            </h3>
-            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.4, margin: '0 0 18px' }}>
-              This will wipe test check-in records and restore your default fleet configurations.
-            </p>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              <button
-                onClick={() => setIsResetConfirmModalOpen(false)}
-                style={{
-                  padding: '11px',
-                  background: 'var(--surface-pill)',
-                  border: '1px solid var(--border-subtle)',
-                  color: 'var(--text-primary)',
-                  borderRadius: '12px',
-                  fontSize: '13px',
-                  fontWeight: 700,
-                  cursor: 'pointer'
-                }}
-              >
-                Cancel
-              </button>
-
-              <button
-                onClick={handleExecuteFactoryReset}
-                style={{
-                  padding: '11px',
-                  background: 'var(--pastel-red)',
-                  color: '#FFFFFF',
-                  borderRadius: '12px',
-                  fontSize: '13px',
-                  fontWeight: 850,
-                  border: 'none',
-                  cursor: 'pointer'
-                }}
-              >
-                Reset Platform
-              </button>
-            </div>
+            <AlertTriangle size={26} />
           </div>
-        </div>
+
+          <h3 style={{ fontSize: '18px', fontWeight: 850, color: 'var(--text-primary)', margin: '0 0 6px' }}>
+            Factory Reset Platform?
+          </h3>
+          <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.4, margin: '0 0 18px' }}>
+            This will wipe test check-in records and restore your default fleet configurations.
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            <button
+              onClick={() => setIsResetConfirmModalOpen(false)}
+              style={{
+                padding: '11px',
+                background: 'var(--surface-pill)',
+                border: '1px solid var(--border-subtle)',
+                color: 'var(--text-primary)',
+                borderRadius: '12px',
+                fontSize: '13px',
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
+            >
+              Cancel
+            </button>
+
+            <button
+              onClick={handleExecuteFactoryReset}
+              style={{
+                padding: '11px',
+                background: 'var(--pastel-red)',
+                color: '#FFFFFF',
+                borderRadius: '12px',
+                fontSize: '13px',
+                fontWeight: 850,
+                border: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              Reset Platform
+            </button>
+          </div>
+        </ModalOverlay>
       )}
 
       {/* ================= IN-APP SUPPORT CHAT DRAWER ================= */}

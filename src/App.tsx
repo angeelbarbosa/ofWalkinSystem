@@ -387,12 +387,13 @@ export function App() {
                   top: 0,
                   zIndex: 80,
                   width: '100%', 
-                  background: 'var(--bg-main)',
+                  background: 'var(--bg-main, #09090B)',
                   backdropFilter: 'blur(20px)',
                   WebkitBackdropFilter: 'blur(20px)',
-                  paddingTop: 'max(10px, env(safe-area-inset-top, 14px))',
-                  paddingBottom: '10px',
-                  marginBottom: '14px',
+                  borderBottom: '1px solid var(--border-subtle, rgba(255, 255, 255, 0.08))',
+                  paddingTop: 'max(14px, env(safe-area-inset-top, 20px))',
+                  paddingBottom: '12px',
+                  marginBottom: '16px',
                   boxSizing: 'border-box'
                 }}
               >

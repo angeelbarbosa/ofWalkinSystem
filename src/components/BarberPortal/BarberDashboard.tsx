@@ -19,6 +19,7 @@ import type { Barber, CheckInRecord, ShopConfig, RentPaymentRecord } from '../..
 import { storage } from '../../utils/storage';
 import { BarberRentModal } from './BarberRentModal';
 import { ChangePasscodeModal } from './ChangePasscodeModal';
+import { ModalOverlay } from '../Shared/ModalOverlay';
 import { notificationManager, type ArrivalToastEventData } from '../../utils/notifications';
 
 interface BarberDashboardProps {
@@ -934,33 +935,8 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
 
       {/* Quick Add Walk-In Modal (In-Dashboard Direct Check-In) */}
       {isAddWalkInModalOpen && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.75)',
-          backdropFilter: 'blur(8px)',
-          WebkitBackdropFilter: 'blur(8px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 99999,
-          padding: 16,
-          boxSizing: 'border-box'
-        }}>
-          <div style={{
-            width: '100%',
-            maxWidth: 420,
-            background: 'var(--surface-card, #18181B)',
-            border: '1px solid var(--border-subtle, rgba(255,255,255,0.12))',
-            borderRadius: 24,
-            padding: '24px 20px',
-            boxShadow: '0 24px 60px rgba(0,0,0,0.8)',
-            boxSizing: 'border-box'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <ModalOverlay onClose={() => setIsAddWalkInModalOpen(false)} maxWidth={420}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <div style={{ padding: '7px', background: 'var(--surface-pill)', color: 'var(--accent-primary)', borderRadius: '10px' }}>
                   <Plus size={18} />
@@ -1089,8 +1065,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {/* Barber Rent Payment Modal */}

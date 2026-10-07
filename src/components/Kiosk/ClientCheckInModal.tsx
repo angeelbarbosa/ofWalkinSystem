@@ -3,6 +3,7 @@ import { X, Check, User, Clock, Keyboard as KeyboardIcon, Flame, AlertCircle } f
 import type { Barber } from '../../types';
 import { OnScreenKeyboard } from '../Shared/OnScreenKeyboard';
 import { IosTimePicker, getCurrentFormattedTime } from '../Shared/IosTimePicker';
+import { ModalOverlay } from '../Shared/ModalOverlay';
 
 interface ClientCheckInModalProps {
   selectedBarber: Barber;
@@ -35,36 +36,13 @@ export const ClientCheckInModal: React.FC<ClientCheckInModalProps> = ({
   };
 
   return (
-    <div className="modal-overlay" style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: 'rgba(0,0,0,0.8)',
-      backdropFilter: 'blur(8px)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 100,
-      padding: '16px'
-    }}>
-      <div className="bubbly-modal-card pop-in" style={{
-        width: '100%',
-        maxWidth: '480px',
-        background: 'var(--surface-card, #18181B)',
-        border: '1px solid var(--border-subtle, rgba(255,255,255,0.15))',
-        borderRadius: '28px',
-        padding: '28px 24px',
-        position: 'relative',
-        boxShadow: 'var(--shadow-lg)'
-      }}>
-        <button
-          onClick={onCancel}
-          style={{ position: 'absolute', top: 20, right: 20, color: 'var(--text-muted)', cursor: 'pointer' }}
-        >
-          <X size={22} />
-        </button>
+    <ModalOverlay onClose={onCancel} maxWidth={480}>
+      <button
+        onClick={onCancel}
+        style={{ position: 'absolute', top: 20, right: 20, color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer' }}
+      >
+        <X size={22} />
+      </button>
 
         {/* Selected Barber Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
@@ -234,7 +212,6 @@ export const ClientCheckInModal: React.FC<ClientCheckInModalProps> = ({
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </ModalOverlay>
   );
 };

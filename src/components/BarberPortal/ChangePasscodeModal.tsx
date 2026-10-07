@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { KeyRound, Check, X, ShieldCheck, AlertCircle } from 'lucide-react';
 import type { Barber } from '../../types';
+import { ModalOverlay } from '../Shared/ModalOverlay';
 
 interface ChangePasscodeModalProps {
   barber: Barber;
@@ -110,16 +111,7 @@ export const ChangePasscodeModal: React.FC<ChangePasscodeModalProps> = ({
   };
 
   return (
-    <div className="modal-overlay" style={{ zIndex: 10000 }}>
-      <div
-        className="bubbly-modal-card pop-in"
-        style={{
-          maxWidth: '440px',
-          padding: '28px 24px',
-          textAlign: 'center',
-          position: 'relative'
-        }}
-      >
+    <ModalOverlay onClose={onClose} maxWidth={440} cardStyle={{ textAlign: 'center' }}>
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -393,7 +385,6 @@ export const ChangePasscodeModal: React.FC<ChangePasscodeModalProps> = ({
             </button>
           </div>
         )}
-      </div>
-    </div>
+    </ModalOverlay>
   );
 };

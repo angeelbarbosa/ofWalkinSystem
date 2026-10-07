@@ -18,6 +18,7 @@ import { RentLedgerDashboard } from './RentLedgerDashboard';
 import { ShopPayoutSettings } from './ShopPayoutSettings';
 import { SupportChatDrawer } from '../Shared/SupportChatDrawer';
 import { ShopSubscriptionModal } from './ShopSubscriptionModal';
+import { ModalOverlay } from '../Shared/ModalOverlay';
 
 interface AdminDashboardProps {
   currentShop?: Shop | null;
@@ -220,7 +221,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </p>
         </div>
 
-        <div className="portal-barber-filter" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        <div 
+          className="portal-barber-filter" 
+          style={{ 
+            display: 'flex', 
+            gap: 8, 
+            overflowX: 'auto', 
+            flexWrap: 'nowrap', 
+            paddingBottom: 6, 
+            WebkitOverflowScrolling: 'touch',
+            scrollbarWidth: 'none'
+          }}
+        >
           <button
             onClick={() => setActiveSubTab('rent')}
             className={`barber-tab-chip ${activeSubTab === 'rent' ? 'active' : ''}`}
@@ -508,15 +520,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           {/* Add / Edit Barber Modal */}
           {isAddingBarber && (
-            <div className="modal-overlay">
-              <div className="bubbly-modal-card pop-in" style={{ background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-bubble)', padding: '24px 20px', maxWidth: 460 }}>
-                <h3 style={{ fontSize: '1.3rem', fontWeight: 850, color: 'var(--text-primary)', marginBottom: 16 }}>
-                  {showBarberRentConfirm && editingBarber
-                    ? 'Confirm Rent Change'
-                    : editingBarber
-                    ? 'Edit Barber & Rent Plan'
-                    : 'Add Barber & Set Rent'}
-                </h3>
+            <ModalOverlay
+              onClose={() => {
+                setIsAddingBarber(false);
+                setShowBarberRentConfirm(false);
+              }}
+              maxWidth={460}
+            >
+              <h3 style={{ fontSize: '1.3rem', fontWeight: 850, color: 'var(--text-primary)', marginBottom: 16 }}>
+                {showBarberRentConfirm && editingBarber
+                  ? 'Confirm Rent Change'
+                  : editingBarber
+                  ? 'Edit Barber & Rent Plan'
+                  : 'Add Barber & Set Rent'}
+              </h3>
 
                 {showBarberRentConfirm && editingBarber ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -776,8 +793,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </div>
                   </form>
                 )}
-              </div>
-            </div>
+            </ModalOverlay>
           )}
         </div>
       )}

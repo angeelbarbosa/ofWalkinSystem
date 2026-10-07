@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   X, 
   CheckCircle, 
@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import type { Barber, RentPaymentRecord, ShopConfig } from '../../types';
+import { ModalOverlay } from '../Shared/ModalOverlay';
 
 interface BarberRentModalProps {
   barber: Barber;
@@ -43,18 +44,6 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
   const [isPayingNewCycle, setIsPayingNewCycle] = useState(false);
   const [copiedReceipt, setCopiedReceipt] = useState(false);
 
-  // Lock body scroll while modal is mounted
-  useEffect(() => {
-    const originalOverflow = document.body.style.overflow;
-    const originalTouch = document.body.style.touchAction;
-    document.body.style.overflow = 'hidden';
-    document.body.style.touchAction = 'none';
-    return () => {
-      document.body.style.overflow = originalOverflow;
-      document.body.style.touchAction = originalTouch;
-    };
-  }, []);
-
   const showPaymentForm = !paidRecord || isPayingNewCycle;
 
   const handleProcessPayment = async () => {
@@ -83,19 +72,7 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
   };
 
   return (
-    <div className="modal-overlay" style={{ zIndex: 99999 }}>
-      <div 
-        className="bubbly-modal-card pop-in" 
-        style={{ 
-          maxWidth: 480, 
-          padding: '28px 24px', 
-          position: 'relative',
-          background: 'var(--surface-card, #141417)',
-          border: '1px solid var(--border-subtle, rgba(255,255,255,0.12))',
-          borderRadius: 24,
-          boxShadow: '0 24px 60px rgba(0,0,0,0.8)'
-        }}
-      >
+    <ModalOverlay onClose={onClose} maxWidth={480}>
         <button
           type="button"
           onClick={onClose}
@@ -439,7 +416,6 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
             </div>
           </div>
         )}
-      </div>
-    </div>
+    </ModalOverlay>
   );
 };
