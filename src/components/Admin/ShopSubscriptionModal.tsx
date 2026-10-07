@@ -197,7 +197,7 @@ export const ShopSubscriptionModal: React.FC<ShopSubscriptionModalProps> = ({
                   <span style={{ fontSize: '0.95rem', fontWeight: 850, color: 'var(--text-primary)' }}>Total Due Today:</span>
                   <div style={{ fontSize: '0.72rem', color: 'var(--pastel-green, #10B981)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
                     <Sparkles size={11} />
-                    <span>Includes Kiosk, Booth Rent, & SMS Gateway</span>
+                    <span>Includes Kiosk, Booth Rent, & Live Queue Board</span>
                   </div>
                 </div>
                 <span style={{ fontSize: '1.45rem', fontWeight: 900, color: 'var(--text-primary)' }}>

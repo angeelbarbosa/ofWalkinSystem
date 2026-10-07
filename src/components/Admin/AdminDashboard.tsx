@@ -5,7 +5,6 @@ import {
   Edit3, 
   Settings, 
   Users, 
-  MessageSquare, 
   Download, 
   Check,
   DollarSign,
@@ -49,7 +48,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onMarkSupportRead = () => {},
   onPayShopSubscription = () => {}
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'roster' | 'rent' | 'payouts' | 'settings' | 'sms' | 'history' | 'subscription'>('rent');
+  const [activeSubTab, setActiveSubTab] = useState<'roster' | 'rent' | 'payouts' | 'settings' | 'history' | 'subscription'>('rent');
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isPaySubscriptionOpen, setIsPaySubscriptionOpen] = useState(false);
   
@@ -68,12 +67,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [autoResetAppointmentSec, setAutoResetAppointmentSec] = useState(config.autoResetAppointmentSec);
   const [pinCode, setPinCode] = useState(config.pinCode);
 
-  // SMS Twilio State
-  const [twilioEnabled, setTwilioEnabled] = useState(config.twilioConfig?.enabled || false);
-  const [accountSid, setAccountSid] = useState(config.twilioConfig?.accountSid || '');
-  const [authToken, setAuthToken] = useState(config.twilioConfig?.authToken || '');
-  const [fromPhone, setFromPhone] = useState(config.twilioConfig?.fromPhone || '');
-
   // Save Settings
   const handleSaveShopSettings = (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,13 +77,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       autoResetShoppingSec: Number(autoResetShoppingSec),
       autoResetAppointmentSec: Number(autoResetAppointmentSec),
       soundAlertsEnabled: false,
-      pinCode,
-      twilioConfig: {
-        enabled: twilioEnabled,
-        accountSid,
-        authToken,
-        fromPhone
-      }
+      pinCode
     };
     onSaveConfig(updated);
     alert('Settings saved successfully!');
@@ -217,15 +204,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           >
             <Settings size={15} />
             <span>Settings</span>
-          </button>
-
-          <button
-            onClick={() => setActiveSubTab('sms')}
-            className={`barber-tab-chip ${activeSubTab === 'sms' ? 'active' : ''}`}
-            style={{ padding: '8px 14px', borderRadius: 9999, fontSize: '0.82rem', fontWeight: 750, display: 'flex', alignItems: 'center', gap: 6, background: activeSubTab === 'sms' ? 'var(--accent-primary)' : 'var(--surface-pill)', color: activeSubTab === 'sms' ? 'var(--bg-main)' : 'var(--text-primary)', border: '1px solid var(--border-subtle)', cursor: 'pointer' }}
-          >
-            <MessageSquare size={15} />
-            <span>SMS Backup</span>
           </button>
 
           <button
@@ -592,84 +570,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       )}
 
-      {/* Sub-Tab 3: Twilio SMS */}
-      {activeSubTab === 'sms' && (
-        <div className="admin-card slide-up" style={{ background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderRadius: '24px', padding: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--surface-pill)', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <MessageSquare size={20} />
-            </div>
-            <div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0 }}>
-                Automated SMS Backup
-              </h3>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '2px 0 0' }}>
-                Optionally text the barber's phone when a client arrives
-              </p>
-            </div>
-          </div>
-
-          <form onSubmit={handleSaveShopSettings}>
-            <div style={{ background: 'var(--surface-pill)', borderRadius: 18, padding: 16, marginBottom: 18, border: '1px solid var(--border-subtle)' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontWeight: 700, fontSize: '0.92rem', marginBottom: 14 }}>
-                <input
-                  type="checkbox"
-                  checked={twilioEnabled}
-                  onChange={e => setTwilioEnabled(e.target.checked)}
-                  style={{ width: 18, height: 18, accentColor: 'var(--text-primary)' }}
-                />
-                <span>Enable Twilio SMS Alerts to Barbers</span>
-              </label>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div className="form-group">
-                  <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Twilio Account SID</label>
-                  <input
-                    type="text"
-                    placeholder="ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-                    value={accountSid}
-                    onChange={e => setAccountSid(e.target.value)}
-                    className="bubbly-input"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Twilio Auth Token</label>
-                  <input
-                    type="password"
-                    placeholder="Your Twilio Token"
-                    value={authToken}
-                    onChange={e => setAuthToken(e.target.value)}
-                    className="bubbly-input"
-                  />
-                </div>
-              </div>
-
-              <div className="form-group" style={{ marginTop: 10 }}>
-                <label className="form-label" style={{ color: 'var(--text-secondary)' }}>From Phone Number</label>
-                <input
-                  type="text"
-                  placeholder="+15551234567"
-                  value={fromPhone}
-                  onChange={e => setFromPhone(e.target.value)}
-                  className="bubbly-input"
-                  style={{ maxWidth: 320 }}
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              className="choice-card-action-btn"
-              style={{ maxWidth: 220 }}
-            >
-              <Check size={16} />
-              <span>Save SMS Settings</span>
-            </button>
-          </form>
-        </div>
-      )}
-
       {/* Sub-Tab 4: Check-in Logs History */}
       {activeSubTab === 'history' && (
         <div className="admin-card slide-up" style={{ background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderRadius: '24px', padding: '20px' }}>
@@ -825,7 +725,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 'Automated Weekly Booth Rent Collection & Ledgers',
                 'Live Multi-Device Cloud Sync (iPhone, iPad, Mac)',
                 'Direct In-App Platform Support Line to Platform HQ',
-                'Twilio SMS Automated Arrival Alert System'
+                'Real-Time Live Queue Lobby Display & Mobile Alerts'
               ].map((feat, idx) => (
                 <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                   <Check size={14} style={{ color: 'var(--pastel-green)', flexShrink: 0 }} />
