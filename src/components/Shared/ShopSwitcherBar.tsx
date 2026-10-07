@@ -15,37 +15,42 @@ export function ShopSwitcherBar({ currentShop }: ShopSwitcherBarProps) {
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '8px',
-        padding: '6px 14px',
+        gap: '6px',
+        padding: '5px 10px',
         background: 'var(--surface-pill)',
         border: '1px solid var(--border-subtle)',
         borderRadius: '9999px',
         backdropFilter: 'blur(8px)',
-        userSelect: 'none'
+        userSelect: 'none',
+        minWidth: 0,
+        flex: 1,
+        overflow: 'hidden'
       }}
     >
       <div
         style={{
-          width: '8px',
-          height: '8px',
+          width: '7px',
+          height: '7px',
           borderRadius: '50%',
           backgroundColor: 'var(--pastel-green)',
-          boxShadow: '0 0 6px var(--pastel-green)'
+          boxShadow: '0 0 6px var(--pastel-green)',
+          flexShrink: 0
         }}
       />
-      <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '140px' }}>
+      <span style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1, minWidth: 0 }}>
         {currentShop.name}
       </span>
       <span
         style={{
-          fontSize: '10px',
+          fontSize: '9px',
           textTransform: 'uppercase',
-          letterSpacing: '0.05em',
-          padding: '2px 6px',
+          letterSpacing: '0.04em',
+          padding: '1px 5px',
           borderRadius: '4px',
           background: 'var(--surface-card-subtle)',
           color: 'var(--text-muted)',
-          fontWeight: 800
+          fontWeight: 800,
+          flexShrink: 0
         }}
       >
         {currentShop.slug}

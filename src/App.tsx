@@ -104,14 +104,21 @@ export function App() {
     markShopSubscriptionPaid
   } = useLiveSystem();
 
-  // Scroll window to top whenever portal tab changes (e.g. jumping from HQ to Shop Admin)
+  // Scroll window to top whenever portal tab or active shop changes (e.g. jumping from HQ to Shop Admin)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, left: 0, behavior: 'instant' as any });
       document.body.scrollTop = 0;
       document.documentElement.scrollTop = 0;
+
+      const timer = setTimeout(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' as any });
+        document.body.scrollTop = 0;
+        document.documentElement.scrollTop = 0;
+      }, 50);
+      return () => clearTimeout(timer);
     }
-  }, [currentTab]);
+  }, [currentTab, activeShop?.slug]);
 
   // Keep URL query parameter and localStorage in sync with active portal
   useEffect(() => {
@@ -243,17 +250,18 @@ export function App() {
           className="slide-up"
           style={{
             position: 'fixed',
-            bottom: 'max(24px, calc(env(safe-area-inset-bottom, 14px) + 14px))',
+            bottom: 'max(20px, calc(env(safe-area-inset-bottom, 12px) + 12px))',
             left: '50%',
             transform: 'translateX(-50%)',
             zIndex: 99990,
-            maxWidth: '92%',
-            width: '420px',
-            background: 'rgba(20, 20, 24, 0.96)',
+            width: 'calc(100% - 24px)',
+            maxWidth: '440px',
+            background: 'var(--surface-card)',
+            color: 'var(--text-primary)',
             border: '1px solid var(--accent-primary)',
             borderRadius: '20px',
             padding: '12px 16px',
-            boxShadow: '0 16px 40px rgba(0,0,0,0.8), 0 0 20px rgba(245, 158, 11, 0.2)',
+            boxShadow: 'var(--shadow-lg)',
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
             display: 'flex',
@@ -377,21 +385,20 @@ export function App() {
                 style={{ 
                   width: '100%', 
                   maxWidth: '680px', 
-                  margin: '0 auto 16px',
-                  paddingTop: 'max(8px, env(safe-area-inset-top, 8px))',
+                  margin: '0 auto 14px',
                   boxSizing: 'border-box'
                 }}
               >
                 {/* Navigation Controls Bar with Shop Identity Badge */}
-                <div className="staff-nav-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', width: '100%', flexWrap: 'nowrap' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                <div className="staff-nav-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', width: '100%', boxSizing: 'border-box' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flex: 1, overflow: 'hidden' }}>
                     {sessionStorage.getItem('walkin_super_admin_unlocked') === 'true' && (
                       <button
                         onClick={() => setCurrentTab('super_admin')}
                         className="back-pill-btn"
                         style={{ 
-                          padding: '7px 11px', 
-                          fontSize: '0.78rem', 
+                          padding: '6px 10px', 
+                          fontSize: '0.76rem', 
                           whiteSpace: 'nowrap', 
                           flexShrink: 0,
                           background: 'rgba(245, 158, 11, 0.15)',
@@ -415,10 +422,10 @@ export function App() {
                         handleResetKiosk();
                       }}
                       className="back-pill-btn"
-                      style={{ padding: '7px 12px', fontSize: '0.8rem', whiteSpace: 'nowrap', flexShrink: 0 }}
+                      style={{ padding: '6px 10px', fontSize: '0.78rem', whiteSpace: 'nowrap', flexShrink: 0 }}
                       title="Exit to Customer Kiosk"
                     >
-                      <ArrowLeft size={14} />
+                      <ArrowLeft size={13} />
                       <span>Kiosk</span>
                     </button>
 

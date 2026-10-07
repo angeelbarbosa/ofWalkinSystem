@@ -226,6 +226,11 @@ export function SuperAdminDashboard({
   const handleMasterJumpToAdmin = (shopSlug: string) => {
     onSwitchShop(shopSlug);
     onNavigateTab('admin');
+    if (typeof window !== 'undefined') {
+      window.scrollTo(0, 0);
+      document.body.scrollTop = 0;
+      document.documentElement.scrollTop = 0;
+    }
   };
 
   // Create New Shop Submit

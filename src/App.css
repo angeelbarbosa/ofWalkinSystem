@@ -1324,16 +1324,19 @@
   }
 
   .content-wrapper {
-    padding: max(64px, calc(env(safe-area-inset-top, 24px) + 28px)) 12px calc(env(safe-area-inset-bottom, 16px) + 40px) !important;
+    padding: max(54px, calc(env(safe-area-inset-top, 24px) + 18px)) 12px calc(env(safe-area-inset-bottom, 16px) + 40px) !important;
     width: 100%;
     max-width: 100vw;
     box-sizing: border-box;
+    overflow-x: hidden;
   }
 
   .staff-nav-bar {
-    padding: 4px 2px;
+    padding: 2px 0;
     gap: 6px;
-    flex-wrap: nowrap;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
   }
 
   .kiosk-home-container {
