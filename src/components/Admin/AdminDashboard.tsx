@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Plus, 
   Trash2, 
@@ -61,10 +61,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [newBarberPhone, setNewBarberPhone] = useState('');
   const [newBarberStation, setNewBarberStation] = useState<number>(barbers.length + 1);
   const [newBarberPasscode, setNewBarberPasscode] = useState('1111');
-  const [newBarberRentAmount, setNewBarberRentAmount] = useState<number>(config.defaultWeeklyRent || 200);
+  const [newBarberRentAmount, setNewBarberRentAmount] = useState<string>(String(config.defaultWeeklyRent || 200));
   const [newBarberRentCycle, setNewBarberRentCycle] = useState<'weekly' | 'monthly' | 'biweekly'>('weekly');
   const [newBarberRentDueDay, setNewBarberRentDueDay] = useState('Monday');
   const [newBarberRentStartDate, setNewBarberRentStartDate] = useState(new Date().toISOString().split('T')[0]);
+
+  // Lock body scroll when popup/modal is open
+  useEffect(() => {
+    if (isAddingBarber || isPaySubscriptionOpen || isSupportOpen) {
+      const originalOverflow = document.body.style.overflow;
+      const originalTouch = document.body.style.touchAction;
+      document.body.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+        document.body.style.touchAction = originalTouch;
+      };
+    }
+  }, [isAddingBarber, isPaySubscriptionOpen, isSupportOpen]);
 
   // Shop Settings State
   const [welcomeShoppingBody, setWelcomeShoppingBody] = useState(config.welcomeShoppingBody);
@@ -89,6 +103,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   const executeSaveBarber = () => {
+    const rentNum = parseFloat(newBarberRentAmount) || 0;
     if (editingBarber) {
       const updated = barbers.map(b => b.id === editingBarber.id ? {
         ...b,
@@ -97,8 +112,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         phone: newBarberPhone.trim(),
         stationNumber: Number(newBarberStation),
         passcode: newBarberPasscode.trim() || b.passcode || '1111',
-        weeklyRent: Number(newBarberRentAmount),
-        rentAmount: Number(newBarberRentAmount),
+        weeklyRent: rentNum,
+        rentAmount: rentNum,
         rentCycle: newBarberRentCycle,
         rentDueDay: newBarberRentDueDay,
         rentStartDate: newBarberRentStartDate
@@ -119,8 +134,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         isWorking: true,
         pushSubscriptionActive: true,
         passcode: newBarberPasscode.trim() || '1111',
-        weeklyRent: Number(newBarberRentAmount),
-        rentAmount: Number(newBarberRentAmount),
+        weeklyRent: rentNum,
+        rentAmount: rentNum,
         rentCycle: newBarberRentCycle,
         rentDueDay: newBarberRentDueDay,
         rentStartDate: newBarberRentStartDate
@@ -135,7 +150,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setNewBarberSpec('');
     setNewBarberPhone('');
     setNewBarberPasscode('1111');
-    setNewBarberRentAmount(config.defaultWeeklyRent || 200);
+    setNewBarberRentAmount(String(config.defaultWeeklyRent || 200));
     setNewBarberRentCycle('weekly');
     setNewBarberRentDueDay('Monday');
     setNewBarberRentStartDate(new Date().toISOString().split('T')[0]);
@@ -147,8 +162,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     if (!newBarberName.trim()) return;
 
     if (editingBarber) {
+      const rentNum = parseFloat(newBarberRentAmount) || 0;
       const currentRent = editingBarber.rentAmount ?? editingBarber.weeklyRent ?? config.defaultWeeklyRent ?? 200;
-      const rentChanged = Number(newBarberRentAmount) !== currentRent || newBarberRentCycle !== (editingBarber.rentCycle || 'weekly');
+      const rentChanged = rentNum !== currentRent || newBarberRentCycle !== (editingBarber.rentCycle || 'weekly');
       if (rentChanged && !showBarberRentConfirm) {
         setShowBarberRentConfirm(true);
         return;
@@ -348,7 +364,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 setNewBarberPhone('');
                 setNewBarberStation(barbers.length + 1);
                 setNewBarberPasscode('1111');
-                setNewBarberRentAmount(config.defaultWeeklyRent || 200);
+                setNewBarberRentAmount(String(config.defaultWeeklyRent || 200));
                 setNewBarberRentCycle('weekly');
                 setNewBarberRentDueDay('Monday');
                 setNewBarberRentStartDate(new Date().toISOString().split('T')[0]);
@@ -459,10 +475,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               setNewBarberPhone(barber.phone);
                               setNewBarberStation(barber.stationNumber);
                               setNewBarberPasscode(barber.passcode || '1111');
-                              setNewBarberRentAmount(barber.rentAmount ?? barber.weeklyRent ?? config.defaultWeeklyRent ?? 200);
+                              const currentRate = barber.rentAmount ?? barber.weeklyRent ?? config.defaultWeeklyRent ?? 200;
+                              setNewBarberRentAmount(String(currentRate));
                               setNewBarberRentCycle(barber.rentCycle || 'weekly');
                               setNewBarberRentDueDay(barber.rentDueDay || (barber.rentCycle === 'monthly' ? '1st of month' : 'Monday'));
                               setNewBarberRentStartDate(barber.rentStartDate || new Date().toISOString().split('T')[0]);
+                              setShowBarberRentConfirm(false);
                               setIsAddingBarber(true);
                             }}
                             className="back-pill-btn"
@@ -676,8 +694,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           </label>
                           <input
                             type="number"
+                            min="0"
+                            step="any"
+                            placeholder="e.g. 200"
                             value={newBarberRentAmount}
-                            onChange={e => setNewBarberRentAmount(Number(e.target.value))}
+                            onChange={e => setNewBarberRentAmount(e.target.value)}
                             className="bubbly-input"
                             style={{ fontSize: '13px', padding: '10px' }}
                           />

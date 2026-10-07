@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   CheckCircle, 
@@ -42,6 +42,18 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
   const [paidRecord, setPaidRecord] = useState<RentPaymentRecord | null>(existingRecord || null);
   const [isPayingNewCycle, setIsPayingNewCycle] = useState(false);
   const [copiedReceipt, setCopiedReceipt] = useState(false);
+
+  // Lock body scroll while modal is mounted
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    const originalTouch = document.body.style.touchAction;
+    document.body.style.overflow = 'hidden';
+    document.body.style.touchAction = 'none';
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.touchAction = originalTouch;
+    };
+  }, []);
 
   const showPaymentForm = !paidRecord || isPayingNewCycle;
 

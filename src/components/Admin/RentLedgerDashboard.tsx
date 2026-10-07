@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   DollarSign, 
   CheckCircle2, 
@@ -29,9 +29,23 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
   const [cashPaymentMethod, setCashPaymentMethod] = useState<RentPaymentRecord['paymentMethod']>('manual');
   const [cashNotes, setCashNotes] = useState('');
   const [editingRentBarber, setEditingRentBarber] = useState<Barber | null>(null);
-  const [newRentAmount, setNewRentAmount] = useState<number>(200);
+  const [newRentAmount, setNewRentAmount] = useState<string>('200');
   const [showRentConfirm, setShowRentConfirm] = useState(false);
   const [reminderSentFor, setReminderSentFor] = useState<string | null>(null);
+
+  // Lock body scroll when popup/modal is open
+  useEffect(() => {
+    if (editingRentBarber || selectedBarberForCash) {
+      const originalOverflow = document.body.style.overflow;
+      const originalTouch = document.body.style.touchAction;
+      document.body.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+        document.body.style.touchAction = originalTouch;
+      };
+    }
+  }, [editingRentBarber, selectedBarberForCash]);
 
   // Rent Calculations for Current Period
   const activeBarbers = barbers.filter(b => b.isWorking);
@@ -67,8 +81,9 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
   const handleRequestSaveRent = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingRentBarber) return;
+    const parsedAmount = parseFloat(newRentAmount) || 0;
     const currentRent = editingRentBarber.weeklyRent || config.defaultWeeklyRent || 200;
-    if (newRentAmount === currentRent) {
+    if (parsedAmount === currentRent) {
       setEditingRentBarber(null);
       return;
     }
@@ -77,8 +92,9 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
 
   const handleConfirmSaveRent = () => {
     if (!editingRentBarber) return;
+    const parsedAmount = parseFloat(newRentAmount) || 0;
     const updated = barbers.map(b => 
-      b.id === editingRentBarber.id ? { ...b, weeklyRent: newRentAmount, rentAmount: newRentAmount } : b
+      b.id === editingRentBarber.id ? { ...b, weeklyRent: parsedAmount, rentAmount: parsedAmount } : b
     );
     onSaveBarbers(updated);
     setEditingRentBarber(null);
@@ -273,7 +289,9 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
                 <button
                   onClick={() => {
                     setEditingRentBarber(barber);
-                    setNewRentAmount(barber.weeklyRent || 200);
+                    const currentRate = barber.weeklyRent ?? config.defaultWeeklyRent ?? 200;
+                    setNewRentAmount(String(currentRate));
+                    setShowRentConfirm(false);
                   }}
                   className="back-pill-btn"
                   style={{ padding: '7px 12px', fontSize: '0.78rem' }}
@@ -420,7 +438,7 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
                     <div>
                       <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--pastel-green)', fontWeight: 800 }}>New Rate</div>
                       <div style={{ fontSize: '1.15rem', fontWeight: 900, color: 'var(--pastel-green)' }}>
-                        ${newRentAmount}/wk
+                        ${parseFloat(newRentAmount) || 0}/wk
                       </div>
                     </div>
                   </div>
@@ -458,9 +476,10 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
                     type="number"
                     required
                     min="0"
-                    step="10"
+                    step="any"
+                    placeholder="e.g. 200"
                     value={newRentAmount}
-                    onChange={(e) => setNewRentAmount(Number(e.target.value))}
+                    onChange={(e) => setNewRentAmount(e.target.value)}
                     className="bubbly-input"
                   />
                   <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 6 }}>

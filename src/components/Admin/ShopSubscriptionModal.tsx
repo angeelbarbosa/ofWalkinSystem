@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   CheckCircle, 
@@ -43,6 +43,18 @@ export const ShopSubscriptionModal: React.FC<ShopSubscriptionModalProps> = ({
     method: string;
     nextBillingDate: string;
   } | null>(null);
+
+  // Lock body scroll while modal is mounted
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    const originalTouch = document.body.style.touchAction;
+    document.body.style.overflow = 'hidden';
+    document.body.style.touchAction = 'none';
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.touchAction = originalTouch;
+    };
+  }, []);
 
   const handleProcessPayment = async () => {
     setIsProcessing(true);
