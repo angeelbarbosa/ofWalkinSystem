@@ -458,13 +458,13 @@ export function SuperAdminDashboard({
       minHeight: '100dvh',
       background: 'var(--bg-main)',
       color: 'var(--text-primary)',
-      padding: 'max(56px, calc(env(safe-area-inset-top, 0px) + 24px)) 16px max(120px, env(safe-area-inset-bottom, 32px)) 16px',
       fontFamily: 'var(--font-body)',
       width: '100%',
       boxSizing: 'border-box',
       display: 'flex',
       flexDirection: 'column',
-      alignItems: 'center'
+      alignItems: 'center',
+      position: 'relative'
     }}>
       {/* Toast Alert Banner */}
       {toastMessage && (
@@ -472,7 +472,7 @@ export function SuperAdminDashboard({
           className="slide-down"
           style={{
             position: 'fixed',
-            top: 20,
+            top: 'max(20px, calc(env(safe-area-inset-top, 0px) + 12px))',
             left: '50%',
             transform: 'translateX(-50%)',
             background: 'var(--text-primary)',
@@ -489,21 +489,36 @@ export function SuperAdminDashboard({
         </div>
       )}
 
-      <div style={{ maxWidth: '720px', width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        {/* Top Header */}
-        <div style={{
+      {/* Sticky Fixed Platform HQ Header (Protected Status Bar & Notch) */}
+      <header
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 60,
+          width: '100%',
+          background: 'var(--bg-main)',
+          backdropFilter: 'blur(24px)',
+          WebkitBackdropFilter: 'blur(24px)',
+          borderBottom: '1px solid var(--border-subtle)',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.25)',
+          paddingTop: 'max(14px, calc(env(safe-area-inset-top, 0px) + 12px))',
+          paddingBottom: '12px',
+          paddingLeft: '16px',
+          paddingRight: '16px',
+          boxSizing: 'border-box',
           display: 'flex',
           flexDirection: 'column',
-          gap: '16px',
-          paddingBottom: '18px',
-          borderBottom: '1px solid var(--border-subtle)'
-        }}>
+          alignItems: 'center'
+        }}
+      >
+        <div style={{ maxWidth: '720px', width: '100%', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {/* Top Brand Bar */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
               <div style={{
-                width: '42px',
-                height: '42px',
-                borderRadius: '14px',
+                width: '38px',
+                height: '38px',
+                borderRadius: '12px',
                 background: 'var(--surface-pill)',
                 border: '1px solid var(--border-subtle)',
                 color: 'var(--text-primary)',
@@ -512,26 +527,26 @@ export function SuperAdminDashboard({
                 justifyContent: 'center',
                 flexShrink: 0
               }}>
-                <Shield size={22} />
+                <Shield size={20} />
               </div>
-              <div style={{ minWidth: 0 }}>
-                <h1 style={{ fontSize: '20px', fontWeight: 900, letterSpacing: '-0.02em', margin: 0, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <h1 style={{ fontSize: '18px', fontWeight: 900, letterSpacing: '-0.02em', margin: 0, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   WalkinApp Platform HQ
                 </h1>
-                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>
+                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   Client Subscriptions & Direct Shop Support
                 </p>
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
               <button
                 onClick={() => onNavigateTab('kiosk')}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '5px',
-                  padding: '8px 14px',
+                  padding: '7px 13px',
                   background: 'var(--surface-pill)',
                   border: '1px solid var(--border-subtle)',
                   color: 'var(--text-primary)',
@@ -549,7 +564,7 @@ export function SuperAdminDashboard({
                 onClick={handleLock}
                 title="Lock Master Hub"
                 style={{
-                  padding: '8px 12px',
+                  padding: '7px 11px',
                   background: 'var(--surface-pill)',
                   border: '1px solid var(--border-subtle)',
                   color: 'var(--text-muted)',
@@ -578,9 +593,9 @@ export function SuperAdminDashboard({
             <button
               onClick={() => setHqActiveTab('fleet')}
               style={{
-                padding: '10px 14px',
+                padding: '9px 12px',
                 borderRadius: '12px',
-                fontSize: '13px',
+                fontSize: '12px',
                 fontWeight: 800,
                 display: 'flex',
                 alignItems: 'center',
@@ -590,19 +605,21 @@ export function SuperAdminDashboard({
                 color: hqActiveTab === 'fleet' ? 'var(--text-primary)' : 'var(--text-muted)',
                 boxShadow: hqActiveTab === 'fleet' ? 'var(--shadow-sm)' : 'none',
                 cursor: 'pointer',
-                transition: 'all 0.2s ease'
+                transition: 'all 0.2s ease',
+                border: 'none',
+                whiteSpace: 'nowrap'
               }}
             >
-              <Store size={16} />
+              <Store size={15} />
               <span>Fleet & Subscriptions ({shops.length})</span>
             </button>
 
             <button
               onClick={() => setHqActiveTab('messages')}
               style={{
-                padding: '10px 14px',
+                padding: '9px 12px',
                 borderRadius: '12px',
-                fontSize: '13px',
+                fontSize: '12px',
                 fontWeight: 800,
                 display: 'flex',
                 alignItems: 'center',
@@ -613,10 +630,12 @@ export function SuperAdminDashboard({
                 boxShadow: hqActiveTab === 'messages' ? 'var(--shadow-sm)' : 'none',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
-                position: 'relative'
+                position: 'relative',
+                border: 'none',
+                whiteSpace: 'nowrap'
               }}
             >
-              <MessageSquare size={16} />
+              <MessageSquare size={15} />
               <span>Support Messages</span>
               {totalUnreadMessages > 0 && (
                 <span style={{
@@ -624,7 +643,7 @@ export function SuperAdminDashboard({
                   color: '#FFFFFF',
                   fontSize: '10px',
                   fontWeight: 900,
-                  padding: '2px 7px',
+                  padding: '1px 6px',
                   borderRadius: 9999
                 }}>
                   {totalUnreadMessages}
@@ -633,6 +652,19 @@ export function SuperAdminDashboard({
             </button>
           </div>
         </div>
+      </header>
+
+      {/* Scrollable Dashboard Body */}
+      <main style={{
+        maxWidth: '720px',
+        width: '100%',
+        margin: '0 auto',
+        padding: '18px 16px max(120px, env(safe-area-inset-bottom, 32px)) 16px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px',
+        boxSizing: 'border-box'
+      }}>
 
         {/* ================= TAB 1: FLEET & SUBSCRIPTION DASHBOARD ================= */}
         {hqActiveTab === 'fleet' && (
@@ -1551,7 +1583,7 @@ export function SuperAdminDashboard({
             </form>
           </div>
         )}
-      </div>
+      </main>
 
       {/* ================= MODAL: ADD NEW BARBERSHOP ================= */}
       {isNewShopModalOpen && (
