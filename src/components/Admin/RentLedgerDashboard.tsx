@@ -30,6 +30,7 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
   const [cashNotes, setCashNotes] = useState('');
   const [editingRentBarber, setEditingRentBarber] = useState<Barber | null>(null);
   const [newRentAmount, setNewRentAmount] = useState<number>(200);
+  const [showRentConfirm, setShowRentConfirm] = useState(false);
   const [reminderSentFor, setReminderSentFor] = useState<string | null>(null);
 
   // Rent Calculations for Current Period
@@ -63,14 +64,25 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
     setCashNotes('');
   };
 
-  const handleSaveEditedRent = (e: React.FormEvent) => {
+  const handleRequestSaveRent = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingRentBarber) return;
+    const currentRent = editingRentBarber.weeklyRent || config.defaultWeeklyRent || 200;
+    if (newRentAmount === currentRent) {
+      setEditingRentBarber(null);
+      return;
+    }
+    setShowRentConfirm(true);
+  };
+
+  const handleConfirmSaveRent = () => {
+    if (!editingRentBarber) return;
     const updated = barbers.map(b => 
-      b.id === editingRentBarber.id ? { ...b, weeklyRent: newRentAmount } : b
+      b.id === editingRentBarber.id ? { ...b, weeklyRent: newRentAmount, rentAmount: newRentAmount } : b
     );
     onSaveBarbers(updated);
     setEditingRentBarber(null);
+    setShowRentConfirm(false);
   };
 
   const handleSendReminder = (barber: Barber) => {
@@ -375,51 +387,109 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
       {/* 4. Edit Chair Rent Amount Modal */}
       {editingRentBarber && (
         <div className="modal-overlay">
-          <div className="bubbly-modal-card pop-in" style={{ maxWidth: 380, padding: '24px 20px', background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-bubble)' }}>
+          <div className="bubbly-modal-card pop-in" style={{ maxWidth: 400, padding: '24px 22px', background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-bubble)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
               <h3 style={{ fontSize: '1.2rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0 }}>
-                Set Rent: {editingRentBarber.name}
+                {showRentConfirm ? 'Confirm Rate Change' : `Set Rent: ${editingRentBarber.name}`}
               </h3>
               <button
-                onClick={() => setEditingRentBarber(null)}
+                onClick={() => {
+                  setEditingRentBarber(null);
+                  setShowRentConfirm(false);
+                }}
                 style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
               >
                 <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleSaveEditedRent} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div>
-                <label className="form-label">Weekly Booth Rent ($)</label>
-                <input
-                  type="number"
-                  required
-                  min="0"
-                  step="10"
-                  value={newRentAmount}
-                  onChange={(e) => setNewRentAmount(Number(e.target.value))}
-                  className="bubbly-input"
-                />
-              </div>
+            {showRentConfirm ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div style={{ background: 'var(--surface-pill)', padding: '14px 16px', borderRadius: 14, border: '1px solid var(--border-subtle)' }}>
+                  <div style={{ fontSize: '0.88rem', color: 'var(--text-primary)', marginBottom: 10, fontWeight: 750 }}>
+                    Are you sure you want to change rent for <strong>{editingRentBarber.name}</strong>?
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, background: 'var(--surface-card)', padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border-subtle)' }}>
+                    <div>
+                      <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 800 }}>Current Rate</div>
+                      <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-secondary)' }}>
+                        ${editingRentBarber.weeklyRent || config.defaultWeeklyRent || 200}/wk
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>➔</div>
+                    <div>
+                      <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--pastel-green)', fontWeight: 800 }}>New Rate</div>
+                      <div style={{ fontSize: '1.15rem', fontWeight: 900, color: 'var(--pastel-green)' }}>
+                        ${newRentAmount}/wk
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-              <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-                <button
-                  type="button"
-                  onClick={() => setEditingRentBarber(null)}
-                  className="back-pill-btn"
-                  style={{ flex: 1, justifyContent: 'center' }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="choice-card-action-btn"
-                  style={{ flex: 2, justifyContent: 'center' }}
-                >
-                  <span>Save Rate</span>
-                </button>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                  This change will update in real-time across all devices and will immediately show on <strong>{editingRentBarber.name}</strong>'s payment screen.
+                </div>
+
+                <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowRentConfirm(false)}
+                    className="back-pill-btn"
+                    style={{ flex: 1, justifyContent: 'center' }}
+                  >
+                    No, Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfirmSaveRent}
+                    className="choice-card-action-btn"
+                    style={{ flex: 1.5, justifyContent: 'center' }}
+                  >
+                    <Check size={16} />
+                    <span>Yes, Change Rent</span>
+                  </button>
+                </div>
               </div>
-            </form>
+            ) : (
+              <form onSubmit={handleRequestSaveRent} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div>
+                  <label className="form-label">Weekly Booth Rent ($)</label>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    step="10"
+                    value={newRentAmount}
+                    onChange={(e) => setNewRentAmount(Number(e.target.value))}
+                    className="bubbly-input"
+                  />
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 6 }}>
+                    Current rate: ${editingRentBarber.weeklyRent || config.defaultWeeklyRent || 200} / week
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingRentBarber(null);
+                      setShowRentConfirm(false);
+                    }}
+                    className="back-pill-btn"
+                    style={{ flex: 1, justifyContent: 'center' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="choice-card-action-btn"
+                    style={{ flex: 2, justifyContent: 'center' }}
+                  >
+                    <span>Save Rate</span>
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

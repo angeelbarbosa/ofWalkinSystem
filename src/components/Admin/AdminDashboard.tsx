@@ -55,6 +55,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Barbers Management State
   const [isAddingBarber, setIsAddingBarber] = useState(false);
   const [editingBarber, setEditingBarber] = useState<Barber | null>(null);
+  const [showBarberRentConfirm, setShowBarberRentConfirm] = useState(false);
   const [newBarberName, setNewBarberName] = useState('');
   const [newBarberSpec, setNewBarberSpec] = useState('');
   const [newBarberPhone, setNewBarberPhone] = useState('');
@@ -87,11 +88,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     alert('Settings saved successfully!');
   };
 
-  // Add / Edit Barber
-  const handleSaveBarber = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newBarberName.trim()) return;
-
+  const executeSaveBarber = () => {
     if (editingBarber) {
       const updated = barbers.map(b => b.id === editingBarber.id ? {
         ...b,
@@ -108,6 +105,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       } : b);
       onSaveBarbers(updated);
       setEditingBarber(null);
+      setIsAddingBarber(false);
+      setShowBarberRentConfirm(false);
     } else {
       const newBarber: Barber = {
         id: 'barber-' + Date.now(),
@@ -128,6 +127,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       };
       onSaveBarbers([...barbers, newBarber]);
       setIsAddingBarber(false);
+      setShowBarberRentConfirm(false);
     }
 
     // Reset Form
@@ -139,6 +139,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setNewBarberRentCycle('weekly');
     setNewBarberRentDueDay('Monday');
     setNewBarberRentStartDate(new Date().toISOString().split('T')[0]);
+  };
+
+  // Add / Edit Barber Form Submit
+  const handleSaveBarber = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newBarberName.trim()) return;
+
+    if (editingBarber) {
+      const currentRent = editingBarber.rentAmount ?? editingBarber.weeklyRent ?? config.defaultWeeklyRent ?? 200;
+      const rentChanged = Number(newBarberRentAmount) !== currentRent || newBarberRentCycle !== (editingBarber.rentCycle || 'weekly');
+      if (rentChanged && !showBarberRentConfirm) {
+        setShowBarberRentConfirm(true);
+        return;
+      }
+    }
+
+    executeSaveBarber();
   };
 
   const handleToggleWorking = (barberId: string) => {
@@ -476,211 +493,268 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div className="modal-overlay">
               <div className="bubbly-modal-card pop-in" style={{ background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-bubble)', padding: '24px 20px', maxWidth: 460 }}>
                 <h3 style={{ fontSize: '1.3rem', fontWeight: 850, color: 'var(--text-primary)', marginBottom: 16 }}>
-                  {editingBarber ? 'Edit Barber & Rent Plan' : 'Add Barber & Set Rent'}
+                  {showBarberRentConfirm && editingBarber
+                    ? 'Confirm Rent Change'
+                    : editingBarber
+                    ? 'Edit Barber & Rent Plan'
+                    : 'Add Barber & Set Rent'}
                 </h3>
-                <form onSubmit={handleSaveBarber}>
-                  <div className="form-group" style={{ marginBottom: 12 }}>
-                    <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Full Name *</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Brandon Rivera"
-                      value={newBarberName}
-                      onChange={e => setNewBarberName(e.target.value)}
-                      className="bubbly-input"
-                    />
-                  </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-                    <div className="form-group">
-                      <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Station #</label>
-                      <input
-                        type="number"
-                        value={newBarberStation}
-                        onChange={e => setNewBarberStation(Number(e.target.value))}
-                        className="bubbly-input"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Station PIN</label>
-                      <input
-                        type="text"
-                        maxLength={4}
-                        placeholder="1111"
-                        value={newBarberPasscode}
-                        onChange={e => setNewBarberPasscode(e.target.value)}
-                        className="bubbly-input"
-                      />
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
-                    <div className="form-group">
-                      <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Phone Number</label>
-                      <input
-                        type="text"
-                        placeholder="(555) 000-0000"
-                        value={newBarberPhone}
-                        onChange={e => setNewBarberPhone(e.target.value)}
-                        className="bubbly-input"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Specialty</label>
-                      <input
-                        type="text"
-                        placeholder="Fades & Beard Care"
-                        value={newBarberSpec}
-                        onChange={e => setNewBarberSpec(e.target.value)}
-                        className="bubbly-input"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Booth Rent Schedule Configuration Box */}
-                  <div style={{
-                    background: 'var(--surface-pill)',
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: 16,
-                    padding: '14px',
-                    marginBottom: 14
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                      <label style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                        Booth Rent Billing Schedule
-                      </label>
-                      
-                      {/* Cycle Toggle */}
-                      <div style={{ display: 'flex', background: 'var(--surface-card)', borderRadius: 8, padding: 2, border: '1px solid var(--border-subtle)' }}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setNewBarberRentCycle('weekly');
-                            if (newBarberRentDueDay.includes('month') || newBarberRentDueDay === '1st') {
-                              setNewBarberRentDueDay('Monday');
-                            }
-                          }}
-                          style={{
-                            padding: '3px 10px',
-                            borderRadius: 6,
-                            border: 'none',
-                            fontSize: '11px',
-                            fontWeight: 750,
-                            cursor: 'pointer',
-                            background: newBarberRentCycle === 'weekly' ? 'var(--accent-primary)' : 'transparent',
-                            color: newBarberRentCycle === 'weekly' ? 'var(--bg-main)' : 'var(--text-secondary)'
-                          }}
-                        >
-                          Weekly
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setNewBarberRentCycle('monthly');
-                            if (newBarberRentDueDay === 'Monday') {
-                              setNewBarberRentDueDay('1st of month');
-                            }
-                          }}
-                          style={{
-                            padding: '3px 10px',
-                            borderRadius: 6,
-                            border: 'none',
-                            fontSize: '11px',
-                            fontWeight: 750,
-                            cursor: 'pointer',
-                            background: newBarberRentCycle === 'monthly' ? 'var(--accent-primary)' : 'transparent',
-                            color: newBarberRentCycle === 'monthly' ? 'var(--bg-main)' : 'var(--text-secondary)'
-                          }}
-                        >
-                          Monthly
-                        </button>
+                {showBarberRentConfirm && editingBarber ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    <div style={{ background: 'var(--surface-pill)', padding: '16px', borderRadius: 14, border: '1px solid var(--border-subtle)' }}>
+                      <div style={{ fontSize: '0.88rem', color: 'var(--text-primary)', marginBottom: 12, fontWeight: 750 }}>
+                        Are you sure you want to change the booth rent for <strong>{editingBarber.name}</strong>?
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, background: 'var(--surface-card)', padding: '12px 14px', borderRadius: 10, border: '1px solid var(--border-subtle)' }}>
+                        <div>
+                          <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 800 }}>Current Rent</div>
+                          <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-secondary)' }}>
+                            ${editingBarber.rentAmount ?? editingBarber.weeklyRent ?? config.defaultWeeklyRent ?? 200}/{editingBarber.rentCycle === 'monthly' ? 'mo' : 'wk'}
+                          </div>
+                        </div>
+                        <div style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>➔</div>
+                        <div>
+                          <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--pastel-green)', fontWeight: 800 }}>New Rent</div>
+                          <div style={{ fontSize: '1.15rem', fontWeight: 900, color: 'var(--pastel-green)' }}>
+                            ${newBarberRentAmount}/{newBarberRentCycle === 'monthly' ? 'mo' : 'wk'}
+                          </div>
+                        </div>
                       </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
-                      <div>
-                        <label className="form-label" style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>
-                          Rent Rate (${newBarberRentCycle === 'monthly' ? '/month' : '/week'})
-                        </label>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                      This update will immediately be reflected on <strong>{editingBarber.name}</strong>'s payment checkout screen and future billing cycles.
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+                      <button
+                        type="button"
+                        onClick={() => setShowBarberRentConfirm(false)}
+                        className="back-pill-btn"
+                        style={{ flex: 1, justifyContent: 'center' }}
+                      >
+                        No, Go Back
+                      </button>
+                      <button
+                        type="button"
+                        onClick={executeSaveBarber}
+                        className="choice-card-action-btn"
+                        style={{ flex: 1.5, justifyContent: 'center' }}
+                      >
+                        <Check size={16} />
+                        <span>Yes, Save & Update</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSaveBarber}>
+                    <div className="form-group" style={{ marginBottom: 12 }}>
+                      <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Full Name *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Brandon Rivera"
+                        value={newBarberName}
+                        onChange={e => setNewBarberName(e.target.value)}
+                        className="bubbly-input"
+                      />
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                      <div className="form-group">
+                        <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Station #</label>
                         <input
                           type="number"
-                          value={newBarberRentAmount}
-                          onChange={e => setNewBarberRentAmount(Number(e.target.value))}
+                          value={newBarberStation}
+                          onChange={e => setNewBarberStation(Number(e.target.value))}
+                          className="bubbly-input"
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Station PIN</label>
+                        <input
+                          type="text"
+                          maxLength={4}
+                          placeholder="1111"
+                          value={newBarberPasscode}
+                          onChange={e => setNewBarberPasscode(e.target.value)}
+                          className="bubbly-input"
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+                      <div className="form-group">
+                        <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Phone Number</label>
+                        <input
+                          type="text"
+                          placeholder="(555) 000-0000"
+                          value={newBarberPhone}
+                          onChange={e => setNewBarberPhone(e.target.value)}
+                          className="bubbly-input"
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Specialty</label>
+                        <input
+                          type="text"
+                          placeholder="Fades & Beard Care"
+                          value={newBarberSpec}
+                          onChange={e => setNewBarberSpec(e.target.value)}
+                          className="bubbly-input"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Booth Rent Schedule Configuration Box */}
+                    <div style={{
+                      background: 'var(--surface-pill)',
+                      border: '1px solid var(--border-subtle)',
+                      borderRadius: 16,
+                      padding: '14px',
+                      marginBottom: 14
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <label style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          Booth Rent Billing Schedule
+                        </label>
+                        
+                        {/* Cycle Toggle */}
+                        <div style={{ display: 'flex', background: 'var(--surface-card)', borderRadius: 8, padding: 2, border: '1px solid var(--border-subtle)' }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setNewBarberRentCycle('weekly');
+                              if (newBarberRentDueDay.includes('month') || newBarberRentDueDay === '1st') {
+                                setNewBarberRentDueDay('Monday');
+                              }
+                            }}
+                            style={{
+                              padding: '3px 10px',
+                              borderRadius: 6,
+                              border: 'none',
+                              fontSize: '11px',
+                              fontWeight: 750,
+                              cursor: 'pointer',
+                              background: newBarberRentCycle === 'weekly' ? 'var(--accent-primary)' : 'transparent',
+                              color: newBarberRentCycle === 'weekly' ? 'var(--bg-main)' : 'var(--text-secondary)'
+                            }}
+                          >
+                            Weekly
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setNewBarberRentCycle('monthly');
+                              if (newBarberRentDueDay === 'Monday') {
+                                setNewBarberRentDueDay('1st of month');
+                              }
+                            }}
+                            style={{
+                              padding: '3px 10px',
+                              borderRadius: 6,
+                              border: 'none',
+                              fontSize: '11px',
+                              fontWeight: 750,
+                              cursor: 'pointer',
+                              background: newBarberRentCycle === 'monthly' ? 'var(--accent-primary)' : 'transparent',
+                              color: newBarberRentCycle === 'monthly' ? 'var(--bg-main)' : 'var(--text-secondary)'
+                            }}
+                          >
+                            Monthly
+                          </button>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                        <div>
+                          <label className="form-label" style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>
+                            Rent Rate (${newBarberRentCycle === 'monthly' ? '/month' : '/week'})
+                          </label>
+                          <input
+                            type="number"
+                            value={newBarberRentAmount}
+                            onChange={e => setNewBarberRentAmount(Number(e.target.value))}
+                            className="bubbly-input"
+                            style={{ fontSize: '13px', padding: '10px' }}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="form-label" style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>
+                            Due Schedule
+                          </label>
+                          {newBarberRentCycle === 'monthly' ? (
+                            <select
+                              value={newBarberRentDueDay}
+                              onChange={e => setNewBarberRentDueDay(e.target.value)}
+                              className="bubbly-input"
+                              style={{ fontSize: '12px', padding: '10px' }}
+                            >
+                              <option value="1st of month">1st of each month</option>
+                              <option value="15th of month">15th of each month</option>
+                              <option value="Same day as start date">Same day as start date</option>
+                              <option value="Last day of month">Last day of month</option>
+                            </select>
+                          ) : (
+                            <select
+                              value={newBarberRentDueDay}
+                              onChange={e => setNewBarberRentDueDay(e.target.value)}
+                              className="bubbly-input"
+                              style={{ fontSize: '12px', padding: '10px' }}
+                            >
+                              <option value="Monday">Every Monday</option>
+                              <option value="Tuesday">Every Tuesday</option>
+                              <option value="Wednesday">Every Wednesday</option>
+                              <option value="Thursday">Every Thursday</option>
+                              <option value="Friday">Every Friday</option>
+                              <option value="Saturday">Every Saturday</option>
+                              <option value="Sunday">Every Sunday</option>
+                            </select>
+                          )}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="form-label" style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>
+                          Rent Cycle Start Date (Anchor Date)
+                        </label>
+                        <input
+                          type="date"
+                          value={newBarberRentStartDate}
+                          onChange={e => setNewBarberRentStartDate(e.target.value)}
                           className="bubbly-input"
                           style={{ fontSize: '13px', padding: '10px' }}
                         />
                       </div>
-
-                      <div>
-                        <label className="form-label" style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>
-                          Due Schedule
-                        </label>
-                        {newBarberRentCycle === 'monthly' ? (
-                          <select
-                            value={newBarberRentDueDay}
-                            onChange={e => setNewBarberRentDueDay(e.target.value)}
-                            className="bubbly-input"
-                            style={{ fontSize: '12px', padding: '10px' }}
-                          >
-                            <option value="1st of month">1st of each month</option>
-                            <option value="15th of month">15th of each month</option>
-                            <option value="Same day as start date">Same day as start date</option>
-                            <option value="Last day of month">Last day of month</option>
-                          </select>
-                        ) : (
-                          <select
-                            value={newBarberRentDueDay}
-                            onChange={e => setNewBarberRentDueDay(e.target.value)}
-                            className="bubbly-input"
-                            style={{ fontSize: '12px', padding: '10px' }}
-                          >
-                            <option value="Monday">Every Monday</option>
-                            <option value="Tuesday">Every Tuesday</option>
-                            <option value="Wednesday">Every Wednesday</option>
-                            <option value="Thursday">Every Thursday</option>
-                            <option value="Friday">Every Friday</option>
-                            <option value="Saturday">Every Saturday</option>
-                            <option value="Sunday">Every Sunday</option>
-                          </select>
-                        )}
-                      </div>
                     </div>
 
-                    <div>
-                      <label className="form-label" style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>
-                        Rent Cycle Start Date (Anchor Date)
-                      </label>
-                      <input
-                        type="date"
-                        value={newBarberRentStartDate}
-                        onChange={e => setNewBarberRentStartDate(e.target.value)}
-                        className="bubbly-input"
-                        style={{ fontSize: '13px', padding: '10px' }}
-                      />
+                    <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAddingBarber(false);
+                          setShowBarberRentConfirm(false);
+                        }}
+                        className="back-pill-btn"
+                        style={{ flex: 1, justifyContent: 'center' }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="choice-card-action-btn"
+                        style={{ flex: 2 }}
+                      >
+                        <Check size={16} />
+                        <span>{editingBarber ? 'Save Changes' : 'Add Barber'}</span>
+                      </button>
                     </div>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
-                    <button
-                      type="button"
-                      onClick={() => setIsAddingBarber(false)}
-                      className="back-pill-btn"
-                      style={{ flex: 1, justifyContent: 'center' }}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="choice-card-action-btn"
-                      style={{ flex: 2 }}
-                    >
-                      <Check size={16} />
-                      <span>{editingBarber ? 'Save Changes' : 'Add Barber'}</span>
-                    </button>
-                  </div>
-                </form>
+                  </form>
+                )}
               </div>
             </div>
           )}
