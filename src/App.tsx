@@ -623,11 +623,6 @@ export function App() {
                       }
                     }}
                     onLockStation={() => setAuthenticatedBarber(null)}
-                    onAddWalkinDirect={async (clientName, serviceNote) => {
-                      if (clientName && authenticatedBarber) {
-                        await addCheckIn(clientName, authenticatedBarber, serviceNote || 'Walk-In', 'walkin');
-                      }
-                    }}
                   />
                 )}
               </div>

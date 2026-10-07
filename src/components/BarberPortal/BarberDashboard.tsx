@@ -12,14 +12,13 @@ import {
   CreditCard, 
   DollarSign, 
   LogOut, 
-  KeyRound, 
-  Plus
+  KeyRound,
+  Users
 } from 'lucide-react';
 import type { Barber, CheckInRecord, ShopConfig, RentPaymentRecord } from '../../types';
 import { storage } from '../../utils/storage';
 import { BarberRentModal } from './BarberRentModal';
 import { ChangePasscodeModal } from './ChangePasscodeModal';
-import { ModalOverlay } from '../Shared/ModalOverlay';
 import { notificationManager, type ArrivalToastEventData } from '../../utils/notifications';
 
 interface BarberDashboardProps {
@@ -32,7 +31,6 @@ interface BarberDashboardProps {
   onPayRent?: (barber: Barber, method: RentPaymentRecord['paymentMethod'], feeCovered: boolean) => Promise<RentPaymentRecord>;
   onSaveBarbers?: (barbers: Barber[]) => void;
   onLockStation?: () => void;
-  onAddWalkinDirect?: (clientName?: string, serviceNote?: string) => Promise<void> | void;
 }
 
 export const BarberDashboard: React.FC<BarberDashboardProps> = ({
@@ -44,8 +42,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
   onUpdateStatus,
   onPayRent,
   onSaveBarbers,
-  onLockStation,
-  onAddWalkinDirect
+  onLockStation
 }) => {
   // If a currentBarber was passed from login, use it; otherwise fallback to preference
   const assignedBarber = currentBarber || barbers.find(
@@ -56,10 +53,6 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
   const [activeToast, setActiveToast] = useState<ArrivalToastEventData | null>(null);
   const [isRentModalOpen, setIsRentModalOpen] = useState(false);
   const [isPasscodeModalOpen, setIsPasscodeModalOpen] = useState(false);
-  const [isAddWalkInModalOpen, setIsAddWalkInModalOpen] = useState(false);
-  const [newWalkInName, setNewWalkInName] = useState('');
-  const [newWalkInService, setNewWalkInService] = useState('Haircut');
-  const [isSubmittingWalkIn, setIsSubmittingWalkIn] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [tested, setTested] = useState(false);
 
@@ -133,31 +126,6 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
     }
   };
 
-  const handleSaveWalkIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newWalkInName.trim()) return;
-    setIsSubmittingWalkIn(true);
-    try {
-      if (onAddWalkinDirect) {
-        await onAddWalkinDirect(newWalkInName.trim(), newWalkInService.trim() || 'Walk-In');
-      } else {
-        storage.addCheckIn({
-          clientName: newWalkInName.trim(),
-          barberId: assignedBarber.id,
-          barberName: assignedBarber.name,
-          appointmentTime: 'Walk-In',
-          type: 'walkin',
-          notes: newWalkInService.trim() || undefined
-        });
-      }
-      setNewWalkInName('');
-      setNewWalkInService('Haircut');
-      setIsAddWalkInModalOpen(false);
-    } finally {
-      setIsSubmittingWalkIn(false);
-    }
-  };
-
   // Reassign an unassigned general walk-in to this barber
   const handleClaimWalkIn = (record: CheckInRecord) => {
     const allCheckIns = storage.getCheckIns();
@@ -167,6 +135,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
         : c
     );
     storage.saveCheckIns(updated);
+    onUpdateStatus(record.id, 'waiting');
   };
 
   // Filter checkins for this barber only
@@ -309,7 +278,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
         </div>
       )}
 
-      {/* Station Header Bar: Profile Info + Top Right Booth Rent Pill + Mobile Action Strip */}
+      {/* Station Header Bar: Profile Info + Top Right Booth Rent Pill + Action Buttons */}
       <div
         className="slide-down"
         style={{
@@ -431,8 +400,8 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
           </div>
         </div>
 
-        {/* Bottom Responsive Action Buttons Row */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, width: '100%' }}>
+        {/* Action Buttons Row (Live Alerts & Station PIN) */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, width: '100%' }}>
           {permission !== 'granted' ? (
             <button
               onClick={handleEnablePush}
@@ -441,17 +410,17 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 5,
-                padding: '9px 10px',
+                padding: '10px',
                 background: 'var(--accent-primary, #F59E0B)',
                 color: '#000000',
                 border: 'none',
                 borderRadius: 14,
-                fontSize: '0.76rem',
+                fontSize: '0.78rem',
                 fontWeight: 800,
                 cursor: 'pointer'
               }}
             >
-              <Bell size={13} />
+              <Bell size={14} />
               <span>Enable Alerts</span>
             </button>
           ) : (
@@ -462,19 +431,19 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 5,
-                padding: '9px 10px',
+                padding: '10px',
                 background: tested ? 'var(--pastel-green-bg)' : 'var(--surface-pill, #27272A)',
                 color: tested ? 'var(--pastel-green)' : 'var(--text-primary)',
                 border: `1px solid ${tested ? 'var(--pastel-green-border)' : 'var(--border-subtle, rgba(255,255,255,0.1))'}`,
                 borderRadius: 14,
-                fontSize: '0.76rem',
+                fontSize: '0.78rem',
                 fontWeight: 750,
                 cursor: 'pointer',
                 transition: 'all 0.2s ease'
               }}
               title="Test audio alert chime and phone vibration"
             >
-              <Bell size={13} style={{ color: tested ? 'var(--pastel-green)' : 'var(--accent-primary)' }} />
+              <Bell size={14} style={{ color: tested ? 'var(--pastel-green)' : 'var(--accent-primary)' }} />
               <span>{tested ? 'Alert Synced!' : 'Live Alerts'}</span>
             </button>
           )}
@@ -487,49 +456,26 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
               alignItems: 'center',
               justifyContent: 'center',
               gap: 5,
-              padding: '9px 10px',
+              padding: '10px',
               background: 'var(--surface-pill, #27272A)',
               color: 'var(--text-primary)',
               border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
               borderRadius: 14,
-              fontSize: '0.76rem',
+              fontSize: '0.78rem',
               fontWeight: 750,
               cursor: 'pointer'
             }}
             title="Change station 4-digit passcode"
           >
-            <KeyRound size={13} style={{ color: 'var(--accent-primary)' }} />
+            <KeyRound size={14} style={{ color: 'var(--accent-primary)' }} />
             <span>Station PIN</span>
-          </button>
-
-          {/* Quick Add Walk-In Directly for this station */}
-          <button
-            onClick={() => setIsAddWalkInModalOpen(true)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 5,
-              padding: '9px 10px',
-              background: 'var(--surface-pill, #27272A)',
-              color: 'var(--text-primary)',
-              border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
-              borderRadius: 14,
-              fontSize: '0.76rem',
-              fontWeight: 750,
-              cursor: 'pointer'
-            }}
-            title="Directly add walk-in client to your queue"
-          >
-            <Plus size={13} style={{ color: 'var(--accent-primary)' }} />
-            <span>+ Add Walk-In</span>
           </button>
         </div>
       </div>
 
-      {/* Sleek 3-Column Personal Stats Overview */}
+      {/* 3-Column Quick Stats Overview */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 20 }}>
-        {/* Waiting */}
+        {/* Appointments / Station Queue */}
         <div style={{
           background: 'var(--surface-card, #18181B)',
           padding: '12px 10px',
@@ -542,7 +488,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
             {waitingList.length}
           </div>
           <div style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-secondary)', marginTop: 3 }}>
-            Waiting
+            Appointments
           </div>
         </div>
 
@@ -563,7 +509,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
           </div>
         </div>
 
-        {/* Completed */}
+        {/* Live Walk-In Queue */}
         <div style={{
           background: 'var(--surface-card, #18181B)',
           padding: '12px 10px',
@@ -572,74 +518,92 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
           textAlign: 'center',
           boxShadow: 'var(--shadow-sm)'
         }}>
-          <div style={{ fontSize: '1.45rem', fontWeight: 900, color: 'var(--text-primary)', lineHeight: 1.1 }}>
-            {completedList.length}
+          <div style={{ fontSize: '1.45rem', fontWeight: 900, color: unassignedWalkIns.length > 0 ? 'var(--accent-primary)' : 'var(--text-muted)', lineHeight: 1.1 }}>
+            {unassignedWalkIns.length}
           </div>
           <div style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-secondary)', marginTop: 3 }}>
-            Completed
+            Live Walk-Ins
           </div>
         </div>
       </div>
 
-      {/* General Shop Walk-Ins Pool (Clients waiting for next available barber) */}
-      {unassignedWalkIns.length > 0 && (
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <h3 style={{ fontSize: '0.98rem', fontWeight: 850, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6, margin: 0 }}>
-              <span style={{ color: 'var(--accent-primary)' }}>General Shop Walk-Ins</span>
-              <span style={{ fontSize: '0.72rem', background: 'var(--accent-primary)', color: '#000000', padding: '1px 7px', borderRadius: 9999, fontWeight: 900 }}>
-                {unassignedWalkIns.length}
+      {/* SECTION 1: Currently In Your Chair */}
+      {inChairList.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span>Currently in Your Chair</span>
+              <span style={{ fontSize: '0.75rem', background: '#10B981', color: '#000000', padding: '2px 8px', borderRadius: 9999, fontWeight: 900 }}>
+                {inChairList.length}
               </span>
             </h3>
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Waiting for next chair</span>
+            <span style={{ fontSize: '0.74rem', color: '#10B981', fontWeight: 750 }}>
+              In Service
+            </span>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {unassignedWalkIns.map((walkin) => (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {inChairList.map((record) => (
               <div
-                key={walkin.id}
+                key={record.id}
+                className="slide-up"
                 style={{
-                  background: 'var(--surface-card, #18181B)',
-                  border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
-                  borderRadius: 16,
-                  padding: '12px 14px',
+                  background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, var(--surface-card, #18181B) 100%)',
+                  border: '2px solid #10B981',
+                  borderRadius: 22,
+                  padding: '18px',
+                  boxShadow: '0 8px 24px rgba(16, 185, 129, 0.2)',
                   display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 10
+                  flexDirection: 'column',
+                  gap: 14
                 }}
               >
                 <div>
-                  <div style={{ fontSize: '0.92rem', fontWeight: 850, color: 'var(--text-primary)' }}>
-                    {walkin.clientName}
-                  </div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                    <Clock size={11} />
-                    <span>Arrived {getElapsedTime(walkin.checkInTime)}</span>
-                    {walkin.notes && <span>• {walkin.notes}</span>}
+                  <span
+                    style={{
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      padding: '2px 8px',
+                      borderRadius: 6,
+                      background: '#10B981',
+                      color: '#000000',
+                      display: 'inline-block',
+                      marginBottom: 4,
+                      textTransform: 'uppercase'
+                    }}
+                  >
+                    In Progress
+                  </span>
+                  <h4 style={{ fontSize: '1.35rem', fontWeight: 900, color: 'var(--text-primary)', margin: 0 }}>
+                    {record.clientName}
+                  </h4>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: 3 }}>
+                    {record.appointmentTime ? `Appointment: ${record.appointmentTime}` : 'Walk-In Customer'}
+                    {record.notes && ` • ${record.notes}`}
                   </div>
                 </div>
 
                 <button
-                  onClick={() => handleClaimWalkIn(walkin)}
+                  onClick={() => handleSetCompleted(record)}
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 5,
-                    padding: '7px 12px',
-                    background: 'var(--accent-primary, #F59E0B)',
+                    width: '100%',
+                    padding: '14px',
+                    borderRadius: 16,
+                    fontSize: '0.96rem',
+                    fontWeight: 900,
+                    background: '#10B981',
                     color: '#000000',
                     border: 'none',
-                    borderRadius: 9999,
-                    fontSize: '0.76rem',
-                    fontWeight: 850,
                     cursor: 'pointer',
-                    boxShadow: '0 2px 8px rgba(245, 158, 11, 0.25)',
-                    whiteSpace: 'nowrap'
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    boxShadow: '0 6px 20px rgba(16, 185, 129, 0.35)'
                   }}
                 >
-                  <Scissors size={13} />
-                  <span>Take Walk-In</span>
+                  <Check size={18} />
+                  <span>Mark Cut Finished</span>
                 </button>
               </div>
             ))}
@@ -647,30 +611,35 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
         </div>
       )}
 
-      {/* Main Waiting Queue Section */}
+      {/* SECTION 2: My Checked-In Appointments (Booked specifically for this barber) */}
       <div style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-          <h3 style={{ fontSize: '1.1rem', fontWeight: 850, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
-            <span>Waiting for Your Station</span>
-            <span style={{ fontSize: '0.75rem', background: 'var(--accent-primary, #F59E0B)', color: '#000000', padding: '2px 8px', borderRadius: 9999, fontWeight: 900 }}>
-              {waitingList.length}
-            </span>
-          </h3>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+          <div>
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 850, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+              <span>My Checked-In Appointments</span>
+              <span style={{ fontSize: '0.74rem', background: 'var(--accent-primary, #F59E0B)', color: '#000000', padding: '2px 8px', borderRadius: 9999, fontWeight: 900 }}>
+                {waitingList.length}
+              </span>
+            </h3>
+            <p style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', margin: '3px 0 0' }}>
+              Clients checked in for {barberDisplayName}
+            </p>
+          </div>
         </div>
 
         {waitingList.length === 0 ? (
           <div style={{
             background: 'var(--surface-card, #18181B)',
             borderRadius: 22,
-            padding: '32px 18px',
+            padding: '28px 18px',
             textAlign: 'center',
             border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
             boxShadow: 'var(--shadow-sm)'
           }}>
             <div style={{
-              width: 48,
-              height: 48,
-              borderRadius: 16,
+              width: 44,
+              height: 44,
+              borderRadius: 15,
               background: 'var(--surface-pill, #27272A)',
               color: 'var(--text-muted, #71717A)',
               display: 'flex',
@@ -678,13 +647,13 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
               justifyContent: 'center',
               margin: '0 auto 10px'
             }}>
-              <Armchair size={24} />
+              <Armchair size={22} />
             </div>
-            <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 4px' }}>
-              No clients waiting right now
+            <h4 style={{ fontSize: '0.98rem', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 4px' }}>
+              No appointments waiting right now
             </h4>
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', maxWidth: 320, margin: '0 auto' }}>
-              When a client checks in for {barberDisplayName} or joins the walk-in rotation, they appear here instantly.
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', maxWidth: 320, margin: '0 auto' }}>
+              When a client arrives and checks in for {barberDisplayName} at the kiosk, they appear here instantly.
             </p>
           </div>
         ) : (
@@ -805,85 +774,112 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
         )}
       </div>
 
-      {/* In Chair Section */}
-      {inChairList.length > 0 && (
-        <div style={{ marginBottom: 24 }}>
-          <h3 style={{ fontSize: '1.1rem', fontWeight: 850, color: 'var(--text-primary)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span>Currently in Your Chair</span>
-            <span style={{ fontSize: '0.75rem', background: '#10B981', color: '#000000', padding: '2px 8px', borderRadius: 9999, fontWeight: 900 }}>
-              {inChairList.length}
-            </span>
-          </h3>
+      {/* SECTION 3: Live Walk-in Queue */}
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+          <div>
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 850, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+              <span style={{ color: 'var(--accent-primary)' }}>Live Walk-in Queue</span>
+              <span style={{ fontSize: '0.74rem', background: unassignedWalkIns.length > 0 ? 'var(--accent-primary)' : 'var(--surface-pill)', color: unassignedWalkIns.length > 0 ? '#000000' : 'var(--text-secondary)', padding: '2px 8px', borderRadius: 9999, fontWeight: 900 }}>
+                {unassignedWalkIns.length}
+              </span>
+            </h3>
+            <p style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', margin: '3px 0 0' }}>
+              Lobby walk-ins waiting for the next available barber
+            </p>
+          </div>
+        </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {inChairList.map((record) => (
+        {unassignedWalkIns.length === 0 ? (
+          <div style={{
+            background: 'var(--surface-card, #18181B)',
+            borderRadius: 20,
+            padding: '24px 16px',
+            textAlign: 'center',
+            border: '1px solid var(--border-subtle, rgba(255,255,255,0.08))',
+            boxShadow: 'var(--shadow-sm)'
+          }}>
+            <div style={{
+              width: 40,
+              height: 40,
+              borderRadius: 14,
+              background: 'var(--surface-pill, #27272A)',
+              color: 'var(--text-muted, #71717A)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 8px'
+            }}>
+              <Users size={20} />
+            </div>
+            <h4 style={{ fontSize: '0.94rem', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 3px' }}>
+              Live walk-in queue is clear
+            </h4>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: 0 }}>
+              No unassigned walk-in clients waiting in the lobby.
+            </p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {unassignedWalkIns.map((walkin) => (
               <div
-                key={record.id}
+                key={walkin.id}
                 className="slide-up"
                 style={{
-                  background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, var(--surface-card, #18181B) 100%)',
-                  border: '2px solid #10B981',
-                  borderRadius: 22,
-                  padding: '18px',
-                  boxShadow: '0 8px 24px rgba(16, 185, 129, 0.2)',
+                  background: 'var(--surface-card, #18181B)',
+                  border: '1px solid var(--border-subtle, rgba(255,255,255,0.12))',
+                  borderRadius: 18,
+                  padding: '14px 16px',
                   display: 'flex',
-                  flexDirection: 'column',
-                  gap: 14
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 12
                 }}
               >
                 <div>
-                  <span
-                    style={{
-                      fontSize: '0.72rem',
-                      fontWeight: 800,
-                      padding: '2px 8px',
-                      borderRadius: 6,
-                      background: '#10B981',
-                      color: '#000000',
-                      display: 'inline-block',
-                      marginBottom: 4,
-                      textTransform: 'uppercase'
-                    }}
-                  >
-                    In Service
-                  </span>
-                  <h4 style={{ fontSize: '1.35rem', fontWeight: 900, color: 'var(--text-primary)', margin: 0 }}>
-                    {record.clientName}
-                  </h4>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: 3 }}>
-                    {record.appointmentTime ? `Appointment: ${record.appointmentTime}` : 'Walk-In Customer'}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '1px 6px', borderRadius: 4, background: 'var(--surface-pill)', color: 'var(--accent-primary)', textTransform: 'uppercase' }}>
+                      Lobby Walk-In
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '1.05rem', fontWeight: 850, color: 'var(--text-primary)' }}>
+                    {walkin.clientName}
+                  </div>
+                  <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
+                    <Clock size={11} />
+                    <span>Arrived {getElapsedTime(walkin.checkInTime)}</span>
+                    {walkin.notes && <span>• {walkin.notes}</span>}
                   </div>
                 </div>
 
                 <button
-                  onClick={() => handleSetCompleted(record)}
+                  onClick={() => handleClaimWalkIn(walkin)}
                   style={{
-                    width: '100%',
-                    padding: '14px',
-                    borderRadius: 16,
-                    fontSize: '0.96rem',
-                    fontWeight: 900,
-                    background: '#10B981',
-                    color: '#000000',
-                    border: 'none',
-                    cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 8,
-                    boxShadow: '0 6px 20px rgba(16, 185, 129, 0.35)'
+                    gap: 6,
+                    padding: '10px 16px',
+                    background: 'var(--accent-primary, #F59E0B)',
+                    color: '#000000',
+                    border: 'none',
+                    borderRadius: 14,
+                    fontSize: '0.84rem',
+                    fontWeight: 850,
+                    cursor: 'pointer',
+                    boxShadow: '0 3px 10px rgba(245, 158, 11, 0.28)',
+                    whiteSpace: 'nowrap'
                   }}
                 >
-                  <Check size={18} />
-                  <span>Mark Cut Finished</span>
+                  <Scissors size={14} />
+                  <span>Take Walk-In</span>
                 </button>
               </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* Finished Today Section */}
+      {/* SECTION 4: Finished Today */}
       {completedList.length > 0 && (
         <div style={{ marginBottom: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
@@ -931,141 +927,6 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
             ))}
           </div>
         </div>
-      )}
-
-      {/* Quick Add Walk-In Modal (In-Dashboard Direct Check-In) */}
-      {isAddWalkInModalOpen && (
-        <ModalOverlay onClose={() => setIsAddWalkInModalOpen(false)} maxWidth={420}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ padding: '7px', background: 'var(--surface-pill)', color: 'var(--accent-primary)', borderRadius: '10px' }}>
-                  <Plus size={18} />
-                </div>
-                <div>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 850, margin: 0, color: 'var(--text-primary)' }}>
-                    Add Walk-In to Station
-                  </h3>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '2px 0 0' }}>
-                    Seat client for {assignedBarber.name} (Station #{assignedBarber.stationNumber})
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsAddWalkInModalOpen(false)}
-                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '20px', cursor: 'pointer' }}
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveWalkIn} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div>
-                <label style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Client Name *</label>
-                <input
-                  type="text"
-                  required
-                  autoFocus
-                  placeholder="e.g. Marcus, Jason..."
-                  value={newWalkInName}
-                  onChange={(e) => setNewWalkInName(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '12px 14px',
-                    borderRadius: 14,
-                    background: 'var(--surface-pill, #27272A)',
-                    border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
-                    color: 'var(--text-primary)',
-                    fontSize: '0.95rem',
-                    fontWeight: 700,
-                    outline: 'none',
-                    marginTop: 4,
-                    boxSizing: 'border-box'
-                  }}
-                />
-              </div>
-
-              <div>
-                <label style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Service / Note (Optional)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Skin Fade, Beard Trim..."
-                  value={newWalkInService}
-                  onChange={(e) => setNewWalkInService(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '12px 14px',
-                    borderRadius: 14,
-                    background: 'var(--surface-pill, #27272A)',
-                    border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
-                    color: 'var(--text-primary)',
-                    fontSize: '0.9rem',
-                    outline: 'none',
-                    marginTop: 4,
-                    boxSizing: 'border-box'
-                  }}
-                />
-                {/* Quick Chips */}
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
-                  {['Haircut', 'Fade & Beard', 'Beard Trim', 'Lineup'].map((chip) => (
-                    <button
-                      key={chip}
-                      type="button"
-                      onClick={() => setNewWalkInService(chip)}
-                      style={{
-                        padding: '4px 9px',
-                        borderRadius: 9999,
-                        background: newWalkInService === chip ? 'var(--accent-primary)' : 'var(--surface-pill)',
-                        color: newWalkInService === chip ? '#000000' : 'var(--text-secondary)',
-                        border: '1px solid var(--border-subtle)',
-                        fontSize: '0.72rem',
-                        fontWeight: 750,
-                        cursor: 'pointer'
-                      }}
-                    >
-                      {chip}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: 10, marginTop: 6 }}>
-                <button
-                  type="button"
-                  onClick={() => setIsAddWalkInModalOpen(false)}
-                  style={{
-                    padding: '12px',
-                    background: 'var(--surface-pill)',
-                    border: '1px solid var(--border-subtle)',
-                    color: 'var(--text-primary)',
-                    borderRadius: 14,
-                    fontSize: '0.86rem',
-                    fontWeight: 750,
-                    cursor: 'pointer'
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmittingWalkIn || !newWalkInName.trim()}
-                  style={{
-                    padding: '12px',
-                    background: 'var(--accent-primary, #F59E0B)',
-                    color: '#000000',
-                    border: 'none',
-                    borderRadius: 14,
-                    fontSize: '0.88rem',
-                    fontWeight: 850,
-                    cursor: newWalkInName.trim() ? 'pointer' : 'default',
-                    opacity: newWalkInName.trim() ? 1 : 0.6,
-                    boxShadow: '0 4px 14px rgba(245, 158, 11, 0.3)'
-                  }}
-                >
-                  {isSubmittingWalkIn ? 'Adding...' : 'Add to Queue'}
-                </button>
-              </div>
-            </form>
-        </ModalOverlay>
       )}
 
       {/* Barber Rent Payment Modal */}
