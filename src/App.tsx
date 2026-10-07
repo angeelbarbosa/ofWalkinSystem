@@ -344,7 +344,7 @@ export function App() {
             ? 0 
             : currentTab === 'kiosk' 
             ? 'max(36px, calc(env(safe-area-inset-top, 24px) + 14px)) 16px max(32px, calc(env(safe-area-inset-bottom, 16px) + 16px))' 
-            : 'max(68px, calc(env(safe-area-inset-top, 24px) + 36px)) 16px max(36px, calc(env(safe-area-inset-bottom, 16px) + 20px))' 
+            : '0 16px max(36px, calc(env(safe-area-inset-bottom, 16px) + 20px))' 
         }}
       >
         
@@ -383,98 +383,107 @@ export function App() {
             {currentTab !== 'kiosk' && (
               <header 
                 style={{ 
+                  position: 'sticky',
+                  top: 0,
+                  zIndex: 80,
                   width: '100%', 
-                  maxWidth: '680px', 
-                  margin: '0 auto 14px',
+                  background: 'var(--bg-main)',
+                  backdropFilter: 'blur(20px)',
+                  WebkitBackdropFilter: 'blur(20px)',
+                  paddingTop: 'max(10px, env(safe-area-inset-top, 14px))',
+                  paddingBottom: '10px',
+                  marginBottom: '14px',
                   boxSizing: 'border-box'
                 }}
               >
-                {/* Navigation Controls Bar with Shop Identity Badge */}
-                <div className="staff-nav-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', width: '100%', boxSizing: 'border-box' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flex: 1, overflow: 'hidden' }}>
-                    {sessionStorage.getItem('walkin_super_admin_unlocked') === 'true' && (
+                <div style={{ maxWidth: '680px', margin: '0 auto', width: '100%' }}>
+                  {/* Navigation Controls Bar with Shop Identity Badge */}
+                  <div className="staff-nav-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', width: '100%', boxSizing: 'border-box' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flex: 1, overflow: 'hidden' }}>
+                      {sessionStorage.getItem('walkin_super_admin_unlocked') === 'true' && (
+                        <button
+                          onClick={() => setCurrentTab('super_admin')}
+                          className="back-pill-btn"
+                          style={{ 
+                            padding: '6px 10px', 
+                            fontSize: '0.76rem', 
+                            whiteSpace: 'nowrap', 
+                            flexShrink: 0,
+                            background: 'rgba(245, 158, 11, 0.15)',
+                            border: '1px solid var(--accent-primary)',
+                            color: 'var(--accent-primary)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                          title="Return to Master HQ Fleet"
+                        >
+                          <Shield size={13} />
+                          <span>HQ</span>
+                        </button>
+                      )}
+
                       <button
-                        onClick={() => setCurrentTab('super_admin')}
+                        onClick={() => {
+                          setAuthenticatedBarber(null);
+                          setCurrentTab('kiosk');
+                          handleResetKiosk();
+                        }}
                         className="back-pill-btn"
-                        style={{ 
-                          padding: '6px 10px', 
-                          fontSize: '0.76rem', 
-                          whiteSpace: 'nowrap', 
-                          flexShrink: 0,
-                          background: 'rgba(245, 158, 11, 0.15)',
-                          border: '1px solid var(--accent-primary)',
-                          color: 'var(--accent-primary)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px'
-                        }}
-                        title="Return to Master HQ Fleet"
+                        style={{ padding: '6px 10px', fontSize: '0.78rem', whiteSpace: 'nowrap', flexShrink: 0 }}
+                        title="Exit to Customer Kiosk"
                       >
-                        <Shield size={13} />
-                        <span>HQ</span>
+                        <ArrowLeft size={13} />
+                        <span>Kiosk</span>
                       </button>
-                    )}
 
-                    <button
-                      onClick={() => {
-                        setAuthenticatedBarber(null);
-                        setCurrentTab('kiosk');
-                        handleResetKiosk();
-                      }}
-                      className="back-pill-btn"
-                      style={{ padding: '6px 10px', fontSize: '0.78rem', whiteSpace: 'nowrap', flexShrink: 0 }}
-                      title="Exit to Customer Kiosk"
-                    >
-                      <ArrowLeft size={13} />
-                      <span>Kiosk</span>
-                    </button>
+                      {/* Isolated Shop Badge (No dropdown or leakage of other shops) */}
+                      <ShopSwitcherBar currentShop={activeShop} />
+                    </div>
 
-                    {/* Isolated Shop Badge (No dropdown or leakage of other shops) */}
-                    <ShopSwitcherBar currentShop={activeShop} />
-                  </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                      {currentTab === 'barber_portal' && (
+                        <div
+                          style={{
+                            background: 'var(--surface-card, #09090B)',
+                            border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
+                            color: 'var(--text-primary, #FFFFFF)',
+                            padding: '5px 10px',
+                            borderRadius: 9999,
+                            fontSize: '0.78rem',
+                            fontWeight: 800,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 5,
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          <Scissors size={13} />
+                          <span>{authenticatedBarber ? `${authenticatedBarber.name} (#${authenticatedBarber.stationNumber})` : 'Barber Hub'}</span>
+                        </div>
+                      )}
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                    {currentTab === 'barber_portal' && (
-                      <div
-                        style={{
-                          background: 'var(--surface-card, #09090B)',
-                          border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
-                          color: 'var(--text-primary, #FFFFFF)',
-                          padding: '5px 10px',
-                          borderRadius: 9999,
-                          fontSize: '0.78rem',
-                          fontWeight: 800,
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 5,
-                          whiteSpace: 'nowrap'
-                        }}
-                      >
-                        <Scissors size={13} />
-                        <span>{authenticatedBarber ? `${authenticatedBarber.name} (#${authenticatedBarber.stationNumber})` : 'Barber Hub'}</span>
-                      </div>
-                    )}
-
-                    {currentTab === 'admin' && (
-                      <div
-                        style={{
-                          background: 'var(--surface-card, #09090B)',
-                          border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
-                          color: 'var(--text-primary, #FFFFFF)',
-                          padding: '5px 10px',
-                          borderRadius: 9999,
-                          fontSize: '0.78rem',
-                          fontWeight: 800,
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 5,
-                          whiteSpace: 'nowrap'
-                        }}
-                      >
-                        <Lock size={12} />
-                        <span>Admin</span>
-                      </div>
-                    )}
+                      {currentTab === 'admin' && (
+                        <div
+                          style={{
+                            background: 'var(--surface-card, #09090B)',
+                            border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
+                            color: 'var(--text-primary, #FFFFFF)',
+                            padding: '5px 10px',
+                            borderRadius: 9999,
+                            fontSize: '0.78rem',
+                            fontWeight: 800,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 5,
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          <Lock size={12} />
+                          <span>Admin</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </header>
