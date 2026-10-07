@@ -4,17 +4,15 @@ import {
   CheckCircle, 
   Megaphone, 
   Trash2, 
-  Armchair,
-  Scissors,
-  Check,
-  Bell,
-  X,
-  CreditCard,
-  DollarSign,
-  Lock,
-  KeyRound,
-  Vibrate,
-  Smartphone,
+  Armchair, 
+  Scissors, 
+  Check, 
+  Bell, 
+  X, 
+  CreditCard, 
+  DollarSign, 
+  LogOut, 
+  KeyRound, 
   Plus
 } from 'lucide-react';
 import type { Barber, CheckInRecord, ShopConfig, RentPaymentRecord } from '../../types';
@@ -33,7 +31,7 @@ interface BarberDashboardProps {
   onPayRent?: (barber: Barber, method: RentPaymentRecord['paymentMethod'], feeCovered: boolean) => Promise<RentPaymentRecord>;
   onSaveBarbers?: (barbers: Barber[]) => void;
   onLockStation?: () => void;
-  onAddWalkinDirect: () => void;
+  onAddWalkinDirect?: (clientName?: string, serviceNote?: string) => Promise<void> | void;
 }
 
 export const BarberDashboard: React.FC<BarberDashboardProps> = ({
@@ -57,6 +55,10 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
   const [activeToast, setActiveToast] = useState<ArrivalToastEventData | null>(null);
   const [isRentModalOpen, setIsRentModalOpen] = useState(false);
   const [isPasscodeModalOpen, setIsPasscodeModalOpen] = useState(false);
+  const [isAddWalkInModalOpen, setIsAddWalkInModalOpen] = useState(false);
+  const [newWalkInName, setNewWalkInName] = useState('');
+  const [newWalkInService, setNewWalkInService] = useState('Haircut');
+  const [isSubmittingWalkIn, setIsSubmittingWalkIn] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [tested, setTested] = useState(false);
 
@@ -112,6 +114,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
     if (result.success) {
       notificationManager.sendBarberArrivalAlert('Test Client', assignedBarber.name, '2:30 PM', assignedBarber.id);
       setTested(true);
+      setTimeout(() => setTested(false), 2500);
     }
   };
 
@@ -119,6 +122,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
     await notificationManager.requestPermissionAndSubscribe(assignedBarber.id, assignedBarber.name);
     notificationManager.sendBarberArrivalAlert('Test Client', assignedBarber.name, '2:30 PM', assignedBarber.id);
     setTested(true);
+    setTimeout(() => setTested(false), 2500);
   };
 
   const handleSaveNewPasscode = (newPasscode: string) => {
@@ -128,6 +132,42 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
     }
   };
 
+  const handleSaveWalkIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newWalkInName.trim()) return;
+    setIsSubmittingWalkIn(true);
+    try {
+      if (onAddWalkinDirect) {
+        await onAddWalkinDirect(newWalkInName.trim(), newWalkInService.trim() || 'Walk-In');
+      } else {
+        storage.addCheckIn({
+          clientName: newWalkInName.trim(),
+          barberId: assignedBarber.id,
+          barberName: assignedBarber.name,
+          appointmentTime: 'Walk-In',
+          type: 'walkin',
+          notes: newWalkInService.trim() || undefined
+        });
+      }
+      setNewWalkInName('');
+      setNewWalkInService('Haircut');
+      setIsAddWalkInModalOpen(false);
+    } finally {
+      setIsSubmittingWalkIn(false);
+    }
+  };
+
+  // Reassign an unassigned general walk-in to this barber
+  const handleClaimWalkIn = (record: CheckInRecord) => {
+    const allCheckIns = storage.getCheckIns();
+    const updated = allCheckIns.map(c => 
+      c.id === record.id 
+        ? { ...c, barberId: assignedBarber.id, barberName: assignedBarber.name, status: 'waiting' as const } 
+        : c
+    );
+    storage.saveCheckIns(updated);
+  };
+
   // Filter checkins for this barber only
   const filteredCheckIns = checkIns.filter(record => {
     const target = assignedBarber.name.toLowerCase();
@@ -135,6 +175,14 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
       record.barberId === assignedBarber.id ||
       (record.barberName && record.barberName.toLowerCase() === target)
     );
+  });
+
+  // General Shop Walk-Ins (Unassigned / First Available)
+  const unassignedWalkIns = checkIns.filter(record => {
+    const isUnassigned = (!record.barberId && (!record.barberName || record.barberName === 'Front Register')) ||
+                         record.barberId === 'first_available' ||
+                         record.barberName?.toLowerCase().includes('first available');
+    return isUnassigned && (record.status === 'waiting' || record.status === 'called') && record.type !== 'shopping';
   });
 
   const waitingList = filteredCheckIns.filter(r => r.status === 'waiting' || r.status === 'called');
@@ -260,7 +308,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
         </div>
       )}
 
-      {/* Station Header Bar: Profile Info + Compact Mobile Action Strip */}
+      {/* Station Header Bar: Profile Info + Top Right Booth Rent Pill + Mobile Action Strip */}
       <div
         className="slide-down"
         style={{
@@ -277,18 +325,18 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
       >
         {/* Top Info Row */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
             <div
               style={{
-                width: 46,
-                height: 46,
-                borderRadius: 16,
+                width: 44,
+                height: 44,
+                borderRadius: 15,
                 background: assignedBarber.avatarColor || 'var(--accent-primary, #F59E0B)',
                 color: '#000000',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '1.25rem',
+                fontSize: '1.2rem',
                 fontWeight: 900,
                 flexShrink: 0,
                 boxShadow: '0 4px 14px rgba(0,0,0,0.2)'
@@ -296,15 +344,15 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
             >
               {assignedBarber.name.charAt(0)}
             </div>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <h2 style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-primary)', margin: 0, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <h2 style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--text-primary)', margin: 0, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {assignedBarber.name}
                 </h2>
                 <span
                   style={{
                     background: 'var(--surface-pill, #27272A)',
-                    color: 'var(--accent-primary, #F59E0B)',
+                    color: 'var(--text-secondary)',
                     fontSize: '0.72rem',
                     fontWeight: 800,
                     padding: '2px 8px',
@@ -316,45 +364,70 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                   Station #{assignedBarber.stationNumber}
                 </span>
               </div>
-              <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
+              <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
                 <span
                   style={{
                     width: 6,
                     height: 6,
                     borderRadius: '50%',
-                    background: permission === 'granted' ? '#10B981' : '#F59E0B',
+                    background: permission === 'granted' ? 'var(--pastel-green)' : 'var(--pastel-amber)',
                     display: 'inline-block'
                   }}
                 />
-                <span>{permission === 'granted' ? 'Phone Alerts Ready' : 'Alerts Not Enabled'}</span>
+                <span>{permission === 'granted' ? 'Live Alerts Active' : 'Alerts Disabled'}</span>
               </div>
             </div>
           </div>
 
-          {/* Quick Lock Station Icon for security */}
-          {onLockStation && (
-            <button
-              onClick={onLockStation}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 5,
-                padding: '7px 12px',
-                background: 'var(--surface-pill, #27272A)',
-                border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
-                color: 'var(--text-primary)',
-                borderRadius: 9999,
-                fontSize: '0.78rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                flexShrink: 0
-              }}
-              title="Lock station screen"
-            >
-              <Lock size={12} />
-              <span>Lock</span>
-            </button>
-          )}
+          {/* Top Right: Booth Rent Badge & Subtle Switch Station Action */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            {onPayRent && (
+              <button
+                onClick={() => setIsRentModalOpen(true)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  padding: '7px 12px',
+                  background: isRentPaidThisCycle ? 'var(--pastel-green-bg)' : 'var(--pastel-amber-bg)',
+                  border: `1px solid ${isRentPaidThisCycle ? 'var(--pastel-green-border)' : 'var(--pastel-amber-border)'}`,
+                  color: isRentPaidThisCycle ? 'var(--pastel-green)' : 'var(--pastel-amber)',
+                  borderRadius: 9999,
+                  fontSize: '0.76rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  transition: 'all 0.2s ease'
+                }}
+                title={isRentPaidThisCycle ? 'Rent Paid - View Receipt' : 'Rent Due - Pay Online'}
+              >
+                {isRentPaidThisCycle ? <DollarSign size={13} /> : <CreditCard size={13} />}
+                <span>{isRentPaidThisCycle ? `Rent Paid ($${assignedBarber.weeklyRent || 200})` : `Pay Rent: $${assignedBarber.weeklyRent || 200}`}</span>
+              </button>
+            )}
+
+            {onLockStation && (
+              <button
+                onClick={onLockStation}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  padding: '7px 10px',
+                  background: 'var(--surface-pill, #27272A)',
+                  border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
+                  color: 'var(--text-muted)',
+                  borderRadius: 9999,
+                  fontSize: '0.74rem',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+                title="Switch Station / Exit"
+              >
+                <LogOut size={13} />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Bottom Responsive Action Buttons Row */}
@@ -367,18 +440,18 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 5,
-                padding: '8px 10px',
+                padding: '9px 10px',
                 background: 'var(--accent-primary, #F59E0B)',
                 color: '#000000',
                 border: 'none',
-                borderRadius: 12,
+                borderRadius: 14,
                 fontSize: '0.76rem',
                 fontWeight: 800,
                 cursor: 'pointer'
               }}
             >
-              <Smartphone size={13} />
-              <span>Enable Push</span>
+              <Bell size={13} />
+              <span>Enable Alerts</span>
             </button>
           ) : (
             <button
@@ -388,19 +461,20 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 5,
-                padding: '8px 10px',
-                background: 'var(--surface-pill, #27272A)',
-                color: 'var(--text-primary)',
-                border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
-                borderRadius: 12,
+                padding: '9px 10px',
+                background: tested ? 'var(--pastel-green-bg)' : 'var(--surface-pill, #27272A)',
+                color: tested ? 'var(--pastel-green)' : 'var(--text-primary)',
+                border: `1px solid ${tested ? 'var(--pastel-green-border)' : 'var(--border-subtle, rgba(255,255,255,0.1))'}`,
+                borderRadius: 14,
                 fontSize: '0.76rem',
-                fontWeight: 700,
-                cursor: 'pointer'
+                fontWeight: 750,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
               }}
-              title="Send a quick test vibration/sound alert to this device"
+              title="Test audio alert chime and phone vibration"
             >
-              <Vibrate size={13} style={{ color: 'var(--accent-primary)' }} />
-              <span>{tested ? 'Buzzed!' : 'Test Buzz'}</span>
+              <Bell size={13} style={{ color: tested ? 'var(--pastel-green)' : 'var(--accent-primary)' }} />
+              <span>{tested ? 'Alert Synced!' : 'Live Alerts'}</span>
             </button>
           )}
 
@@ -412,119 +486,45 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
               alignItems: 'center',
               justifyContent: 'center',
               gap: 5,
-              padding: '8px 10px',
+              padding: '9px 10px',
               background: 'var(--surface-pill, #27272A)',
               color: 'var(--text-primary)',
               border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
-              borderRadius: 12,
+              borderRadius: 14,
               fontSize: '0.76rem',
-              fontWeight: 700,
+              fontWeight: 750,
               cursor: 'pointer'
             }}
             title="Change station 4-digit passcode"
           >
             <KeyRound size={13} style={{ color: 'var(--accent-primary)' }} />
-            <span>Change PIN</span>
+            <span>Station PIN</span>
           </button>
 
-          {/* Quick Add Walk-In Directly for this barber */}
+          {/* Quick Add Walk-In Directly for this station */}
           <button
-            onClick={onAddWalkinDirect}
+            onClick={() => setIsAddWalkInModalOpen(true)}
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: 5,
-              padding: '8px 10px',
+              padding: '9px 10px',
               background: 'var(--surface-pill, #27272A)',
               color: 'var(--text-primary)',
               border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
-              borderRadius: 12,
+              borderRadius: 14,
               fontSize: '0.76rem',
-              fontWeight: 700,
+              fontWeight: 750,
               cursor: 'pointer'
             }}
-            title="Directly add walk-in client to queue"
+            title="Directly add walk-in client to your queue"
           >
             <Plus size={13} style={{ color: 'var(--accent-primary)' }} />
-            <span>Add Walk-In</span>
+            <span>+ Add Walk-In</span>
           </button>
         </div>
       </div>
-
-      {/* Booth Rent Strip for this Barber */}
-      {onPayRent && (
-        <div
-          className="slide-up"
-          style={{
-            background: isRentPaidThisCycle 
-              ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, var(--surface-card, #18181B) 100%)' 
-              : 'linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, var(--surface-card, #18181B) 100%)',
-            border: isRentPaidThisCycle 
-              ? '1px solid rgba(16, 185, 129, 0.35)' 
-              : '1px solid rgba(245, 158, 11, 0.35)',
-            borderRadius: 20,
-            padding: '12px 16px',
-            marginBottom: 16,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 12,
-            boxShadow: 'var(--shadow-sm)'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-            <div
-              style={{
-                width: 34,
-                height: 34,
-                borderRadius: 10,
-                background: isRentPaidThisCycle ? '#10B981' : '#F59E0B',
-                color: '#000000',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0
-              }}
-            >
-              <DollarSign size={18} />
-            </div>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {isRentPaidThisCycle
-                  ? `Rent Paid ($${assignedBarber.weeklyRent || 200})`
-                  : `Rent Due: $${assignedBarber.weeklyRent || 200}.00`}
-              </div>
-              <div style={{ fontSize: '0.72rem', color: isRentPaidThisCycle ? '#10B981' : '#F59E0B' }}>
-                {isRentPaidThisCycle
-                  ? `Receipt #${myRentRecord?.receiptNumber}`
-                  : `Due every ${assignedBarber.rentDueDay || 'Monday'}`}
-              </div>
-            </div>
-          </div>
-
-          <button
-            onClick={() => setIsRentModalOpen(true)}
-            style={{
-              padding: '7px 14px',
-              fontSize: '0.78rem',
-              fontWeight: 800,
-              borderRadius: 9999,
-              background: isRentPaidThisCycle ? 'var(--surface-pill, #27272A)' : 'var(--accent-primary, #F59E0B)',
-              color: isRentPaidThisCycle ? 'var(--text-primary)' : '#000000',
-              border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 5,
-              flexShrink: 0
-            }}
-          >
-            <CreditCard size={13} />
-            <span>{isRentPaidThisCycle ? 'Receipt' : 'Pay Rent'}</span>
-          </button>
-        </div>
-      )}
 
       {/* Sleek 3-Column Personal Stats Overview */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 20 }}>
@@ -579,6 +579,72 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
           </div>
         </div>
       </div>
+
+      {/* General Shop Walk-Ins Pool (Clients waiting for next available barber) */}
+      {unassignedWalkIns.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <h3 style={{ fontSize: '0.98rem', fontWeight: 850, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6, margin: 0 }}>
+              <span style={{ color: 'var(--accent-primary)' }}>General Shop Walk-Ins</span>
+              <span style={{ fontSize: '0.72rem', background: 'var(--accent-primary)', color: '#000000', padding: '1px 7px', borderRadius: 9999, fontWeight: 900 }}>
+                {unassignedWalkIns.length}
+              </span>
+            </h3>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Waiting for next chair</span>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {unassignedWalkIns.map((walkin) => (
+              <div
+                key={walkin.id}
+                style={{
+                  background: 'var(--surface-card, #18181B)',
+                  border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
+                  borderRadius: 16,
+                  padding: '12px 14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 10
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: '0.92rem', fontWeight: 850, color: 'var(--text-primary)' }}>
+                    {walkin.clientName}
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                    <Clock size={11} />
+                    <span>Arrived {getElapsedTime(walkin.checkInTime)}</span>
+                    {walkin.notes && <span>• {walkin.notes}</span>}
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => handleClaimWalkIn(walkin)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    padding: '7px 12px',
+                    background: 'var(--accent-primary, #F59E0B)',
+                    color: '#000000',
+                    border: 'none',
+                    borderRadius: 9999,
+                    fontSize: '0.76rem',
+                    fontWeight: 850,
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(245, 158, 11, 0.25)',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  <Scissors size={13} />
+                  <span>Take Walk-In</span>
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Main Waiting Queue Section */}
       <div style={{ marginBottom: 24 }}>
@@ -664,6 +730,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                     <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
                       <Clock size={12} />
                       <span>Arrived {getElapsedTime(record.checkInTime)}</span>
+                      {record.notes && <span>• {record.notes}</span>}
                     </div>
                   </div>
                 </div>
@@ -815,7 +882,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
         </div>
       )}
 
-      {/* Completed Today Section */}
+      {/* Finished Today Section */}
       {completedList.length > 0 && (
         <div style={{ marginBottom: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
@@ -861,6 +928,167 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                 <span style={{ fontWeight: 750 }}>{record.clientName}</span>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Quick Add Walk-In Modal (In-Dashboard Direct Check-In) */}
+      {isAddWalkInModalOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 99999,
+          padding: 16,
+          boxSizing: 'border-box'
+        }}>
+          <div style={{
+            width: '100%',
+            maxWidth: 420,
+            background: 'var(--surface-card, #18181B)',
+            border: '1px solid var(--border-subtle, rgba(255,255,255,0.12))',
+            borderRadius: 24,
+            padding: '24px 20px',
+            boxShadow: '0 24px 60px rgba(0,0,0,0.8)',
+            boxSizing: 'border-box'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ padding: '7px', background: 'var(--surface-pill)', color: 'var(--accent-primary)', borderRadius: '10px' }}>
+                  <Plus size={18} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 850, margin: 0, color: 'var(--text-primary)' }}>
+                    Add Walk-In to Station
+                  </h3>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '2px 0 0' }}>
+                    Seat client for {assignedBarber.name} (Station #{assignedBarber.stationNumber})
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsAddWalkInModalOpen(false)}
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '20px', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveWalkIn} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Client Name *</label>
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  placeholder="e.g. Marcus, Jason..."
+                  value={newWalkInName}
+                  onChange={(e) => setNewWalkInName(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px 14px',
+                    borderRadius: 14,
+                    background: 'var(--surface-pill, #27272A)',
+                    border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
+                    color: 'var(--text-primary)',
+                    fontSize: '0.95rem',
+                    fontWeight: 700,
+                    outline: 'none',
+                    marginTop: 4,
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Service / Note (Optional)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Skin Fade, Beard Trim..."
+                  value={newWalkInService}
+                  onChange={(e) => setNewWalkInService(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px 14px',
+                    borderRadius: 14,
+                    background: 'var(--surface-pill, #27272A)',
+                    border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
+                    color: 'var(--text-primary)',
+                    fontSize: '0.9rem',
+                    outline: 'none',
+                    marginTop: 4,
+                    boxSizing: 'border-box'
+                  }}
+                />
+                {/* Quick Chips */}
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+                  {['Haircut', 'Fade & Beard', 'Beard Trim', 'Lineup'].map((chip) => (
+                    <button
+                      key={chip}
+                      type="button"
+                      onClick={() => setNewWalkInService(chip)}
+                      style={{
+                        padding: '4px 9px',
+                        borderRadius: 9999,
+                        background: newWalkInService === chip ? 'var(--accent-primary)' : 'var(--surface-pill)',
+                        color: newWalkInService === chip ? '#000000' : 'var(--text-secondary)',
+                        border: '1px solid var(--border-subtle)',
+                        fontSize: '0.72rem',
+                        fontWeight: 750,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {chip}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: 10, marginTop: 6 }}>
+                <button
+                  type="button"
+                  onClick={() => setIsAddWalkInModalOpen(false)}
+                  style={{
+                    padding: '12px',
+                    background: 'var(--surface-pill)',
+                    border: '1px solid var(--border-subtle)',
+                    color: 'var(--text-primary)',
+                    borderRadius: 14,
+                    fontSize: '0.86rem',
+                    fontWeight: 750,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingWalkIn || !newWalkInName.trim()}
+                  style={{
+                    padding: '12px',
+                    background: 'var(--accent-primary, #F59E0B)',
+                    color: '#000000',
+                    border: 'none',
+                    borderRadius: 14,
+                    fontSize: '0.88rem',
+                    fontWeight: 850,
+                    cursor: newWalkInName.trim() ? 'pointer' : 'default',
+                    opacity: newWalkInName.trim() ? 1 : 0.6,
+                    boxShadow: '0 4px 14px rgba(245, 158, 11, 0.3)'
+                  }}
+                >
+                  {isSubmittingWalkIn ? 'Adding...' : 'Add to Queue'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
