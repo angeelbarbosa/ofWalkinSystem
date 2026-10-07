@@ -837,6 +837,16 @@ export const storage = {
     this.saveCheckIns(updated);
   },
 
+  claimCheckIn(id: string, barberId: string, barberName: string, status: CheckInRecord['status'] = 'waiting') {
+    const records = this.getCheckIns();
+    const updated = records.map(r => 
+      r.id === id 
+        ? { ...r, barberId, barberName, status, statusUpdatedAt: new Date().toISOString(), notes: 'claimed' } 
+        : r
+    );
+    this.saveCheckIns(updated);
+  },
+
   clearCompletedCheckIns() {
     const records = this.getCheckIns();
     const updated = records.filter(r => r.status === 'waiting' || r.status === 'in_chair' || r.status === 'called');

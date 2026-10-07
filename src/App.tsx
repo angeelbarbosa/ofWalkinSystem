@@ -95,6 +95,7 @@ export function App() {
     loadDemoFleet,
     addCheckIn,
     updateStatus,
+    claimCheckIn,
     saveBarbers,
     saveConfig,
     payBoothRent,
@@ -612,6 +613,7 @@ export function App() {
                     rentRecords={rentRecords}
                     config={config}
                     onUpdateStatus={updateStatus}
+                    onClaimWalkIn={claimCheckIn}
                     onPayRent={payBoothRent}
                     onSaveBarbers={(updated) => {
                       saveBarbers(updated);

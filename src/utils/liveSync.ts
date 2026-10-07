@@ -445,18 +445,53 @@ export function useLiveSystem() {
   };
 
   const updateStatus = async (id: string, status: CheckInRecord['status']) => {
+    // 1. Update localStorage & broadcast
+    storage.updateCheckInStatus(id, status);
+
+    // 2. Immediately update local React state for instantaneous UI response
+    setCheckIns(prev => prev.map(c => 
+      c.id === id ? { ...c, status, statusUpdatedAt: new Date().toISOString() } : c
+    ));
+
+    // 3. Convex cloud sync
     if (convexClient && id.length > 20) {
       try {
         await convexClient.mutation(api.checkins.updateStatus, {
           id: id as any,
           status
         });
-        return;
       } catch {
         // Fallback
       }
     }
-    storage.updateCheckInStatus(id, status);
+  };
+
+  const claimCheckIn = async (
+    checkInId: string, 
+    barber: Barber, 
+    newStatus: CheckInRecord['status'] = 'waiting'
+  ) => {
+    // 1. Update localStorage & broadcast
+    storage.claimCheckIn(checkInId, barber.id, barber.name, newStatus);
+
+    // 2. Immediately update local React state for instantaneous UI response
+    setCheckIns(prev => prev.map(c => 
+      c.id === checkInId 
+        ? { ...c, barberId: barber.id, barberName: barber.name, status: newStatus, notes: 'claimed' } 
+        : c
+    ));
+
+    // 3. Convex cloud sync
+    if (convexClient && checkInId.length > 20) {
+      try {
+        await convexClient.mutation(api.checkins.updateStatus, {
+          id: checkInId as any,
+          status: newStatus
+        });
+      } catch {
+        // Fallback
+      }
+    }
   };
 
   const saveBarbers = async (updated: Barber[]) => {
@@ -621,6 +656,7 @@ export function useLiveSystem() {
     loadDemoFleet,
     addCheckIn,
     updateStatus,
+    claimCheckIn,
     saveBarbers,
     saveConfig,
     payBoothRent,
