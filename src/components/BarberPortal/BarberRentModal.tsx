@@ -6,11 +6,11 @@ import {
   ArrowRight, 
   Lock, 
   ShieldCheck, 
-  Sparkles,
-  Zap,
-  Banknote,
-  Check,
-  Copy
+  Sparkles, 
+  Check, 
+  Copy,
+  Smartphone,
+  RefreshCw
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import type { Barber, RentPaymentRecord, ShopConfig } from '../../types';
@@ -25,31 +25,32 @@ interface BarberRentModalProps {
 
 export const BarberRentModal: React.FC<BarberRentModalProps> = ({
   barber,
-  config,
+  config: _config,
   existingRecord,
   onPayRent,
   onClose
 }) => {
-  const baseRent = barber.weeklyRent || 200;
-  const [paymentMethod, setPaymentMethod] = useState<'apple_pay' | 'card' | 'zelle' | 'cash'>('apple_pay');
+  const baseRent = barber.weeklyRent || barber.rentAmount || 200;
+  const rentCycleText = barber.rentCycle === 'monthly' ? 'Monthly' : barber.rentCycle === 'biweekly' ? 'Bi-Weekly' : 'Weekly';
+  
+  // Card/Apple Pay standard processing fee (2.9% + 30¢)
+  const processingFee = Number(((baseRent * 0.029) + 0.30).toFixed(2));
+  const totalAmount = Number((baseRent + processingFee).toFixed(2));
+
   const [isProcessing, setIsProcessing] = useState(false);
+  const [autoPayEnabled, setAutoPayEnabled] = useState(barber.autoPayEnabled ?? true);
   const [paidRecord, setPaidRecord] = useState<RentPaymentRecord | null>(existingRecord || null);
   const [isPayingNewCycle, setIsPayingNewCycle] = useState(false);
   const [copiedReceipt, setCopiedReceipt] = useState(false);
-
-  // Fee calculation: Card/Apple Pay pass through 2.9% + 30c; Zelle/Cash is $0 fee
-  const isZeroFee = paymentMethod === 'zelle' || paymentMethod === 'cash';
-  const processingFee = isZeroFee ? 0 : Number(((baseRent * 0.029) + 0.30).toFixed(2));
-  const totalAmount = baseRent + processingFee;
 
   const showPaymentForm = !paidRecord || isPayingNewCycle;
 
   const handleProcessPayment = async () => {
     setIsProcessing(true);
 
-    // Simulate crisp 1.2s Stripe / Apple Pay payment processing
+    // Simulate crisp 1.2s Stripe & Apple Pay payment processing
     setTimeout(async () => {
-      const record = await onPayRent(barber, paymentMethod, !isZeroFee);
+      const record = await onPayRent(barber, 'apple_pay', true);
       setIsProcessing(false);
       setPaidRecord(record);
       setIsPayingNewCycle(false);
@@ -74,7 +75,7 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
       <div 
         className="bubbly-modal-card pop-in" 
         style={{ 
-          maxWidth: 490, 
+          maxWidth: 480, 
           padding: '28px 24px', 
           position: 'relative',
           background: 'var(--surface-card, #141417)',
@@ -111,15 +112,15 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
               <div
                 style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 14,
+                  width: 46,
+                  height: 46,
+                  borderRadius: 15,
                   background: barber.avatarColor || 'var(--accent-primary, #F59E0B)',
                   color: '#000000',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '1.2rem',
+                  fontSize: '1.25rem',
                   fontWeight: 900,
                   flexShrink: 0
                 }}
@@ -131,7 +132,7 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
                   Station #{barber.stationNumber} • Booth Rent
                 </span>
                 <h3 style={{ fontSize: '1.25rem', fontWeight: 850, color: 'var(--text-primary)', margin: '2px 0 0', lineHeight: 1.2 }}>
-                  Pay Weekly Rent for {barber.name}
+                  Pay Booth Rent ({barber.name})
                 </h3>
               </div>
             </div>
@@ -147,19 +148,19 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.86rem', color: 'var(--text-secondary)', marginBottom: 8 }}>
-                <span>Weekly Chair Rent:</span>
-                <span style={{ fontWeight: 750, color: 'var(--text-primary)' }}>${baseRent.toFixed(2)} / wk</span>
+                <span>{rentCycleText} Station Rent:</span>
+                <span style={{ fontWeight: 750, color: 'var(--text-primary)' }}>${baseRent.toFixed(2)}</span>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.86rem', color: 'var(--text-secondary)', marginBottom: 12 }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <span>Payment Processing Fee</span>
-                  <span style={{ fontSize: '0.7rem', background: 'var(--surface-card)', color: 'var(--text-muted)', padding: '1px 6px', borderRadius: 4, border: '1px solid var(--border-subtle)' }}>
-                    {isZeroFee ? '$0.00 Fee' : '2.9% + 30¢'}
+                  <span>Card / Apple Pay Processing</span>
+                  <span style={{ fontSize: '0.68rem', background: 'var(--surface-card)', color: 'var(--text-muted)', padding: '1px 6px', borderRadius: 4, border: '1px solid var(--border-subtle)' }}>
+                    2.9% + 30¢
                   </span>
                 </span>
-                <span style={{ fontWeight: 750, color: isZeroFee ? 'var(--pastel-green, #10B981)' : 'var(--text-primary)' }}>
-                  {isZeroFee ? 'FREE' : `$${processingFee.toFixed(2)}`}
+                <span style={{ fontWeight: 750, color: 'var(--text-primary)' }}>
+                  ${processingFee.toFixed(2)}
                 </span>
               </div>
 
@@ -173,252 +174,77 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
                     <span>Due every {barber.rentDueDay || 'Monday'}</span>
                   </div>
                 </div>
-                <span style={{ fontSize: '1.45rem', fontWeight: 900, color: 'var(--text-primary)' }}>
+                <span style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--text-primary)' }}>
                   ${totalAmount.toFixed(2)}
                 </span>
               </div>
             </div>
 
-            {/* Payment Method Selector (4 Grid Options) */}
-            <div style={{ marginBottom: 18 }}>
-              <label style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: 8 }}>
-                Select Payment Method
-              </label>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
-                {/* Apple Pay */}
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('apple_pay')}
-                  style={{
-                    padding: '10px 4px',
-                    borderRadius: 14,
-                    border: paymentMethod === 'apple_pay' ? '2px solid var(--accent-primary)' : '1px solid var(--border-subtle)',
-                    background: paymentMethod === 'apple_pay' ? 'rgba(16, 185, 129, 0.12)' : 'var(--surface-pill)',
-                    color: paymentMethod === 'apple_pay' ? 'var(--accent-primary)' : 'var(--text-primary)',
-                    fontWeight: 800,
-                    fontSize: '0.78rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 4,
-                    cursor: 'pointer'
-                  }}
-                >
-                  <CreditCard size={18} />
-                  <span>Apple Pay</span>
-                </button>
-
-                {/* Stripe Card */}
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('card')}
-                  style={{
-                    padding: '10px 4px',
-                    borderRadius: 14,
-                    border: paymentMethod === 'card' ? '2px solid var(--accent-primary)' : '1px solid var(--border-subtle)',
-                    background: paymentMethod === 'card' ? 'rgba(16, 185, 129, 0.12)' : 'var(--surface-pill)',
-                    color: paymentMethod === 'card' ? 'var(--accent-primary)' : 'var(--text-primary)',
-                    fontWeight: 800,
-                    fontSize: '0.78rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 4,
-                    cursor: 'pointer'
-                  }}
-                >
-                  <CreditCard size={18} />
-                  <span>Card</span>
-                </button>
-
-                {/* Zelle */}
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('zelle')}
-                  style={{
-                    padding: '10px 4px',
-                    borderRadius: 14,
-                    border: paymentMethod === 'zelle' ? '2px solid var(--accent-primary)' : '1px solid var(--border-subtle)',
-                    background: paymentMethod === 'zelle' ? 'rgba(16, 185, 129, 0.12)' : 'var(--surface-pill)',
-                    color: paymentMethod === 'zelle' ? 'var(--accent-primary)' : 'var(--text-primary)',
-                    fontWeight: 800,
-                    fontSize: '0.78rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 4,
-                    cursor: 'pointer'
-                  }}
-                >
-                  <Zap size={18} />
-                  <span>Zelle</span>
-                </button>
-
-                {/* Cash to Owner */}
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('cash')}
-                  style={{
-                    padding: '10px 4px',
-                    borderRadius: 14,
-                    border: paymentMethod === 'cash' ? '2px solid var(--accent-primary)' : '1px solid var(--border-subtle)',
-                    background: paymentMethod === 'cash' ? 'rgba(16, 185, 129, 0.12)' : 'var(--surface-pill)',
-                    color: paymentMethod === 'cash' ? 'var(--accent-primary)' : 'var(--text-primary)',
-                    fontWeight: 800,
-                    fontSize: '0.78rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 4,
-                    cursor: 'pointer'
-                  }}
-                >
-                  <Banknote size={18} />
-                  <span>Cash</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Simulated Card Details Input if Card selected */}
-            {paymentMethod === 'card' && (
-              <div 
-                className="slide-down"
-                style={{
-                  background: 'var(--surface-pill, #1C1C21)',
-                  border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
-                  borderRadius: 16,
-                  padding: '14px',
-                  marginBottom: 18,
+            {/* Auto-Pay Switcher */}
+            <div 
+              style={{
+                background: 'var(--surface-pill, #1C1C21)',
+                border: '1px solid var(--border-subtle, rgba(255,255,255,0.08))',
+                borderRadius: 14,
+                padding: '12px 14px',
+                marginBottom: 18,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 10,
+                cursor: 'pointer'
+              }}
+              onClick={() => setAutoPayEnabled(!autoPayEnabled)}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 10,
+                  background: autoPayEnabled ? 'var(--pastel-green-bg)' : 'var(--surface-card)',
+                  color: autoPayEnabled ? 'var(--pastel-green)' : 'var(--text-muted)',
                   display: 'flex',
-                  flexDirection: 'column',
-                  gap: 10
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
-                    Card Information (Stripe Secure)
-                  </span>
-                  <ShieldCheck size={15} color="#10B981" />
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <RefreshCw size={15} />
                 </div>
                 <div>
-                  <input
-                    type="text"
-                    readOnly
-                    value="•••• •••• •••• 4242 (Simulated Instant Payout)"
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      background: 'var(--surface-card, #141417)',
-                      border: '1px solid var(--border-subtle)',
-                      borderRadius: 10,
-                      color: 'var(--text-primary)',
-                      fontSize: '0.84rem',
-                      fontFamily: 'monospace'
-                    }}
-                  />
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                  <input
-                    type="text"
-                    readOnly
-                    value="12/28"
-                    style={{
-                      padding: '8px 10px',
-                      background: 'var(--surface-card, #141417)',
-                      border: '1px solid var(--border-subtle)',
-                      borderRadius: 10,
-                      color: 'var(--text-secondary)',
-                      fontSize: '0.82rem',
-                      textAlign: 'center'
-                    }}
-                  />
-                  <input
-                    type="text"
-                    readOnly
-                    value="CVC •••"
-                    style={{
-                      padding: '8px 10px',
-                      background: 'var(--surface-card, #141417)',
-                      border: '1px solid var(--border-subtle)',
-                      borderRadius: 10,
-                      color: 'var(--text-secondary)',
-                      fontSize: '0.82rem',
-                      textAlign: 'center'
-                    }}
-                  />
+                  <div style={{ fontSize: '0.84rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                    Automatic Rent Renewal
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                    Auto-charge saved card every {barber.rentDueDay || 'Monday'}
+                  </div>
                 </div>
               </div>
-            )}
 
-            {/* Zelle instructions note */}
-            {paymentMethod === 'zelle' && (
-              <div 
-                className="slide-down"
-                style={{
-                  background: 'rgba(59, 130, 246, 0.08)',
-                  border: '1px solid rgba(59, 130, 246, 0.25)',
-                  borderRadius: 16,
-                  padding: '12px 14px',
-                  marginBottom: 18,
-                  fontSize: '0.82rem',
-                  color: 'var(--text-secondary)'
-                }}
-              >
-                <div style={{ fontWeight: 800, color: '#60A5FA', marginBottom: 2 }}>Direct Zelle Transfer ($0 Fee)</div>
-                <div>
-                  Send <strong>${baseRent.toFixed(2)}</strong> via Zelle to{' '}
-                  <strong style={{ color: 'var(--text-primary)' }}>
-                    {config?.zelleRecipientPhone || config?.zelleRecipientEmail || 'Shop Owner account'}
-                  </strong>
-                  {config?.zelleRecipientEmail && config?.zelleRecipientPhone ? ` or ${config.zelleRecipientEmail}` : ''}.
-                  Clicking Confirm logs your receipt into the shop rent ledger.
-                </div>
-              </div>
-            )}
-
-            {/* Cash instructions note */}
-            {paymentMethod === 'cash' && (
-              <div 
-                className="slide-down"
-                style={{
-                  background: 'rgba(16, 185, 129, 0.08)',
-                  border: '1px solid rgba(16, 185, 129, 0.25)',
-                  borderRadius: 16,
-                  padding: '12px 14px',
-                  marginBottom: 18,
-                  fontSize: '0.82rem',
-                  color: 'var(--text-secondary)'
-                }}
-              >
-                <div style={{ fontWeight: 800, color: '#34D399', marginBottom: 2 }}>Handing Cash to Shop Owner</div>
-                <div>Hand <strong>${baseRent.toFixed(2)}</strong> cash to the shop manager. Clicking Confirm logs this payment and issues your instant receipt.</div>
-              </div>
-            )}
+              <input 
+                type="checkbox" 
+                checked={autoPayEnabled} 
+                onChange={(e) => setAutoPayEnabled(e.target.checked)}
+                style={{ width: 18, height: 18, accentColor: 'var(--accent-primary)', cursor: 'pointer' }} 
+              />
+            </div>
 
             {/* Security Assurance */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 20, justifyContent: 'center' }}>
-              <Lock size={13} color="#10B981" />
-              <span>Direct shop account credit & automatic ledger verification</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.76rem', color: 'var(--text-muted)', marginBottom: 18, justifyContent: 'center' }}>
+              <Lock size={12} color="#10B981" />
+              <span>Direct shop account deposit • 256-bit encrypted via Stripe</span>
             </div>
 
-            {/* Action Buttons */}
+            {/* One Big Primary Payment Button */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <button
                 type="button"
                 onClick={handleProcessPayment}
                 disabled={isProcessing}
-                className="choice-card-action-btn"
                 style={{
                   width: '100%',
-                  padding: '14px 20px',
-                  fontSize: '1.02rem',
-                  fontWeight: 850,
-                  borderRadius: 9999,
+                  padding: '16px 20px',
+                  fontSize: '1.05rem',
+                  fontWeight: 900,
+                  borderRadius: 18,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -426,16 +252,16 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
                   background: 'var(--accent-primary, #F59E0B)',
                   color: '#000000',
                   border: 'none',
-                  cursor: isProcessing ? 'wait' : 'pointer'
+                  cursor: isProcessing ? 'wait' : 'pointer',
+                  boxShadow: '0 8px 24px rgba(245, 158, 11, 0.35)'
                 }}
               >
                 {isProcessing ? (
-                  <span>Processing Rent Payment...</span>
+                  <span>Processing Stripe Payment...</span>
                 ) : (
                   <>
-                    <span>
-                      {paymentMethod === 'cash' ? `Confirm Cash ($${totalAmount.toFixed(2)})` : `Pay $${totalAmount.toFixed(2)}`}
-                    </span>
+                    <Smartphone size={18} />
+                    <span>Pay with Apple Pay / Card • ${totalAmount.toFixed(2)}</span>
                     <ArrowRight size={17} />
                   </>
                 )}
@@ -452,7 +278,7 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
                     fontSize: '0.82rem',
                     fontWeight: 700,
                     cursor: 'pointer',
-                    padding: '6px'
+                    padding: '8px'
                   }}
                 >
                   Cancel & View Last Receipt
@@ -484,7 +310,7 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
               Booth Rent Verified!
             </h3>
             <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginBottom: 18 }}>
-              Credited directly to the shop ledger for Station #{paidRecord.stationNumber}.
+              Paid via Stripe and credited directly to the shop ledger for Station #{paidRecord.stationNumber}.
             </p>
 
             {/* Official Digital Receipt Card */}
@@ -535,8 +361,9 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
 
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: 'var(--text-secondary)' }}>Payment Method:</span>
-                <span style={{ fontWeight: 800, color: 'var(--text-primary)', textTransform: 'capitalize' }}>
-                  {paidRecord.paymentMethod ? paidRecord.paymentMethod.replace('_', ' ') : 'Apple Pay'}
+                <span style={{ fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <CreditCard size={13} style={{ color: 'var(--pastel-green)' }} />
+                  <span>Stripe / Apple Pay</span>
                 </span>
               </div>
 
@@ -567,20 +394,19 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="choice-card-action-btn"
                 style={{
                   width: '100%',
-                  padding: '13px 20px',
+                  padding: '14px 20px',
                   fontSize: '0.96rem',
                   fontWeight: 850,
-                  borderRadius: 9999,
+                  borderRadius: 16,
                   background: 'var(--surface-pill, #27272A)',
                   color: 'var(--text-primary)',
                   border: '1px solid var(--border-subtle)',
                   cursor: 'pointer'
                 }}
               >
-                <span>Back to Barber Hub</span>
+                <span>Back to Barber Station</span>
               </button>
 
               <button
@@ -596,7 +422,7 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
                   padding: '6px'
                 }}
               >
-                + Pay Next Week in Advance
+                + Pay Next Cycle in Advance
               </button>
             </div>
           </div>

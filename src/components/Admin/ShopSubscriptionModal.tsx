@@ -9,12 +9,12 @@ import {
   Sparkles, 
   Calendar,
   AlertCircle,
-  ExternalLink
+  Smartphone,
+  Copy,
+  Check
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import type { Shop, SubscriptionPaymentMethod } from '../../types';
-
-export const PLATFORM_STRIPE_PAYMENT_URL = 'https://buy.stripe.com/7sY00lgIz1vi7HC4PUefC00';
 
 interface ShopSubscriptionModalProps {
   shop: Shop;
@@ -30,12 +30,12 @@ export const ShopSubscriptionModal: React.FC<ShopSubscriptionModalProps> = ({
   const baseFee = shop.subscriptionMonthlyFee ?? shop.monthlyPlanPrice ?? 49;
   const isComped = shop.subscriptionStatus === 'comped' || baseFee === 0;
   
-  // Stripe Processing Fee: 2.9% + $0.30 passed to shop owner
+  // Stripe Processing Fee: 2.9% + $0.30 passed through
   const processingFee = isComped ? 0 : Number(((baseFee * 0.029) + 0.30).toFixed(2));
-  const totalAmount = baseFee + processingFee;
+  const totalAmount = Number((baseFee + processingFee).toFixed(2));
 
-  const [paymentMethod, setPaymentMethod] = useState<'apple_pay' | 'card' | 'zelle'>('apple_pay');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [copiedInvoice, setCopiedInvoice] = useState(false);
   const [paidReceipt, setPaidReceipt] = useState<{
     invoiceNumber: string;
     paidAt: string;
@@ -47,15 +47,9 @@ export const ShopSubscriptionModal: React.FC<ShopSubscriptionModalProps> = ({
   const handleProcessPayment = async () => {
     setIsProcessing(true);
 
-    // If paying with Apple Pay / Stripe Card, redirect directly to the live Stripe Checkout page
-    if (paymentMethod === 'apple_pay' || paymentMethod === 'card') {
-      window.location.href = PLATFORM_STRIPE_PAYMENT_URL;
-      return;
-    }
-
-    // For Zelle, confirm locally and record renewal
+    // Simulate crisp 1.2s dynamic Stripe & Apple Pay subscription checkout
     setTimeout(() => {
-      onPaySubscription(paymentMethod);
+      onPaySubscription('apple_pay');
       setIsProcessing(false);
 
       const nextDate = new Date();
@@ -65,7 +59,7 @@ export const ShopSubscriptionModal: React.FC<ShopSubscriptionModalProps> = ({
         invoiceNumber: 'INV-' + Math.floor(100000 + Math.random() * 900000),
         paidAt: new Date().toISOString(),
         totalPaid: totalAmount,
-        method: 'Zelle Transfer',
+        method: 'Stripe / Apple Pay',
         nextBillingDate: nextDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
       });
 
@@ -75,7 +69,13 @@ export const ShopSubscriptionModal: React.FC<ShopSubscriptionModalProps> = ({
         origin: { y: 0.6 },
         colors: ['#10B981', '#F59E0B', '#3B82F6', '#FFFFFF']
       });
-    }, 1000);
+    }, 1200);
+  };
+
+  const handleCopyInvoice = (inv: string) => {
+    navigator.clipboard.writeText(inv);
+    setCopiedInvoice(true);
+    setTimeout(() => setCopiedInvoice(false), 2000);
   };
 
   return (
@@ -83,7 +83,7 @@ export const ShopSubscriptionModal: React.FC<ShopSubscriptionModalProps> = ({
       <div 
         className="bubbly-modal-card pop-in" 
         style={{ 
-          maxWidth: 490, 
+          maxWidth: 480, 
           padding: '28px 24px', 
           position: 'relative',
           background: 'var(--surface-card, #141417)',
@@ -120,9 +120,9 @@ export const ShopSubscriptionModal: React.FC<ShopSubscriptionModalProps> = ({
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
               <div
                 style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 14,
+                  width: 46,
+                  height: 46,
+                  borderRadius: 15,
                   background: 'var(--accent-primary)',
                   color: 'var(--bg-main)',
                   display: 'flex',
@@ -176,14 +176,14 @@ export const ShopSubscriptionModal: React.FC<ShopSubscriptionModalProps> = ({
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.86rem', color: 'var(--text-secondary)', marginBottom: 8 }}>
-                <span>Monthly Platform Access:</span>
+                <span>Monthly Software Access:</span>
                 <span style={{ fontWeight: 750, color: 'var(--text-primary)' }}>${baseFee.toFixed(2)} / mo</span>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.86rem', color: 'var(--text-secondary)', marginBottom: 12 }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                   <span>Stripe Processing Fee</span>
-                  <span style={{ fontSize: '0.7rem', background: 'var(--surface-card)', color: 'var(--text-muted)', padding: '1px 6px', borderRadius: 4, border: '1px solid var(--border-subtle)' }}>
+                  <span style={{ fontSize: '0.68rem', background: 'var(--surface-card)', color: 'var(--text-muted)', padding: '1px 6px', borderRadius: 4, border: '1px solid var(--border-subtle)' }}>
                     2.9% + 30¢
                   </span>
                 </span>
@@ -197,155 +197,75 @@ export const ShopSubscriptionModal: React.FC<ShopSubscriptionModalProps> = ({
                   <span style={{ fontSize: '0.95rem', fontWeight: 850, color: 'var(--text-primary)' }}>Total Due Today:</span>
                   <div style={{ fontSize: '0.72rem', color: 'var(--pastel-green, #10B981)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
                     <Sparkles size={11} />
-                    <span>Includes Kiosk, Booth Rent, & Live Queue Board</span>
+                    <span>Includes Kiosk, Booth Rent & Live Queue</span>
                   </div>
                 </div>
-                <span style={{ fontSize: '1.45rem', fontWeight: 900, color: 'var(--text-primary)' }}>
+                <span style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--text-primary)' }}>
                   ${totalAmount.toFixed(2)}
                 </span>
               </div>
             </div>
 
-            {/* Payment Method Selector */}
-            <div style={{ marginBottom: 18 }}>
-              <label style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: 8 }}>
-                Select Payment Method
-              </label>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('apple_pay')}
-                  style={{
-                    padding: '11px 8px',
-                    borderRadius: 14,
-                    border: paymentMethod === 'apple_pay' ? '2px solid var(--accent-primary)' : '1px solid var(--border-subtle)',
-                    background: paymentMethod === 'apple_pay' ? 'rgba(16, 185, 129, 0.12)' : 'var(--surface-pill)',
-                    color: paymentMethod === 'apple_pay' ? 'var(--accent-primary)' : 'var(--text-primary)',
-                    fontWeight: 800,
-                    fontSize: '0.82rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 4,
-                    cursor: 'pointer'
-                  }}
-                >
-                  <CreditCard size={18} />
-                  <span>Apple Pay</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('card')}
-                  style={{
-                    padding: '11px 8px',
-                    borderRadius: 14,
-                    border: paymentMethod === 'card' ? '2px solid var(--accent-primary)' : '1px solid var(--border-subtle)',
-                    background: paymentMethod === 'card' ? 'rgba(16, 185, 129, 0.12)' : 'var(--surface-pill)',
-                    color: paymentMethod === 'card' ? 'var(--accent-primary)' : 'var(--text-primary)',
-                    fontWeight: 800,
-                    fontSize: '0.82rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 4,
-                    cursor: 'pointer'
-                  }}
-                >
-                  <CreditCard size={18} />
-                  <span>Stripe Card</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('zelle')}
-                  style={{
-                    padding: '11px 8px',
-                    borderRadius: 14,
-                    border: paymentMethod === 'zelle' ? '2px solid var(--accent-primary)' : '1px solid var(--border-subtle)',
-                    background: paymentMethod === 'zelle' ? 'rgba(16, 185, 129, 0.12)' : 'var(--surface-pill)',
-                    color: paymentMethod === 'zelle' ? 'var(--accent-primary)' : 'var(--text-primary)',
-                    fontWeight: 800,
-                    fontSize: '0.82rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 4,
-                    cursor: 'pointer'
-                  }}
-                >
-                  <span style={{ fontSize: '0.95rem', fontWeight: 900 }}>Zelle</span>
-                  <span>Direct Bank</span>
-                </button>
+            {/* Auto-Renewal Notice */}
+            <div style={{
+              background: 'var(--surface-pill, #1C1C21)',
+              border: '1px solid var(--border-subtle, rgba(255,255,255,0.08))',
+              borderRadius: 14,
+              padding: '12px 14px',
+              marginBottom: 18,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10
+            }}>
+              <Calendar size={18} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                Recurring monthly subscription billed to your card on file every 30 days via Stripe. Cancel anytime from Shop Admin.
               </div>
             </div>
 
             {/* Security Assurance */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.76rem', color: 'var(--text-muted)', marginBottom: 18, justifyContent: 'center' }}>
-              <Lock size={12} color="var(--pastel-green, #10B981)" />
-              <span>256-bit Encrypted direct deposit to Platform HQ</span>
+              <Lock size={12} color="#10B981" />
+              <span>Direct encrypted checkout powered by Stripe Billing</span>
             </div>
 
-            {/* Pay Button */}
-            <button
-              type="button"
-              onClick={handleProcessPayment}
-              disabled={isProcessing}
-              style={{
-                width: '100%',
-                padding: '14px 20px',
-                fontSize: '1rem',
-                fontWeight: 850,
-                borderRadius: 9999,
-                background: 'var(--accent-primary)',
-                color: 'var(--bg-main)',
-                border: 'none',
-                cursor: isProcessing ? 'default' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                boxShadow: 'var(--shadow-md)',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              {isProcessing ? (
-                <span>Opening Stripe Checkout...</span>
-              ) : (
-                <>
-                  <span>Pay ${totalAmount.toFixed(2)} with {paymentMethod === 'apple_pay' ? 'Apple Pay' : paymentMethod === 'card' ? 'Stripe Card' : 'Zelle'}</span>
-                  <ArrowRight size={17} />
-                </>
-              )}
-            </button>
-
-            {(paymentMethod === 'apple_pay' || paymentMethod === 'card') && (
-              <div style={{ textAlign: 'center', marginTop: 10 }}>
-                <a
-                  href={PLATFORM_STRIPE_PAYMENT_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    fontSize: '0.78rem',
-                    color: 'var(--text-secondary)',
-                    textDecoration: 'none',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 4
-                  }}
-                >
-                  <span>Open direct Stripe checkout link</span>
-                  <ExternalLink size={12} />
-                </a>
-              </div>
-            )}
+            {/* One Big Primary Subscription Button */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <button
+                type="button"
+                onClick={handleProcessPayment}
+                disabled={isProcessing}
+                style={{
+                  width: '100%',
+                  padding: '16px 20px',
+                  fontSize: '1.05rem',
+                  fontWeight: 900,
+                  borderRadius: 18,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  background: 'var(--accent-primary, #F59E0B)',
+                  color: '#000000',
+                  border: 'none',
+                  cursor: isProcessing ? 'wait' : 'pointer',
+                  boxShadow: '0 8px 24px rgba(245, 158, 11, 0.35)'
+                }}
+              >
+                {isProcessing ? (
+                  <span>Processing Stripe Subscription...</span>
+                ) : (
+                  <>
+                    <Smartphone size={18} />
+                    <span>Subscribe with Apple Pay / Card • ${totalAmount.toFixed(2)}/mo</span>
+                    <ArrowRight size={17} />
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         ) : (
-          /* Payment Receipt Screen */
+          /* Payment Invoice Receipt Screen */
           <div style={{ textAlign: 'center', padding: '6px 0' }}>
             <div
               style={{
@@ -353,6 +273,7 @@ export const ShopSubscriptionModal: React.FC<ShopSubscriptionModalProps> = ({
                 height: 64,
                 borderRadius: '50%',
                 background: 'rgba(16, 185, 129, 0.15)',
+                border: '2px solid var(--pastel-green, #10B981)',
                 color: 'var(--pastel-green, #10B981)',
                 display: 'flex',
                 alignItems: 'center',
@@ -360,17 +281,17 @@ export const ShopSubscriptionModal: React.FC<ShopSubscriptionModalProps> = ({
                 margin: '0 auto 14px'
               }}
             >
-              <CheckCircle size={38} />
+              <CheckCircle size={36} />
             </div>
 
-            <h3 style={{ fontSize: '1.35rem', fontWeight: 900, color: 'var(--text-primary)', margin: '0 0 4px' }}>
-              Subscription Paid!
+            <h3 style={{ fontSize: '1.35rem', fontWeight: 900, color: 'var(--text-primary)', marginBottom: 4 }}>
+              Subscription Renewed!
             </h3>
-            <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', margin: '0 0 18px' }}>
-              Your shop license has been renewed and verified in Platform HQ.
+            <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginBottom: 18 }}>
+              {shop.name} is fully active through {paidReceipt.nextBillingDate}.
             </p>
 
-            {/* Receipt Summary Card */}
+            {/* Official Digital Invoice Card */}
             <div
               style={{
                 background: 'var(--surface-pill, #1C1C21)',
@@ -379,48 +300,75 @@ export const ShopSubscriptionModal: React.FC<ShopSubscriptionModalProps> = ({
                 padding: '16px 18px',
                 textAlign: 'left',
                 marginBottom: 20,
-                fontSize: '0.85rem'
+                fontSize: '0.84rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 7 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ color: 'var(--text-secondary)' }}>Invoice Number:</span>
-                <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{paidReceipt.invoiceNumber}</span>
+                <button
+                  onClick={() => handleCopyInvoice(paidReceipt.invoiceNumber)}
+                  style={{
+                    background: 'var(--surface-card)',
+                    border: '1px solid var(--border-subtle)',
+                    padding: '2px 8px',
+                    borderRadius: 6,
+                    color: 'var(--text-primary)',
+                    fontWeight: 850,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    cursor: 'pointer',
+                    fontSize: '0.78rem'
+                  }}
+                  title="Copy Invoice #"
+                >
+                  <span>{paidReceipt.invoiceNumber}</span>
+                  {copiedInvoice ? <Check size={12} color="#10B981" /> : <Copy size={12} />}
+                </button>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 7 }}>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: 'var(--text-secondary)' }}>Shop Name:</span>
                 <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{shop.name}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 7 }}>
-                <span style={{ color: 'var(--text-secondary)' }}>Plan:</span>
-                <span style={{ fontWeight: 750, color: 'var(--text-primary)' }}>Monthly Platform SaaS</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 7 }}>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: 'var(--text-secondary)' }}>Payment Method:</span>
-                <span style={{ fontWeight: 750, color: 'var(--accent-primary)' }}>{paidReceipt.method}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 7 }}>
-                <span style={{ color: 'var(--text-secondary)' }}>Amount Paid:</span>
-                <span style={{ fontWeight: 900, color: 'var(--pastel-green, #10B981)' }}>${paidReceipt.totalPaid.toFixed(2)}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border-subtle)', paddingTop: 7, marginTop: 4 }}>
-                <span style={{ color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <Calendar size={13} />
-                  <span>Next Renewal:</span>
+                <span style={{ fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <CreditCard size={13} style={{ color: 'var(--pastel-green)' }} />
+                  <span>Stripe / Apple Pay</span>
                 </span>
-                <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{paidReceipt.nextBillingDate}</span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Amount Paid:</span>
+                <span style={{ fontWeight: 900, color: 'var(--pastel-green, #10B981)' }}>
+                  ${paidReceipt.totalPaid.toFixed(2)}
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Next Billing Date:</span>
+                <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>
+                  {paidReceipt.nextBillingDate}
+                </span>
               </div>
             </div>
 
+            {/* Footer Close Button */}
             <button
               type="button"
               onClick={onClose}
-              style={{ 
-                width: '100%', 
-                padding: '13px 20px', 
-                fontSize: '0.95rem', 
-                fontWeight: 800,
-                borderRadius: 9999,
-                background: 'var(--surface-pill)',
+              style={{
+                width: '100%',
+                padding: '14px 20px',
+                fontSize: '0.96rem',
+                fontWeight: 850,
+                borderRadius: 16,
+                background: 'var(--surface-pill, #27272A)',
                 color: 'var(--text-primary)',
                 border: '1px solid var(--border-subtle)',
                 cursor: 'pointer'

@@ -252,9 +252,9 @@ export const INITIAL_OF_RENT: RentPaymentRecord[] = [
     dueDate: '2026-10-05',
     paidAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
     status: 'paid',
-    paymentMethod: 'zelle',
+    paymentMethod: 'stripe',
     receiptNumber: 'REC-90215',
-    notes: 'Paid via Zelle / Verified by Owner'
+    notes: 'Paid via Stripe / Verified by Owner'
   },
   {
     id: 'rent-3',
@@ -355,7 +355,7 @@ export const SEED_SHOPS: Shop[] = [
     subscriptionMonthlyFee: 49,
     subscriptionNextBillingDate: '2026-11-01',
     subscriptionLastPaidDate: '2026-10-01',
-    subscriptionPaymentMethod: 'zelle',
+    subscriptionPaymentMethod: 'stripe',
     ownerContactName: 'Marcus Rivera',
     ownerPhone: '(555) 777-1010',
     ownerEmail: 'marcus@fademasters.com',
@@ -502,7 +502,7 @@ export const SEED_SHOPS: Shop[] = [
     subscriptionMonthlyFee: 49,
     subscriptionNextBillingDate: '2026-10-01',
     subscriptionLastPaidDate: '2026-09-01',
-    subscriptionPaymentMethod: 'cash',
+    subscriptionPaymentMethod: 'stripe',
     ownerContactName: 'Dominic V.',
     ownerPhone: '(555) 888-1111',
     ownerEmail: 'dominic@royalcuts.com',
@@ -567,7 +567,7 @@ export const storage = {
           if (s.subscriptionMonthlyFee === undefined) s.subscriptionMonthlyFee = 49;
           if (!s.subscriptionNextBillingDate) s.subscriptionNextBillingDate = s.slug === 'royalcuts' ? '2026-10-01' : '2026-11-01';
           if (!s.subscriptionLastPaidDate) s.subscriptionLastPaidDate = s.slug === 'royalcuts' ? '2026-09-01' : '2026-10-01';
-          if (!s.subscriptionPaymentMethod) s.subscriptionPaymentMethod = s.slug === 'royalcuts' ? 'cash' : 'zelle';
+          if (!s.subscriptionPaymentMethod) s.subscriptionPaymentMethod = 'stripe';
           if (!s.ownerContactName) s.ownerContactName = s.slug === 'royalcuts' ? 'Dominic V.' : 'Marcus Rivera';
           if (!s.ownerPhone) s.ownerPhone = s.slug === 'royalcuts' ? '(555) 888-1111' : '(555) 777-1010';
         }
@@ -627,7 +627,7 @@ export const storage = {
       subscriptionMonthlyFee: shopData.subscriptionMonthlyFee !== undefined ? Number(shopData.subscriptionMonthlyFee) : 49,
       subscriptionNextBillingDate: shopData.subscriptionNextBillingDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       subscriptionLastPaidDate: new Date().toISOString().split('T')[0],
-      subscriptionPaymentMethod: shopData.subscriptionPaymentMethod || 'zelle',
+      subscriptionPaymentMethod: shopData.subscriptionPaymentMethod || 'stripe',
       ownerContactName: shopData.ownerContactName || '',
       ownerPhone: shopData.ownerPhone || '',
       ownerEmail: shopData.ownerEmail || '',
@@ -958,7 +958,7 @@ export const storage = {
   // 💳 PLATFORM SUBSCRIPTION BILLING ACTIONS (For Platform HQ)
   // -------------------------------------------------------------
 
-  markShopSubscriptionPaid(slug: string, paymentMethod: SubscriptionPaymentMethod = 'zelle'): Shop {
+  markShopSubscriptionPaid(slug: string, paymentMethod: SubscriptionPaymentMethod = 'stripe'): Shop {
     const today = new Date().toISOString().split('T')[0];
     
     // Compute next billing date (30 days ahead)

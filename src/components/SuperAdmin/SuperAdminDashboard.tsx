@@ -114,7 +114,7 @@ export function SuperAdminDashboard({
   const [subStatus, setSubStatus] = useState<SubscriptionStatus>('active');
   const [subStartDate, setSubStartDate] = useState('');
   const [subNextBilling, setSubNextBilling] = useState('');
-  const [subPaymentMethod, setSubPaymentMethod] = useState<SubscriptionPaymentMethod>('zelle');
+  const [subPaymentMethod, setSubPaymentMethod] = useState<SubscriptionPaymentMethod>('stripe');
 
   // Inbox Quick Reply State (for messages tab)
   const [selectedInboxShopSlug, setSelectedInboxShopSlug] = useState<string>(shops[0]?.slug || 'of');
@@ -195,7 +195,7 @@ export function SuperAdminDashboard({
     setSubStatus(shop.subscriptionStatus || 'active');
     setSubStartDate(shop.subscriptionStartDate || shop.subscriptionLastPaidDate || '2026-10-01');
     setSubNextBilling(shop.subscriptionNextBillingDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
-    setSubPaymentMethod(shop.subscriptionPaymentMethod || 'zelle');
+    setSubPaymentMethod(shop.subscriptionPaymentMethod || 'stripe');
   };
 
   // Save Subscription Modal
@@ -218,7 +218,7 @@ export function SuperAdminDashboard({
 
   // 1-Click Mark Paid
   const handleQuickMarkPaid = (shop: Shop) => {
-    onMarkSubscriptionPaid(shop.slug, 'zelle');
+    onMarkSubscriptionPaid(shop.slug, 'stripe');
     showToast(`Marked ${shop.name} as Paid! Next billing advanced 30 days.`);
   };
 
@@ -1996,12 +1996,9 @@ export function SuperAdminDashboard({
                     onChange={(e) => setSubPaymentMethod(e.target.value as SubscriptionPaymentMethod)}
                     style={{ width: '100%', padding: '12px', background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', borderRadius: '12px', color: 'var(--text-primary)', fontSize: '13px', marginTop: '4px', boxSizing: 'border-box' }}
                   >
-                    <option value="zelle">Zelle Transfer</option>
-                    <option value="cash">Cash In-Person</option>
-                    <option value="card">Credit / Debit Card</option>
                     <option value="stripe">Stripe Subscription</option>
-                    <option value="apple_pay">Apple Pay</option>
-                    <option value="manual">Manual / Comped</option>
+                    <option value="apple_pay">Apple Pay / Card</option>
+                    <option value="manual">Manual / Comped Override</option>
                   </select>
                 </div>
               </div>

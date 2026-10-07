@@ -14,7 +14,7 @@ interface RentLedgerDashboardProps {
   barbers: Barber[];
   rentRecords: RentPaymentRecord[];
   config: ShopConfig;
-  onMarkPaidOffline: (barber: Barber, method: 'cash' | 'zelle' | 'manual', notes?: string) => void;
+  onMarkPaidOffline: (barber: Barber, method?: RentPaymentRecord['paymentMethod'], notes?: string) => void;
   onSaveBarbers: (barbers: Barber[]) => void;
 }
 
@@ -26,7 +26,7 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
   onSaveBarbers
 }) => {
   const [selectedBarberForCash, setSelectedBarberForCash] = useState<Barber | null>(null);
-  const [cashPaymentMethod, setCashPaymentMethod] = useState<'cash' | 'zelle' | 'manual'>('zelle');
+  const [cashPaymentMethod, setCashPaymentMethod] = useState<RentPaymentRecord['paymentMethod']>('manual');
   const [cashNotes, setCashNotes] = useState('');
   const [editingRentBarber, setEditingRentBarber] = useState<Barber | null>(null);
   const [newRentAmount, setNewRentAmount] = useState<number>(200);
@@ -254,7 +254,7 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
                     style={{ padding: '7px 12px', fontSize: '0.78rem', borderRadius: 9999 }}
                   >
                     <DollarSign size={13} />
-                    <span>Record Cash/Zelle</span>
+                    <span>Record Manual / Paid</span>
                   </button>
                 )}
 
@@ -285,7 +285,7 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
         </div>
       </div>
 
-      {/* 3. Record Offline Cash/Zelle Modal */}
+      {/* 3. Record Offline Payment Modal */}
       {selectedBarberForCash && (
         <div className="modal-overlay">
           <div className="bubbly-modal-card pop-in" style={{ maxWidth: 420, padding: '24px 20px', background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-bubble)' }}>
@@ -304,8 +304,8 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
             <form onSubmit={handleRecordOfflinePayment} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
                 <label className="form-label">Payment Method</label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
-                  {(['zelle', 'cash', 'manual'] as const).map((m) => (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+                  {(['manual', 'card', 'stripe'] as const).map((m) => (
                     <button
                       key={m}
                       type="button"
@@ -322,7 +322,7 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
                         cursor: 'pointer'
                       }}
                     >
-                      {m}
+                      {m === 'manual' ? 'Manual Credit' : m}
                     </button>
                   ))}
                 </div>
@@ -339,10 +339,10 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
               </div>
 
               <div>
-                <label className="form-label">Notes / Confirmation # (Optional)</label>
+                <label className="form-label">Notes / Reference (Optional)</label>
                 <input
                   type="text"
-                  placeholder="e.g. Zelle confirmation #38291"
+                  placeholder="e.g. In-person card payment / shop credit"
                   value={cashNotes}
                   onChange={(e) => setCashNotes(e.target.value)}
                   className="bubbly-input"

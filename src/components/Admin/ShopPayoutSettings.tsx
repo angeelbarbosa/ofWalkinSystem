@@ -4,7 +4,6 @@ import {
   CreditCard, 
   ShieldCheck, 
   ExternalLink, 
-  Zap, 
   DollarSign, 
   Save, 
   Check
@@ -21,12 +20,9 @@ export const ShopPayoutSettings: React.FC<ShopPayoutSettingsProps> = ({
   onSaveConfig
 }) => {
   const [stripeAccountId, setStripeAccountId] = useState(config.stripeAccountId || 'acct_1OF82937492193');
-  const [stripePaymentLink, setStripePaymentLink] = useState(config.stripePaymentLink || '');
   const [payoutBankName, setPayoutBankName] = useState(config.payoutBankName || 'Chase Business Checking (•••• 4821)');
   const [payoutSchedule, setPayoutSchedule] = useState<'instant' | 'daily' | 'weekly'>(config.payoutSchedule || 'daily');
   const [payoutStatus, setPayoutStatus] = useState<'connected' | 'pending' | 'unlinked'>(config.payoutStatus || 'connected');
-  const [zellePhone, setZellePhone] = useState(config.zelleRecipientPhone || '(555) 777-1010');
-  const [zelleEmail, setZelleEmail] = useState(config.zelleRecipientEmail || 'marcus@fademasters.com');
   const [passFeesToBarber, setPassFeesToBarber] = useState(config.passFeesToBarber !== false);
   const [defaultRent, setDefaultRent] = useState(config.defaultWeeklyRent || 200);
   const [rentDueDay, setRentDueDay] = useState(config.defaultRentDueDay || 'Monday');
@@ -38,12 +34,9 @@ export const ShopPayoutSettings: React.FC<ShopPayoutSettingsProps> = ({
     onSaveConfig({
       ...config,
       stripeAccountId,
-      stripePaymentLink,
       payoutBankName,
       payoutSchedule,
       payoutStatus,
-      zelleRecipientPhone: zellePhone,
-      zelleRecipientEmail: zelleEmail,
       passFeesToBarber,
       defaultWeeklyRent: defaultRent,
       defaultRentDueDay: rentDueDay,
@@ -115,7 +108,7 @@ export const ShopPayoutSettings: React.FC<ShopPayoutSettingsProps> = ({
               </span>
             </div>
             <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: '4px 0 0' }}>
-              Direct deposit destination for weekly booth rent paid by your shop barbers.
+              Direct deposit destination for booth rent paid by your shop barbers.
             </p>
           </div>
         </div>
@@ -180,7 +173,7 @@ export const ShopPayoutSettings: React.FC<ShopPayoutSettingsProps> = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
             <ShieldCheck size={18} color="#10B981" />
             <h4 style={{ fontSize: '1rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0 }}>
-              Connected Payout Destination
+              Connected Payout Destination (Direct Deposit)
             </h4>
           </div>
 
@@ -229,68 +222,7 @@ export const ShopPayoutSettings: React.FC<ShopPayoutSettingsProps> = ({
           </div>
         </div>
 
-        {/* Section 2: Shop Stripe Payment Link & Zelle Direct */}
-        <div 
-          style={{
-            background: 'var(--surface-card, #18181B)',
-            border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
-            borderRadius: 20,
-            padding: '20px'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-            <Zap size={18} color="#F59E0B" />
-            <h4 style={{ fontSize: '1rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0 }}>
-              Direct Payment Channels (Stripe & Zelle)
-            </h4>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
-            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-              <label className="form-label" style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
-                Shop Stripe Payment Link (Optional custom URL for your barbers)
-              </label>
-              <input
-                type="url"
-                value={stripePaymentLink}
-                onChange={e => setStripePaymentLink(e.target.value)}
-                className="bubbly-input"
-                placeholder="https://buy.stripe.com/..."
-              />
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>
-                If provided, barbers clicking Pay with Card or Apple Pay will be directed to your custom Stripe checkout.
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label" style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
-                Owner Zelle Phone
-              </label>
-              <input
-                type="tel"
-                value={zellePhone}
-                onChange={e => setZellePhone(e.target.value)}
-                className="bubbly-input"
-                placeholder="(555) 777-1010"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label" style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
-                Owner Zelle Email
-              </label>
-              <input
-                type="email"
-                value={zelleEmail}
-                onChange={e => setZelleEmail(e.target.value)}
-                className="bubbly-input"
-                placeholder="owner@barbershop.com"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Section 3: Fee Pass-Through & Weekly Rent Defaults */}
+        {/* Section 2: Fee Pass-Through & Rent Defaults */}
         <div 
           style={{
             background: 'var(--surface-card, #18181B)',
@@ -350,8 +282,8 @@ export const ShopPayoutSettings: React.FC<ShopPayoutSettingsProps> = ({
               </label>
               <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: 4, marginLeft: 28 }}>
                 {passFeesToBarber 
-                  ? 'Barbers pay $206.10 on card so you receive exactly $200.00' 
-                  : 'Shop absorbs card fee ($5.80 fee deducted from $200.00)'}
+                  ? 'Barbers pay card fee at checkout so you receive 100% of base rent' 
+                  : 'Shop absorbs card fee (deducted from base rent amount)'}
               </div>
             </div>
           </div>

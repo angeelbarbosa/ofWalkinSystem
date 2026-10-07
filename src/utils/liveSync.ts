@@ -484,7 +484,7 @@ export function useLiveSystem() {
     feeCovered: boolean = true
   ): Promise<RentPaymentRecord> => {
     const baseAmount = barber.weeklyRent || config.defaultWeeklyRent || 200;
-    const isZeroFeeMethod = method === 'cash' || method === 'zelle' || method === 'manual';
+    const isZeroFeeMethod = method === 'manual';
     const fee = isZeroFeeMethod ? 0 : (feeCovered ? Number(((baseAmount * 0.029) + 0.30).toFixed(2)) : 0);
     const total = baseAmount + fee;
 
@@ -501,7 +501,7 @@ export function useLiveSystem() {
       paidAt: new Date().toISOString(),
       status: 'paid',
       paymentMethod: method,
-      notes: `Paid via ${method === 'apple_pay' ? 'Apple Pay' : method === 'card' ? 'Card' : method.toUpperCase()}`
+      notes: `Paid via ${method === 'apple_pay' ? 'Apple Pay' : method === 'card' ? 'Card' : method === 'stripe' ? 'Stripe' : 'Manual Override'}`
     });
 
     setRentRecords(storage.getRentRecords());
@@ -510,7 +510,7 @@ export function useLiveSystem() {
 
   const markRentPaidOffline = (
     barber: Barber,
-    method: 'cash' | 'zelle' | 'manual',
+    method: RentPaymentRecord['paymentMethod'] = 'manual',
     notes?: string
   ): RentPaymentRecord => {
     const baseAmount = barber.weeklyRent || config.defaultWeeklyRent || 200;
@@ -527,7 +527,7 @@ export function useLiveSystem() {
       paidAt: new Date().toISOString(),
       status: 'paid',
       paymentMethod: method,
-      notes: notes || `Recorded by Shop Owner via ${method.toUpperCase()}`
+      notes: notes || `Recorded by Shop Owner via ${method?.toUpperCase() || 'MANUAL OVERRIDE'}`
     });
 
     setRentRecords(storage.getRentRecords());
@@ -590,7 +590,7 @@ export function useLiveSystem() {
     syncSupportMessagesToConvexCloud(updated);
   }, []);
 
-  const markShopSubscriptionPaid = useCallback((slug: string, paymentMethod: SubscriptionPaymentMethod = 'zelle') => {
+  const markShopSubscriptionPaid = useCallback((slug: string, paymentMethod: SubscriptionPaymentMethod = 'stripe') => {
     storage.markShopSubscriptionPaid(slug, paymentMethod);
     const updatedFleet = storage.getShops();
     setShops(updatedFleet);

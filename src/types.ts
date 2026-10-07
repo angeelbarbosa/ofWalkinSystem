@@ -39,7 +39,7 @@ export interface CheckInRecord {
 }
 
 export type RentPaymentStatus = 'paid' | 'due' | 'overdue' | 'waived';
-export type RentPaymentMethod = 'apple_pay' | 'card' | 'cash' | 'zelle' | 'manual';
+export type RentPaymentMethod = 'apple_pay' | 'card' | 'stripe' | 'manual';
 
 export interface RentPaymentRecord {
   id: string;
@@ -85,12 +85,9 @@ export interface ShopConfig {
   passFeesToBarber?: boolean; // true = Barber pays 2.9% + $0.30 fee
   stripeConnectActive?: boolean;
   stripeAccountId?: string; // e.g. 'acct_1Nx48291...'
-  stripePaymentLink?: string; // e.g. 'https://buy.stripe.com/...'
   payoutBankName?: string; // e.g. 'Chase Business •••• 4821'
   payoutStatus?: 'connected' | 'pending' | 'unlinked';
   payoutSchedule?: 'instant' | 'daily' | 'weekly';
-  zelleRecipientPhone?: string;
-  zelleRecipientEmail?: string;
   twilioConfig: {
     enabled: boolean;
     accountSid: string;
@@ -100,7 +97,7 @@ export interface ShopConfig {
 }
 
 export type SubscriptionStatus = 'active' | 'past_due' | 'comped' | 'unpaid';
-export type SubscriptionPaymentMethod = 'zelle' | 'cash' | 'card' | 'stripe' | 'apple_pay' | 'manual';
+export type SubscriptionPaymentMethod = 'stripe' | 'apple_pay' | 'card' | 'manual';
 
 export interface Shop {
   id: string; // e.g. 'shop-of'
