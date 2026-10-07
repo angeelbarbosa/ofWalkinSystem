@@ -60,6 +60,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [newBarberPhone, setNewBarberPhone] = useState('');
   const [newBarberStation, setNewBarberStation] = useState<number>(barbers.length + 1);
   const [newBarberPasscode, setNewBarberPasscode] = useState('1111');
+  const [newBarberRentAmount, setNewBarberRentAmount] = useState<number>(config.defaultWeeklyRent || 200);
+  const [newBarberRentCycle, setNewBarberRentCycle] = useState<'weekly' | 'monthly' | 'biweekly'>('weekly');
+  const [newBarberRentDueDay, setNewBarberRentDueDay] = useState('Monday');
+  const [newBarberRentStartDate, setNewBarberRentStartDate] = useState(new Date().toISOString().split('T')[0]);
 
   // Shop Settings State
   const [welcomeShoppingBody, setWelcomeShoppingBody] = useState(config.welcomeShoppingBody);
@@ -95,7 +99,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         specialty: newBarberSpec.trim(),
         phone: newBarberPhone.trim(),
         stationNumber: Number(newBarberStation),
-        passcode: newBarberPasscode.trim() || b.passcode || '1111'
+        passcode: newBarberPasscode.trim() || b.passcode || '1111',
+        weeklyRent: Number(newBarberRentAmount),
+        rentAmount: Number(newBarberRentAmount),
+        rentCycle: newBarberRentCycle,
+        rentDueDay: newBarberRentDueDay,
+        rentStartDate: newBarberRentStartDate
       } : b);
       onSaveBarbers(updated);
       setEditingBarber(null);
@@ -110,7 +119,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         avatarColor: '#09090B',
         isWorking: true,
         pushSubscriptionActive: true,
-        passcode: newBarberPasscode.trim() || '1111'
+        passcode: newBarberPasscode.trim() || '1111',
+        weeklyRent: Number(newBarberRentAmount),
+        rentAmount: Number(newBarberRentAmount),
+        rentCycle: newBarberRentCycle,
+        rentDueDay: newBarberRentDueDay,
+        rentStartDate: newBarberRentStartDate
       };
       onSaveBarbers([...barbers, newBarber]);
       setIsAddingBarber(false);
@@ -121,6 +135,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setNewBarberSpec('');
     setNewBarberPhone('');
     setNewBarberPasscode('1111');
+    setNewBarberRentAmount(config.defaultWeeklyRent || 200);
+    setNewBarberRentCycle('weekly');
+    setNewBarberRentDueDay('Monday');
+    setNewBarberRentStartDate(new Date().toISOString().split('T')[0]);
   };
 
   const handleToggleWorking = (barberId: string) => {
@@ -302,7 +320,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
             <div>
               <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>Barber Team</h3>
-              <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: '2px 0 0' }}>Manage active barbers and station assignments</p>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: '2px 0 0' }}>Manage active barbers, station assignments & rent schedules</p>
             </div>
 
             <button
@@ -312,6 +330,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 setNewBarberSpec('');
                 setNewBarberPhone('');
                 setNewBarberStation(barbers.length + 1);
+                setNewBarberPasscode('1111');
+                setNewBarberRentAmount(config.defaultWeeklyRent || 200);
+                setNewBarberRentCycle('weekly');
+                setNewBarberRentDueDay('Monday');
+                setNewBarberRentStartDate(new Date().toISOString().split('T')[0]);
                 setIsAddingBarber(true);
               }}
               className="choice-card-action-btn"
@@ -329,95 +352,121 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <tr>
                   <th>Station</th>
                   <th>Barber</th>
+                  <th>Booth Rent Plan</th>
                   <th>Station PIN</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {barbers.map((barber) => (
-                  <tr key={barber.id}>
-                    <td>
-                      <span style={{ fontWeight: 800, background: 'var(--surface-pill)', color: 'var(--text-primary)', padding: '4px 10px', borderRadius: 9999, fontSize: '0.82rem', border: '1px solid var(--border-subtle)' }}>
-                        #{barber.stationNumber}
-                      </span>
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div
-                          style={{
-                            width: 34,
-                            height: 34,
-                            borderRadius: 10,
-                            background: 'var(--surface-pill)',
-                            color: 'var(--text-primary)',
-                            border: '1px solid var(--border-subtle)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontWeight: 800
-                          }}
-                        >
-                          {barber.name.charAt(0)}
+                {barbers.map((barber) => {
+                  const rentAmt = barber.rentAmount ?? barber.weeklyRent ?? config.defaultWeeklyRent ?? 200;
+                  const isMonthly = barber.rentCycle === 'monthly';
+                  const cycleLabel = isMonthly ? `/mo (${barber.rentDueDay || '1st'})` : `/wk (${barber.rentDueDay || 'Mon'})`;
+
+                  return (
+                    <tr key={barber.id}>
+                      <td>
+                        <span style={{ fontWeight: 800, background: 'var(--surface-pill)', color: 'var(--text-primary)', padding: '4px 10px', borderRadius: 9999, fontSize: '0.82rem', border: '1px solid var(--border-subtle)' }}>
+                          #{barber.stationNumber}
+                        </span>
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div
+                            style={{
+                              width: 34,
+                              height: 34,
+                              borderRadius: 10,
+                              background: 'var(--surface-pill)',
+                              color: 'var(--text-primary)',
+                              border: '1px solid var(--border-subtle)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontWeight: 800
+                            }}
+                          >
+                            {barber.name.charAt(0)}
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{barber.name}</div>
+                            {barber.phone && <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>{barber.phone}</div>}
+                          </div>
                         </div>
-                        <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{barber.name}</span>
-                      </div>
-                    </td>
-                    <td>
-                      <span style={{ fontWeight: 700, fontFamily: 'monospace', background: 'var(--surface-pill)', padding: '3px 8px', borderRadius: 8, fontSize: '0.82rem', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }}>
-                        {barber.passcode || '1111'}
-                      </span>
-                    </td>
-                    <td>
-                      <button
-                        onClick={() => handleToggleWorking(barber.id)}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 5,
-                          padding: '4px 10px',
-                          borderRadius: 9999,
-                          fontSize: '0.78rem',
-                          fontWeight: 750,
-                          background: barber.isWorking ? 'var(--pastel-green-bg)' : 'var(--surface-pill)',
-                          color: barber.isWorking ? 'var(--pastel-green)' : 'var(--text-muted)',
-                          border: barber.isWorking ? '1px solid var(--pastel-green-border)' : '1px solid var(--border-subtle)',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        <span>{barber.isWorking ? 'Active' : 'Off Duty'}</span>
-                      </button>
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: 6 }}>
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '0.86rem' }}>
+                            ${rentAmt}{cycleLabel}
+                          </span>
+                          {barber.rentStartDate && (
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                              Started {new Date(barber.rentStartDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        <span style={{ fontWeight: 700, fontFamily: 'monospace', background: 'var(--surface-pill)', padding: '3px 8px', borderRadius: 8, fontSize: '0.82rem', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }}>
+                          {barber.passcode || '1111'}
+                        </span>
+                      </td>
+                      <td>
                         <button
-                          onClick={() => {
-                            setEditingBarber(barber);
-                            setNewBarberName(barber.name);
-                            setNewBarberSpec(barber.specialty);
-                            setNewBarberPhone(barber.phone);
-                            setNewBarberStation(barber.stationNumber);
-                            setNewBarberPasscode(barber.passcode || '1111');
-                            setIsAddingBarber(true);
+                          onClick={() => handleToggleWorking(barber.id)}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 5,
+                            padding: '4px 10px',
+                            borderRadius: 9999,
+                            fontSize: '0.78rem',
+                            fontWeight: 750,
+                            background: barber.isWorking ? 'var(--pastel-green-bg)' : 'var(--surface-pill)',
+                            color: barber.isWorking ? 'var(--pastel-green)' : 'var(--text-muted)',
+                            border: barber.isWorking ? '1px solid var(--pastel-green-border)' : '1px solid var(--border-subtle)',
+                            cursor: 'pointer'
                           }}
-                          className="back-pill-btn"
-                          style={{ padding: '6px 10px', fontSize: '0.78rem' }}
-                          title="Edit Barber"
                         >
-                          <Edit3 size={13} />
+                          <span>{barber.isWorking ? 'Active' : 'Off Duty'}</span>
                         </button>
-                        <button
-                          onClick={() => handleDeleteBarber(barber.id)}
-                          className="back-pill-btn"
-                          style={{ padding: '6px 10px', fontSize: '0.78rem', color: 'var(--pastel-red)' }}
-                          title="Delete Barber"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button
+                            onClick={() => {
+                              setEditingBarber(barber);
+                              setNewBarberName(barber.name);
+                              setNewBarberSpec(barber.specialty);
+                              setNewBarberPhone(barber.phone);
+                              setNewBarberStation(barber.stationNumber);
+                              setNewBarberPasscode(barber.passcode || '1111');
+                              setNewBarberRentAmount(barber.rentAmount ?? barber.weeklyRent ?? config.defaultWeeklyRent ?? 200);
+                              setNewBarberRentCycle(barber.rentCycle || 'weekly');
+                              setNewBarberRentDueDay(barber.rentDueDay || (barber.rentCycle === 'monthly' ? '1st of month' : 'Monday'));
+                              setNewBarberRentStartDate(barber.rentStartDate || new Date().toISOString().split('T')[0]);
+                              setIsAddingBarber(true);
+                            }}
+                            className="back-pill-btn"
+                            style={{ padding: '6px 10px', fontSize: '0.78rem' }}
+                            title="Edit Barber"
+                          >
+                            <Edit3 size={13} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteBarber(barber.id)}
+                            className="back-pill-btn"
+                            style={{ padding: '6px 10px', fontSize: '0.78rem', color: 'var(--pastel-red)' }}
+                            title="Delete Barber"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -425,25 +474,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           {/* Add / Edit Barber Modal */}
           {isAddingBarber && (
             <div className="modal-overlay">
-              <div className="bubbly-modal-card pop-in" style={{ background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-bubble)', padding: '24px 20px', maxWidth: 420 }}>
+              <div className="bubbly-modal-card pop-in" style={{ background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-bubble)', padding: '24px 20px', maxWidth: 460 }}>
                 <h3 style={{ fontSize: '1.3rem', fontWeight: 850, color: 'var(--text-primary)', marginBottom: 16 }}>
-                  {editingBarber ? 'Edit Barber' : 'Add Barber'}
+                  {editingBarber ? 'Edit Barber & Rent Plan' : 'Add Barber & Set Rent'}
                 </h3>
                 <form onSubmit={handleSaveBarber}>
                   <div className="form-group" style={{ marginBottom: 12 }}>
-                    <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Name *</label>
+                    <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Full Name *</label>
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Brandon"
+                      placeholder="e.g. Brandon Rivera"
                       value={newBarberName}
                       onChange={e => setNewBarberName(e.target.value)}
                       className="bubbly-input"
                     />
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                    <div className="form-group" style={{ marginBottom: 12 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                    <div className="form-group">
                       <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Station #</label>
                       <input
                         type="number"
@@ -453,7 +502,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       />
                     </div>
 
-                    <div className="form-group" style={{ marginBottom: 12 }}>
+                    <div className="form-group">
                       <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Station PIN</label>
                       <input
                         type="text"
@@ -462,6 +511,153 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         value={newBarberPasscode}
                         onChange={e => setNewBarberPasscode(e.target.value)}
                         className="bubbly-input"
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+                    <div className="form-group">
+                      <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Phone Number</label>
+                      <input
+                        type="text"
+                        placeholder="(555) 000-0000"
+                        value={newBarberPhone}
+                        onChange={e => setNewBarberPhone(e.target.value)}
+                        className="bubbly-input"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Specialty</label>
+                      <input
+                        type="text"
+                        placeholder="Fades & Beard Care"
+                        value={newBarberSpec}
+                        onChange={e => setNewBarberSpec(e.target.value)}
+                        className="bubbly-input"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Booth Rent Schedule Configuration Box */}
+                  <div style={{
+                    background: 'var(--surface-pill)',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: 16,
+                    padding: '14px',
+                    marginBottom: 14
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                      <label style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        Booth Rent Billing Schedule
+                      </label>
+                      
+                      {/* Cycle Toggle */}
+                      <div style={{ display: 'flex', background: 'var(--surface-card)', borderRadius: 8, padding: 2, border: '1px solid var(--border-subtle)' }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNewBarberRentCycle('weekly');
+                            if (newBarberRentDueDay.includes('month') || newBarberRentDueDay === '1st') {
+                              setNewBarberRentDueDay('Monday');
+                            }
+                          }}
+                          style={{
+                            padding: '3px 10px',
+                            borderRadius: 6,
+                            border: 'none',
+                            fontSize: '11px',
+                            fontWeight: 750,
+                            cursor: 'pointer',
+                            background: newBarberRentCycle === 'weekly' ? 'var(--accent-primary)' : 'transparent',
+                            color: newBarberRentCycle === 'weekly' ? 'var(--bg-main)' : 'var(--text-secondary)'
+                          }}
+                        >
+                          Weekly
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNewBarberRentCycle('monthly');
+                            if (newBarberRentDueDay === 'Monday') {
+                              setNewBarberRentDueDay('1st of month');
+                            }
+                          }}
+                          style={{
+                            padding: '3px 10px',
+                            borderRadius: 6,
+                            border: 'none',
+                            fontSize: '11px',
+                            fontWeight: 750,
+                            cursor: 'pointer',
+                            background: newBarberRentCycle === 'monthly' ? 'var(--accent-primary)' : 'transparent',
+                            color: newBarberRentCycle === 'monthly' ? 'var(--bg-main)' : 'var(--text-secondary)'
+                          }}
+                        >
+                          Monthly
+                        </button>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                      <div>
+                        <label className="form-label" style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>
+                          Rent Rate (${newBarberRentCycle === 'monthly' ? '/month' : '/week'})
+                        </label>
+                        <input
+                          type="number"
+                          value={newBarberRentAmount}
+                          onChange={e => setNewBarberRentAmount(Number(e.target.value))}
+                          className="bubbly-input"
+                          style={{ fontSize: '13px', padding: '10px' }}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="form-label" style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>
+                          Due Schedule
+                        </label>
+                        {newBarberRentCycle === 'monthly' ? (
+                          <select
+                            value={newBarberRentDueDay}
+                            onChange={e => setNewBarberRentDueDay(e.target.value)}
+                            className="bubbly-input"
+                            style={{ fontSize: '12px', padding: '10px' }}
+                          >
+                            <option value="1st of month">1st of each month</option>
+                            <option value="15th of month">15th of each month</option>
+                            <option value="Same day as start date">Same day as start date</option>
+                            <option value="Last day of month">Last day of month</option>
+                          </select>
+                        ) : (
+                          <select
+                            value={newBarberRentDueDay}
+                            onChange={e => setNewBarberRentDueDay(e.target.value)}
+                            className="bubbly-input"
+                            style={{ fontSize: '12px', padding: '10px' }}
+                          >
+                            <option value="Monday">Every Monday</option>
+                            <option value="Tuesday">Every Tuesday</option>
+                            <option value="Wednesday">Every Wednesday</option>
+                            <option value="Thursday">Every Thursday</option>
+                            <option value="Friday">Every Friday</option>
+                            <option value="Saturday">Every Saturday</option>
+                            <option value="Sunday">Every Sunday</option>
+                          </select>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="form-label" style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>
+                        Rent Cycle Start Date (Anchor Date)
+                      </label>
+                      <input
+                        type="date"
+                        value={newBarberRentStartDate}
+                        onChange={e => setNewBarberRentStartDate(e.target.value)}
+                        className="bubbly-input"
+                        style={{ fontSize: '13px', padding: '10px' }}
                       />
                     </div>
                   </div>

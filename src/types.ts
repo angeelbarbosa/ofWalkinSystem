@@ -13,8 +13,10 @@ export interface Barber {
   pushSubscriptionActive?: boolean;
   // Booth Rent Configuration
   weeklyRent?: number; // e.g. 200
+  rentAmount?: number; // Base rent amount e.g. 200 (weekly) or 800 (monthly)
   rentCycle?: 'weekly' | 'biweekly' | 'monthly';
-  rentDueDay?: string; // e.g. 'Monday'
+  rentDueDay?: string; // e.g. 'Monday', '1st of month', '15th of month'
+  rentStartDate?: string; // YYYY-MM-DD e.g. "2026-10-15"
   autoPayEnabled?: boolean;
   passcode?: string; // e.g. "1111"
 }
@@ -119,8 +121,9 @@ export interface Shop {
   // Platform Subscription & Owner Contact (Who pays YOU)
   subscriptionStatus?: SubscriptionStatus; // 'active' (Paid), 'past_due', 'comped', 'unpaid'
   subscriptionMonthlyFee?: number; // e.g. 49
-  subscriptionNextBillingDate?: string; // YYYY-MM-DD e.g. "2026-11-01"
-  subscriptionLastPaidDate?: string; // YYYY-MM-DD e.g. "2026-10-01"
+  subscriptionStartDate?: string; // YYYY-MM-DD e.g. "2026-10-15"
+  subscriptionNextBillingDate?: string; // YYYY-MM-DD e.g. "2026-11-15"
+  subscriptionLastPaidDate?: string; // YYYY-MM-DD e.g. "2026-10-15"
   subscriptionPaymentMethod?: SubscriptionPaymentMethod;
   ownerContactName?: string; // e.g. "Marcus Rivera"
   ownerPhone?: string; // e.g. "(555) 777-1010"

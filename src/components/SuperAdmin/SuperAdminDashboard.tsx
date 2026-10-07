@@ -112,6 +112,7 @@ export function SuperAdminDashboard({
   // Subscription Edit State
   const [subFee, setSubFee] = useState(49);
   const [subStatus, setSubStatus] = useState<SubscriptionStatus>('active');
+  const [subStartDate, setSubStartDate] = useState('');
   const [subNextBilling, setSubNextBilling] = useState('');
   const [subPaymentMethod, setSubPaymentMethod] = useState<SubscriptionPaymentMethod>('zelle');
 
@@ -192,6 +193,7 @@ export function SuperAdminDashboard({
     setSubscriptionModalShop(shop);
     setSubFee(shop.subscriptionMonthlyFee !== undefined ? shop.subscriptionMonthlyFee : 49);
     setSubStatus(shop.subscriptionStatus || 'active');
+    setSubStartDate(shop.subscriptionStartDate || shop.subscriptionLastPaidDate || '2026-10-01');
     setSubNextBilling(shop.subscriptionNextBillingDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
     setSubPaymentMethod(shop.subscriptionPaymentMethod || 'zelle');
   };
@@ -205,6 +207,7 @@ export function SuperAdminDashboard({
       subscriptionMonthlyFee: Number(subFee),
       monthlyPlanPrice: Number(subFee),
       subscriptionStatus: subStatus,
+      subscriptionStartDate: subStartDate,
       subscriptionNextBillingDate: subNextBilling,
       subscriptionPaymentMethod: subPaymentMethod
     });
@@ -1068,7 +1071,7 @@ export function SuperAdminDashboard({
                           <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
                             {isComped 
                               ? 'No billing' 
-                              : `Next billing: ${shop.subscriptionNextBillingDate || 'Pending'}`}
+                              : `Next: ${shop.subscriptionNextBillingDate || 'Pending'}${shop.subscriptionStartDate ? ` • Billed monthly (Day ${parseInt(shop.subscriptionStartDate.split('-')[2] || '1', 10)})` : ''}`}
                           </span>
                         </div>
 
@@ -1921,7 +1924,27 @@ export function SuperAdminDashboard({
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Next Billing Date</label>
+                  <label style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Cycle Start Date (Anchor)</label>
+                  <input
+                    type="date"
+                    value={subStartDate}
+                    onChange={(e) => {
+                      const newDate = e.target.value;
+                      setSubStartDate(newDate);
+                      if (newDate) {
+                        const d = new Date(newDate + 'T00:00:00');
+                        d.setMonth(d.getMonth() + 1);
+                        setSubNextBilling(d.toISOString().split('T')[0]);
+                      }
+                    }}
+                    style={{ width: '100%', padding: '12px', background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', borderRadius: '12px', color: 'var(--text-primary)', fontSize: '13px', marginTop: '4px', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Next Renewal Date</label>
                   <input
                     type="date"
                     value={subNextBilling}
@@ -1929,22 +1952,21 @@ export function SuperAdminDashboard({
                     style={{ width: '100%', padding: '12px', background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', borderRadius: '12px', color: 'var(--text-primary)', fontSize: '13px', marginTop: '4px', boxSizing: 'border-box' }}
                   />
                 </div>
-              </div>
-
-              <div>
-                <label style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Payment Method</label>
-                <select
-                  value={subPaymentMethod}
-                  onChange={(e) => setSubPaymentMethod(e.target.value as SubscriptionPaymentMethod)}
-                  style={{ width: '100%', padding: '12px', background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', borderRadius: '12px', color: 'var(--text-primary)', fontSize: '13px', marginTop: '4px', boxSizing: 'border-box' }}
-                >
-                  <option value="zelle">Zelle Transfer</option>
-                  <option value="cash">Cash In-Person</option>
-                  <option value="card">Credit / Debit Card</option>
-                  <option value="stripe">Stripe Subscription</option>
-                  <option value="apple_pay">Apple Pay</option>
-                  <option value="manual">Manual / Comped</option>
-                </select>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Payment Method</label>
+                  <select
+                    value={subPaymentMethod}
+                    onChange={(e) => setSubPaymentMethod(e.target.value as SubscriptionPaymentMethod)}
+                    style={{ width: '100%', padding: '12px', background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', borderRadius: '12px', color: 'var(--text-primary)', fontSize: '13px', marginTop: '4px', boxSizing: 'border-box' }}
+                  >
+                    <option value="zelle">Zelle Transfer</option>
+                    <option value="cash">Cash In-Person</option>
+                    <option value="card">Credit / Debit Card</option>
+                    <option value="stripe">Stripe Subscription</option>
+                    <option value="apple_pay">Apple Pay</option>
+                    <option value="manual">Manual / Comped</option>
+                  </select>
+                </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '10px' }}>
