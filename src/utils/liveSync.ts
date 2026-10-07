@@ -386,11 +386,12 @@ export function useLiveSystem() {
   const addCheckIn = async (
     clientName: string, 
     selectedBarber?: Barber, 
-    appointmentTime: string = 'Scheduled',
+    appointmentTime: string = 'Walk-In',
     type: CheckInRecord['type'] = 'appointment'
   ) => {
-    const barberId = selectedBarber?.id;
-    const barberName = selectedBarber?.name || 'Brandon';
+    const isWalkIn = type === 'walkin' || !selectedBarber;
+    const barberId = selectedBarber?.id || (isWalkIn ? 'first_available' : undefined);
+    const barberName = selectedBarber?.name || (isWalkIn ? 'First Available' : undefined);
 
     // Push to Convex Cloud if active
     if (convexClient) {
@@ -422,7 +423,12 @@ export function useLiveSystem() {
     }
 
     // Trigger phone buzz & push
-    notificationManager.sendBarberArrivalAlert(clientName, barberName, appointmentTime, barberId);
+    notificationManager.sendBarberArrivalAlert(
+      clientName, 
+      selectedBarber ? selectedBarber.name : 'All Barbers (Walk-In)', 
+      appointmentTime, 
+      barberId
+    );
 
     const newRecord: CheckInRecord = {
       id: 'chk-' + Date.now(),

@@ -794,7 +794,20 @@ export const storage = {
 
   getCheckIns(): CheckInRecord[] {
     const shop = this.getActiveShop();
-    return shop.checkIns || [];
+    const records = shop.checkIns || [];
+    let modified = false;
+    const normalized = records.map(r => {
+      // If a waiting walk-in was pre-assigned to a barber by the previous kiosk bug, normalize it to first_available
+      if (r.type === 'walkin' && r.appointmentTime === 'Walk-In' && r.status === 'waiting' && r.barberId && r.barberId !== 'first_available' && !r.notes?.includes('claimed')) {
+        modified = true;
+        return { ...r, barberId: 'first_available', barberName: 'First Available' };
+      }
+      return r;
+    });
+    if (modified) {
+      this.updateShop(shop.slug, { checkIns: normalized });
+    }
+    return normalized;
   },
 
   saveCheckIns(records: CheckInRecord[]) {

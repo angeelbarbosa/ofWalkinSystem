@@ -138,21 +138,31 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
     onUpdateStatus(record.id, 'waiting');
   };
 
-  // Filter checkins for this barber only
+  // Helper to determine if a check-in belongs to the general shop walk-in queue
+  const isGeneralWalkIn = (record: CheckInRecord) => {
+    if (record.type === 'shopping') return false;
+    return (
+      !record.barberId ||
+      record.barberId === 'first_available' ||
+      record.barberName === 'First Available' ||
+      record.barberName === 'Front Register' ||
+      record.barberName?.toLowerCase().includes('first available')
+    );
+  };
+
+  // General Shop Walk-Ins (Unassigned / First Available in lobby for all barbers)
+  const unassignedWalkIns = checkIns.filter(record => {
+    return (record.status === 'waiting' || record.status === 'called') && isGeneralWalkIn(record);
+  });
+
+  // Filter checkins assigned specifically to THIS barber (appointments or claimed walk-ins)
   const filteredCheckIns = checkIns.filter(record => {
+    if (isGeneralWalkIn(record)) return false;
     const target = assignedBarber.name.toLowerCase();
     return (
       record.barberId === assignedBarber.id ||
       (record.barberName && record.barberName.toLowerCase() === target)
     );
-  });
-
-  // General Shop Walk-Ins (Unassigned / First Available)
-  const unassignedWalkIns = checkIns.filter(record => {
-    const isUnassigned = (!record.barberId && (!record.barberName || record.barberName === 'Front Register')) ||
-                         record.barberId === 'first_available' ||
-                         record.barberName?.toLowerCase().includes('first available');
-    return isUnassigned && (record.status === 'waiting' || record.status === 'called') && record.type !== 'shopping';
   });
 
   const waitingList = filteredCheckIns.filter(r => r.status === 'waiting' || r.status === 'called');

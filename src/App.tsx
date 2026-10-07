@@ -507,9 +507,7 @@ export function App() {
                       setKioskStep('barber_select');
                     }}
                     onJoinWalkInDirect={async (clientName) => {
-                      const working = barbers.filter(b => b.isWorking);
-                      const freeBarber = working.find(b => !checkIns.some(c => (c.barberId === b.id || c.barberName === b.name) && c.status === 'in_chair')) || working[0] || barbers[0];
-                      const record = await addCheckIn(clientName, freeBarber, 'Walk-In', 'walkin');
+                      const record = await addCheckIn(clientName, undefined, 'Walk-In', 'walkin');
                       setLatestConfirmedRecord(record);
                       setKioskStep('confirmed');
                     }}

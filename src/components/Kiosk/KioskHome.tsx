@@ -26,8 +26,8 @@ interface KioskHomeProps {
 export const KioskHome: React.FC<KioskHomeProps> = ({
   config,
   shopSlug = 'of',
-  barbers,
-  checkIns,
+  barbers: _barbers,
+  checkIns: _checkIns,
   onSelectBrowsing,
   onSelectCheckout,
   onSelectAppointment,
@@ -38,21 +38,6 @@ export const KioskHome: React.FC<KioskHomeProps> = ({
   // Walk-In Fast Modal State
   const [showWalkInModal, setShowWalkInModal] = useState(false);
   const [walkInName, setWalkInName] = useState('');
-
-  const activeBarbers = barbers.filter(b => b.isWorking);
-
-  // In Chair Clients
-  const inChairClients = checkIns.filter(c => c.status === 'in_chair');
-
-  // Waiting in queue (Sorted by arrival time)
-  const waitingQueue = checkIns
-    .filter(c => c.status === 'waiting' || c.status === 'called')
-    .sort((a, b) => new Date(a.checkInTime).getTime() - new Date(b.checkInTime).getTime());
-
-  // Dynamic estimated wait time
-  const estimatedWait = activeBarbers.length > 0 
-    ? Math.max(5, Math.round((waitingQueue.length * 15) / Math.max(1, activeBarbers.length)))
-    : 10;
 
   const handleWalkInSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -332,34 +317,9 @@ export const KioskHome: React.FC<KioskHomeProps> = ({
                 Join Walk-In Line
               </h3>
               <p className="modal-sub-title">
-                {waitingQueue.length === 0 
-                  ? "You will be #1 in line • Ready for next open chair" 
-                  : `You will be placed as #${waitingQueue.length + 1} in line • ~${estimatedWait}m wait`}
+                Quick check-in • Ready for next open chair
               </p>
             </div>
-
-            {/* In-Chair Barber Status preview so client knows who is cutting */}
-            {inChairClients.length > 0 && (
-              <div style={{
-                padding: '10px 14px',
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid var(--border-subtle, rgba(255,255,255,0.08))',
-                borderRadius: '16px',
-                marginBottom: '18px',
-                fontSize: '0.8rem',
-                color: 'var(--text-secondary)'
-              }}>
-                <div style={{ fontWeight: 800, color: 'var(--text-primary)', marginBottom: '4px' }}>
-                  Currently in chairs:
-                </div>
-                {inChairClients.map(c => (
-                  <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2px' }}>
-                    <span>{c.barberName}</span>
-                    <span style={{ color: '#F59E0B' }}>Cutting {c.clientName}</span>
-                  </div>
-                ))}
-              </div>
-            )}
 
             <form onSubmit={handleWalkInSubmit}>
               <div style={{ marginBottom: '20px' }}>
