@@ -189,8 +189,12 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
     const targetId = walkInToClaim.id;
     setWalkInToClaim(null);
 
-    // If barber chose to seat walkin in chair while chair is occupied, complete the current cut first
-    if (targetStatus === 'in_chair' && isChairOccupied && activeInChairClient) {
+    // If chair is occupied, a barber cannot add a walk-in to their queue while cutting.
+    // They can only seat them immediately by finishing the active cut first.
+    if (isChairOccupied && activeInChairClient) {
+      if (targetStatus === 'waiting') {
+        return;
+      }
       await onUpdateStatus(activeInChairClient.id, 'completed');
     }
 
@@ -1055,17 +1059,19 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
               background: 'rgba(245, 158, 11, 0.12)',
               border: '1px solid rgba(245, 158, 11, 0.3)',
               borderRadius: 14,
-              padding: '10px 14px',
+              padding: '12px 14px',
               marginBottom: 14,
               display: 'flex',
-              alignItems: 'center',
+              alignItems: 'flex-start',
               gap: 10,
-              fontSize: '0.8rem',
-              color: 'var(--accent-primary)'
+              fontSize: '0.82rem',
+              color: 'var(--accent-primary)',
+              textAlign: 'left',
+              lineHeight: 1.4
             }}>
-              <AlertTriangle size={18} style={{ flexShrink: 0 }} />
+              <AlertTriangle size={18} style={{ flexShrink: 0, marginTop: 2 }} />
               <div>
-                <strong>Chair Busy:</strong> Currently cutting <strong>{activeInChairClient.clientName}</strong>.
+                <strong>Chair Busy:</strong> Currently cutting <strong>{activeInChairClient.clientName}</strong>. You cannot add a walk-in to your queue while cutting. You can finish your current cut to take <strong>{walkInToClaim.clientName}</strong> now, or leave them in the lobby queue for other barbers.
               </div>
             </div>
           )}
@@ -1099,26 +1105,22 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                 </button>
 
                 <button
-                  onClick={() => handleConfirmClaim('waiting')}
+                  type="button"
+                  onClick={() => setWalkInToClaim(null)}
                   style={{
                     width: '100%',
-                    padding: '13px',
-                    borderRadius: 16,
+                    padding: '12px',
                     background: 'var(--surface-pill, #27272A)',
                     color: 'var(--text-primary)',
                     border: '1px solid var(--border-subtle, rgba(255,255,255,0.15))',
-                    fontSize: '0.9rem',
+                    borderRadius: 16,
+                    fontSize: '0.86rem',
                     fontWeight: 800,
                     cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 8,
                     transition: 'all 0.15s ease'
                   }}
                 >
-                  <Armchair size={17} style={{ color: 'var(--accent-primary)' }} />
-                  <span>Add {walkInToClaim.clientName} to Queue (Keep Current Cut)</span>
+                  Leave {walkInToClaim.clientName} in Lobby Queue
                 </button>
               </>
             ) : (
