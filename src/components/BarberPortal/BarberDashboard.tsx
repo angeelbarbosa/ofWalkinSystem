@@ -58,7 +58,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
   const [isRentModalOpen, setIsRentModalOpen] = useState(false);
   const [isPasscodeModalOpen, setIsPasscodeModalOpen] = useState(false);
   const [walkInToClaim, setWalkInToClaim] = useState<CheckInRecord | null>(null);
-  const [chairConflictModal, setChairConflictModal] = useState<CheckInRecord | null>(null);
+  const [chairOccupiedWarning, setChairOccupiedWarning] = useState<{ attemptedClientName: string; actionType: 'in_chair' | 'take_walkin' } | null>(null);
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [tested, setTested] = useState(false);
 
@@ -183,19 +183,31 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
     return `${mins}m ${secs}s ago`;
   };
 
-  // Claim Walk-In Handler
+  // Initiate Taking a Walk-In (with Chair Occupancy Guard)
+  const handleInitiateTakeWalkIn = (walkin: CheckInRecord) => {
+    if (isChairOccupied && activeInChairClient) {
+      setChairOccupiedWarning({
+        attemptedClientName: walkin.clientName,
+        actionType: 'take_walkin'
+      });
+      return;
+    }
+    setWalkInToClaim(walkin);
+  };
+
+  // Confirm Claim Walk-In Handler
   const handleConfirmClaim = async (targetStatus: CheckInRecord['status'] = 'waiting') => {
     if (!walkInToClaim) return;
     const targetId = walkInToClaim.id;
     setWalkInToClaim(null);
 
-    // If chair is occupied, a barber cannot add a walk-in to their queue while cutting.
-    // They can only seat them immediately by finishing the active cut first.
-    if (isChairOccupied && activeInChairClient) {
-      if (targetStatus === 'waiting') {
-        return;
-      }
-      await onUpdateStatus(activeInChairClient.id, 'completed');
+    // Hard block if chair is occupied
+    if (isChairOccupied) {
+      setChairOccupiedWarning({
+        attemptedClientName: walkInToClaim.clientName,
+        actionType: 'take_walkin'
+      });
+      return;
     }
 
     if (onClaimWalkIn) {
@@ -213,24 +225,14 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
   // Safe In-Chair Handler with Chair Occupancy Protection
   const handleSetInChair = (record: CheckInRecord) => {
     if (isChairOccupied && activeInChairClient && activeInChairClient.id !== record.id) {
-      // Chair is already occupied - prompt to finish current cut first
-      setChairConflictModal(record);
+      // Chair is already occupied - block and display clear warning message
+      setChairOccupiedWarning({
+        attemptedClientName: record.clientName,
+        actionType: 'in_chair'
+      });
       return;
     }
     onUpdateStatus(record.id, 'in_chair');
-  };
-
-  // Resolve Chair Conflict: Complete active cut and seat the incoming client
-  const handleResolveChairConflict = async () => {
-    if (!chairConflictModal || !activeInChairClient) return;
-    const incoming = chairConflictModal;
-    setChairConflictModal(null);
-
-    // 1. Complete active in-chair cut
-    await onUpdateStatus(activeInChairClient.id, 'completed');
-
-    // 2. Seat incoming client
-    onUpdateStatus(incoming.id, 'in_chair');
   };
 
   const handleSetCompleted = (record: CheckInRecord) => {
@@ -930,25 +932,26 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                 </div>
 
                 <button
-                  onClick={() => setWalkInToClaim(walkin)}
+                  onClick={() => handleInitiateTakeWalkIn(walkin)}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: 6,
                     padding: '10px 16px',
-                    background: 'var(--accent-primary, #F59E0B)',
-                    color: '#000000',
-                    border: 'none',
+                    background: isChairOccupied ? 'var(--surface-pill, #27272A)' : 'var(--accent-primary, #F59E0B)',
+                    color: isChairOccupied ? 'var(--text-primary)' : '#000000',
+                    border: isChairOccupied ? '1px solid rgba(245, 158, 11, 0.3)' : 'none',
                     borderRadius: 14,
                     fontSize: '0.84rem',
                     fontWeight: 850,
                     cursor: 'pointer',
-                    boxShadow: '0 3px 10px rgba(245, 158, 11, 0.28)',
+                    boxShadow: isChairOccupied ? 'none' : '0 3px 10px rgba(245, 158, 11, 0.28)',
                     whiteSpace: 'nowrap',
                     transition: 'all 0.15s ease'
                   }}
+                  title={isChairOccupied ? `Chair currently occupied by ${activeInChairClient?.clientName}` : 'Take walk-in'}
                 >
-                  <Scissors size={14} />
+                  <Scissors size={14} style={{ color: isChairOccupied ? 'var(--accent-primary)' : '#000000' }} />
                   <span>Take Walk-In</span>
                 </button>
               </div>
@@ -1007,8 +1010,8 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
         </div>
       )}
 
-      {/* Confirmation Popup Modal for Taking a Walk-In */}
-      {walkInToClaim && (
+      {/* Confirmation Popup Modal for Taking a Walk-In (Only accessible when chair is free) */}
+      {walkInToClaim && !isChairOccupied && (
         <ModalOverlay onClose={() => setWalkInToClaim(null)} maxWidth={440}>
           <div style={{ textAlign: 'center', marginBottom: 16 }}>
             <div style={{
@@ -1040,7 +1043,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
             border: '1px solid var(--border-subtle, rgba(255,255,255,0.12))',
             borderRadius: 18,
             padding: '16px',
-            marginBottom: 14,
+            marginBottom: 16,
             textAlign: 'center'
           }}>
             <div style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--text-primary)' }}>
@@ -1053,126 +1056,54 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
             </div>
           </div>
 
-          {/* Chair Occupancy Warning Banner (if chair is already occupied) */}
-          {isChairOccupied && activeInChairClient && (
-            <div style={{
-              background: 'rgba(245, 158, 11, 0.12)',
-              border: '1px solid rgba(245, 158, 11, 0.3)',
-              borderRadius: 14,
-              padding: '12px 14px',
-              marginBottom: 14,
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: 10,
-              fontSize: '0.82rem',
-              color: 'var(--accent-primary)',
-              textAlign: 'left',
-              lineHeight: 1.4
-            }}>
-              <AlertTriangle size={18} style={{ flexShrink: 0, marginTop: 2 }} />
-              <div>
-                <strong>Chair Busy:</strong> Currently cutting <strong>{activeInChairClient.clientName}</strong>. You cannot add a walk-in to your queue while cutting. You can finish your current cut to take <strong>{walkInToClaim.clientName}</strong> now, or leave them in the lobby queue for other barbers.
-              </div>
-            </div>
-          )}
-
           {/* Action Choices */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {isChairOccupied && activeInChairClient ? (
-              <>
-                <button
-                  onClick={() => handleConfirmClaim('in_chair')}
-                  style={{
-                    width: '100%',
-                    padding: '14px',
-                    borderRadius: 16,
-                    background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-                    color: '#000000',
-                    border: 'none',
-                    fontSize: '0.92rem',
-                    fontWeight: 900,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 8,
-                    boxShadow: '0 6px 20px rgba(16, 185, 129, 0.35)',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  <Check size={17} />
-                  <span>Finish {activeInChairClient.clientName} & Seat {walkInToClaim.clientName}</span>
-                </button>
+            <button
+              onClick={() => handleConfirmClaim('in_chair')}
+              style={{
+                width: '100%',
+                padding: '14px',
+                borderRadius: 16,
+                background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                color: '#000000',
+                border: 'none',
+                fontSize: '0.96rem',
+                fontWeight: 900,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                boxShadow: '0 6px 20px rgba(16, 185, 129, 0.35)',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <Scissors size={18} />
+              <span>Seat in Chair Now (Start Cut)</span>
+            </button>
 
-                <button
-                  type="button"
-                  onClick={() => setWalkInToClaim(null)}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    background: 'var(--surface-pill, #27272A)',
-                    color: 'var(--text-primary)',
-                    border: '1px solid var(--border-subtle, rgba(255,255,255,0.15))',
-                    borderRadius: 16,
-                    fontSize: '0.86rem',
-                    fontWeight: 800,
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  Leave {walkInToClaim.clientName} in Lobby Queue
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  onClick={() => handleConfirmClaim('in_chair')}
-                  style={{
-                    width: '100%',
-                    padding: '14px',
-                    borderRadius: 16,
-                    background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-                    color: '#000000',
-                    border: 'none',
-                    fontSize: '0.96rem',
-                    fontWeight: 900,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 8,
-                    boxShadow: '0 6px 20px rgba(16, 185, 129, 0.35)',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  <Scissors size={18} />
-                  <span>Seat in Chair Now (Start Cut)</span>
-                </button>
-
-                <button
-                  onClick={() => handleConfirmClaim('waiting')}
-                  style={{
-                    width: '100%',
-                    padding: '13px',
-                    borderRadius: 16,
-                    background: 'var(--surface-pill, #27272A)',
-                    color: 'var(--text-primary)',
-                    border: '1px solid var(--border-subtle, rgba(255,255,255,0.15))',
-                    fontSize: '0.9rem',
-                    fontWeight: 800,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 8,
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  <Armchair size={17} style={{ color: 'var(--accent-primary)' }} />
-                  <span>Add to My Station Queue</span>
-                </button>
-              </>
-            )}
+            <button
+              onClick={() => handleConfirmClaim('waiting')}
+              style={{
+                width: '100%',
+                padding: '13px',
+                borderRadius: 16,
+                background: 'var(--surface-pill, #27272A)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border-subtle, rgba(255,255,255,0.15))',
+                fontSize: '0.9rem',
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <Armchair size={17} style={{ color: 'var(--accent-primary)' }} />
+              <span>Add to My Station Queue</span>
+            </button>
 
             <button
               type="button"
@@ -1195,24 +1126,24 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
         </ModalOverlay>
       )}
 
-      {/* Chair Conflict Alert Modal (When clicking In Chair while another client is in service) */}
-      {chairConflictModal && activeInChairClient && (
-        <ModalOverlay onClose={() => setChairConflictModal(null)} maxWidth={440}>
+      {/* Chair Occupied Warning Modal (When trying to seat someone or take a walkin while chair is busy) */}
+      {chairOccupiedWarning && activeInChairClient && (
+        <ModalOverlay onClose={() => setChairOccupiedWarning(null)} maxWidth={420}>
           <div style={{ textAlign: 'center', marginBottom: 16 }}>
             <div style={{
-              width: 52,
-              height: 52,
+              width: 54,
+              height: 54,
               borderRadius: 18,
-              background: 'rgba(245, 158, 11, 0.18)',
-              border: '2px solid var(--accent-primary, #F59E0B)',
-              color: 'var(--accent-primary, #F59E0B)',
+              background: 'rgba(239, 68, 68, 0.15)',
+              border: '2px solid #EF4444',
+              color: '#EF4444',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               margin: '0 auto 12px',
-              boxShadow: '0 6px 20px rgba(245, 158, 11, 0.25)'
+              boxShadow: '0 6px 20px rgba(239, 68, 68, 0.25)'
             }}>
-              <Armchair size={26} />
+              <AlertTriangle size={28} />
             </div>
 
             <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-primary)', margin: '0 0 6px' }}>
@@ -1223,78 +1154,48 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
             </p>
           </div>
 
-          {/* Explanation Banner */}
           <div style={{
             background: 'var(--surface-pill, #27272A)',
             border: '1px solid var(--border-subtle, rgba(255,255,255,0.12))',
             borderRadius: 18,
             padding: '16px',
-            marginBottom: 16,
-            fontSize: '0.86rem',
+            marginBottom: 18,
+            fontSize: '0.88rem',
             color: 'var(--text-primary)',
-            lineHeight: 1.45
+            lineHeight: 1.5,
+            textAlign: 'center'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#10B981', fontWeight: 800, marginBottom: 4 }}>
-              <Scissors size={14} />
-              <span>In Chair Right Now:</span>
+            <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#EF4444', textTransform: 'uppercase', marginBottom: 4 }}>
+              Action Blocked
             </div>
-            <div style={{ fontSize: '1.15rem', fontWeight: 900, color: 'var(--text-primary)', marginBottom: 8 }}>
-              {activeInChairClient.clientName}
+            <div>
+              You are currently cutting <strong style={{ color: '#FAFAFA' }}>{activeInChairClient.clientName}</strong>.
             </div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8 }}>
-              You cannot seat <strong>{chairConflictModal.clientName}</strong> until the current cut is finished.
+            <div style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', marginTop: 6 }}>
+              {chairOccupiedWarning.actionType === 'take_walkin' 
+                ? `You cannot take ${chairOccupiedWarning.attemptedClientName} from the lobby queue while cutting. Please tap "Mark Cut Finished" on your current client first.`
+                : `You cannot seat ${chairOccupiedWarning.attemptedClientName} until you tap "Mark Cut Finished" on your current client.`
+              }
             </div>
           </div>
 
-          {/* Action Choices */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <button
-              onClick={handleResolveChairConflict}
-              style={{
-                width: '100%',
-                padding: '14px',
-                borderRadius: 16,
-                background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-                color: '#000000',
-                border: 'none',
-                fontSize: '0.92rem',
-                fontWeight: 900,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                boxShadow: '0 6px 20px rgba(16, 185, 129, 0.35)',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <Check size={17} />
-              <span>Finish {activeInChairClient.clientName} & Seat {chairConflictModal.clientName}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setChairConflictModal(null)}
-              style={{
-                width: '100%',
-                padding: '13px',
-                borderRadius: 16,
-                background: 'var(--surface-pill, #27272A)',
-                color: 'var(--text-primary)',
-                border: '1px solid var(--border-subtle, rgba(255,255,255,0.15))',
-                fontSize: '0.9rem',
-                fontWeight: 800,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <span>Keep {chairConflictModal.clientName} in Queue</span>
-            </button>
-          </div>
+          <button
+            onClick={() => setChairOccupiedWarning(null)}
+            style={{
+              width: '100%',
+              padding: '13px',
+              borderRadius: 16,
+              background: 'var(--accent-primary, #F59E0B)',
+              color: '#000000',
+              border: 'none',
+              fontSize: '0.94rem',
+              fontWeight: 900,
+              cursor: 'pointer',
+              boxShadow: '0 4px 14px rgba(245, 158, 11, 0.3)'
+            }}
+          >
+            Got It
+          </button>
         </ModalOverlay>
       )}
 
