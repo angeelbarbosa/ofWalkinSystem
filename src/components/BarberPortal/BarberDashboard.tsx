@@ -1204,10 +1204,10 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
 
           {/* Action Choices */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {/* Button 1 (Top): Text client something... */}
+            {/* Button 1 (Top): Send Text to Client */}
             {walkInToClaim.clientPhone ? (
               <a
-                href={`sms:${walkInToClaim.clientPhone.replace(/[^\d+]/g, '')}`}
+                href={getSmsUrl(walkInToClaim.clientPhone, walkInToClaim.clientName)}
                 style={{
                   width: '100%',
                   padding: '13px',
@@ -1228,7 +1228,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                 }}
               >
                 <MessageSquare size={17} style={{ color: 'var(--accent-primary)' }} />
-                <span>Text client something...</span>
+                <span>Send Text to Client</span>
               </a>
             ) : (
               <button
@@ -1252,7 +1252,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                 }}
               >
                 <MessageSquare size={17} style={{ color: 'var(--text-muted)' }} />
-                <span>Text client something... (No Phone)</span>
+                <span>Text Client (No Phone Provided)</span>
               </button>
             )}
 
