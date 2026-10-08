@@ -96,7 +96,7 @@ export const BarberLoginScreen: React.FC<BarberLoginScreenProps> = ({
               Barber Hub Access
             </h2>
             <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', maxWidth: 420, margin: '0 auto' }}>
-              Select your station to view private call-ins, live chair queue, and booth rent.
+              Select your station
             </p>
           </div>
 
@@ -128,22 +128,8 @@ export const BarberLoginScreen: React.FC<BarberLoginScreenProps> = ({
                   transition: 'all 0.2s ease'
                 }}
               >
-                {/* Station Tag & Lock Indicator */}
-                <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span
-                    style={{
-                      fontSize: '0.74rem',
-                      fontWeight: 800,
-                      background: 'var(--surface-pill, #27272A)',
-                      color: 'var(--accent-primary, #F59E0B)',
-                      padding: '3px 8px',
-                      borderRadius: 9999,
-                      border: '1px solid var(--border-subtle, rgba(255,255,255,0.08))'
-                    }}
-                  >
-                    Station #{barber.stationNumber}
-                  </span>
-
+                {/* Lock Indicator */}
+                <div style={{ width: '100%', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
                   <div
                     style={{
                       width: 24,
@@ -300,7 +286,7 @@ export const BarberLoginScreen: React.FC<BarberLoginScreenProps> = ({
               {selectedBarber.name}
             </h3>
             <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 16 }}>
-              Station #{selectedBarber.stationNumber} • Enter 4-Digit Passcode
+              Enter 4-Digit Passcode
             </div>
 
             {/* 4-Digit PIN Indicators */}

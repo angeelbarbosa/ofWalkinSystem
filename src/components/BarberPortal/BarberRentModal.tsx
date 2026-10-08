@@ -118,7 +118,7 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
               </div>
               <div style={{ minWidth: 0 }}>
                 <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Station #{barber.stationNumber} • Booth Rent
+                  Booth Rent Payment
                 </span>
                 <h3 style={{ fontSize: '1.25rem', fontWeight: 850, color: 'var(--text-primary)', margin: '2px 0 0', lineHeight: 1.2 }}>
                   Pay Booth Rent ({barber.name})
@@ -299,7 +299,7 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
               Booth Rent Verified!
             </h3>
             <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginBottom: 18 }}>
-              Paid via Stripe and credited directly to the shop ledger for Station #{paidRecord.stationNumber}.
+              Paid via Stripe and credited directly to the shop ledger for {paidRecord.barberName}.
             </p>
 
             {/* Official Digital Receipt Card */}
@@ -344,7 +344,7 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: 'var(--text-secondary)' }}>Barber:</span>
                 <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>
-                  {paidRecord.barberName} (Station #{paidRecord.stationNumber})
+                  {paidRecord.barberName}
                 </span>
               </div>
 

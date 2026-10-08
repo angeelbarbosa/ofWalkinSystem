@@ -197,21 +197,6 @@ export const BarberSelect: React.FC<BarberSelectProps> = ({
                 boxShadow: 'var(--shadow-sm)'
               }}
             >
-              {/* Station Number Pill */}
-              <div style={{
-                position: 'absolute',
-                top: 14,
-                left: 14,
-                fontSize: '11px',
-                fontWeight: 800,
-                color: 'var(--text-muted, #A1A1AA)',
-                background: 'var(--surface-pill, #27272A)',
-                padding: '3px 8px',
-                borderRadius: '8px'
-              }}>
-                Station #{barber.stationNumber}
-              </div>
-
               {/* Barber Avatar */}
               <div
                 style={{

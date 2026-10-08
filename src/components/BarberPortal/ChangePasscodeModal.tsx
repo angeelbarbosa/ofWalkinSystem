@@ -157,7 +157,7 @@ export const ChangePasscodeModal: React.FC<ChangePasscodeModalProps> = ({
         <p style={{ fontSize: '0.85rem', color: '#71717A', marginBottom: 20 }}>
           {isSuccess
             ? `Your station PIN for ${barber.name} has been securely updated.`
-            : `Set a private 4-digit PIN for ${barber.name} (Station #${barber.stationNumber})`}
+            : `Set a private 4-digit PIN for ${barber.name}`}
         </p>
 
         {isSuccess ? (

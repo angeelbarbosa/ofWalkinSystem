@@ -438,23 +438,9 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
             </div>
             <div style={{ minWidth: 0, flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <h2 style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--text-primary)', margin: 0, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-primary)', margin: 0, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {assignedBarber.name}
                 </h2>
-                <span
-                  style={{
-                    background: 'var(--surface-pill, #27272A)',
-                    color: 'var(--text-secondary)',
-                    fontSize: '0.72rem',
-                    fontWeight: 800,
-                    padding: '2px 8px',
-                    borderRadius: 9999,
-                    border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
-                    whiteSpace: 'nowrap'
-                  }}
-                >
-                  Station #{assignedBarber.stationNumber}
-                </span>
               </div>
               <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
                 <span
@@ -647,7 +633,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
               </span>
             </h3>
             <span style={{ fontSize: '0.74rem', color: '#10B981', fontWeight: 750 }}>
-              In Service • Station #{assignedBarber.stationNumber}
+              In Service
             </span>
           </div>
 
@@ -1082,7 +1068,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
               Take Walk-In Client?
             </h3>
             <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: 0 }}>
-              Assign to Station #{assignedBarber.stationNumber} ({assignedBarber.name})
+              Assign to {assignedBarber.name}
             </p>
           </div>
 
@@ -1199,7 +1185,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
               Chair Currently Occupied
             </h3>
             <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: 0 }}>
-              Station #{assignedBarber.stationNumber} ({assignedBarber.name})
+              {assignedBarber.name}'s Chair
             </p>
           </div>
 

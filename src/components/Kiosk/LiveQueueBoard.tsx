@@ -541,7 +541,7 @@ export const LiveQueueBoard: React.FC<LiveQueueBoardProps> = ({
                   <option value="first_available">First Available (Shortest Wait)</option>
                   {activeBarbers.map(b => (
                     <option key={b.id} value={b.id}>
-                      {b.name} (Station #{b.stationNumber})
+                      {b.name}
                     </option>
                   ))}
                 </select>
