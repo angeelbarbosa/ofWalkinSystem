@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { 
-  Flame, 
   UserCheck, 
   ShoppingBag, 
   Sparkles, 
@@ -10,6 +9,8 @@ import {
   User,
   Phone
 } from 'lucide-react';
+import { WalkingLegsIcon } from '../Shared/WalkingLegsIcon';
+import { ModalOverlay } from '../Shared/ModalOverlay';
 import type { ShopConfig, Barber, CheckInRecord } from '../../types';
 
 interface KioskHomeProps {
@@ -232,7 +233,7 @@ export const KioskHome: React.FC<KioskHomeProps> = ({
                 border: '1px solid var(--pastel-amber-border)'
               }}
             >
-              <Flame size={46} strokeWidth={2.4} />
+              <WalkingLegsIcon size={46} strokeWidth={2.4} />
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
@@ -256,7 +257,7 @@ export const KioskHome: React.FC<KioskHomeProps> = ({
                   boxShadow: 'var(--shadow-md)'
                 }}
               >
-                <Flame size={20} />
+                <WalkingLegsIcon size={20} strokeWidth={2.2} />
                 <span>Join Walk-In Line</span>
                 <ChevronRight size={20} />
               </button>
@@ -302,81 +303,136 @@ export const KioskHome: React.FC<KioskHomeProps> = ({
         </div>
       )}
 
-      {/* ================= INSTANT 1-FIELD WALK-IN MODAL ================= */}
+      {/* ================= INSTANT 1-FIELD WALK-IN MODAL (100% CENTERED VIA MODALOVERLAY) ================= */}
       {showWalkInModal && (
-        <div className="modal-overlay">
-          <div className="futuristic-modal-bubble pop-in">
-            <button
-              onClick={() => setShowWalkInModal(false)}
-              className="modal-close-btn"
-            >
-              ✕
-            </button>
+        <ModalOverlay onClose={() => setShowWalkInModal(false)} maxWidth={440}>
+          <button
+            onClick={() => setShowWalkInModal(false)}
+            className="modal-close-btn"
+            style={{ position: 'absolute', top: 18, right: 18, background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 20, cursor: 'pointer' }}
+          >
+            ✕
+          </button>
 
-            <div className="modal-header-icon-wrap">
-              <div className="modal-fire-icon">
-                <Flame size={32} />
-              </div>
-              <h3 className="modal-main-title">
-                Join Walk-In Line
-              </h3>
-              <p className="modal-sub-title">
-                Quick check-in • Ready for next open chair
-              </p>
+          <div className="modal-header-icon-wrap" style={{ textAlign: 'center', marginBottom: 20 }}>
+            <div
+              style={{
+                width: 58,
+                height: 58,
+                borderRadius: 20,
+                background: 'rgba(245, 158, 11, 0.15)',
+                border: '1px solid rgba(245, 158, 11, 0.3)',
+                color: 'var(--accent-primary, #F59E0B)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 12px'
+              }}
+            >
+              <WalkingLegsIcon size={32} strokeWidth={2.2} />
+            </div>
+            <h3 className="modal-main-title" style={{ fontSize: '1.35rem', fontWeight: 900, color: 'var(--text-primary)', margin: '0 0 4px' }}>
+              Join Walk-In Line
+            </h3>
+            <p className="modal-sub-title" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>
+              Quick check-in • Ready for next open chair
+            </p>
+          </div>
+
+          <form onSubmit={handleWalkInSubmit}>
+            <div style={{ marginBottom: '16px' }}>
+              <label className="modal-input-label" style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                <User size={14} style={{ display: 'inline', marginRight: 4, verticalAlign: 'text-bottom' }} />
+                <span>Enter Your First Name *</span>
+              </label>
+              <input
+                type="text"
+                required
+                autoFocus
+                placeholder="e.g. Jordan"
+                value={walkInName}
+                onChange={(e) => setWalkInName(e.target.value)}
+                className="futuristic-text-input"
+                style={{
+                  width: '100%',
+                  padding: '14px 16px',
+                  background: 'var(--surface-pill, #27272A)',
+                  border: '1px solid var(--border-subtle, rgba(255,255,255,0.15))',
+                  borderRadius: '16px',
+                  color: 'var(--text-primary)',
+                  fontSize: '1.05rem',
+                  fontWeight: 600,
+                  boxSizing: 'border-box'
+                }}
+              />
             </div>
 
-            <form onSubmit={handleWalkInSubmit}>
-              <div style={{ marginBottom: '16px' }}>
-                <label className="modal-input-label">
-                  <User size={15} />
-                  <span>Enter Your First Name *</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  autoFocus
-                  placeholder="e.g. Jordan"
-                  value={walkInName}
-                  onChange={(e) => setWalkInName(e.target.value)}
-                  className="futuristic-text-input"
-                />
-              </div>
+            <div style={{ marginBottom: '20px' }}>
+              <label className="modal-input-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                  <Phone size={14} />
+                  <span>Phone Number <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500 }}>(Optional)</span></span>
+                </span>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Get notified when ready</span>
+              </label>
+              <input
+                type="tel"
+                placeholder="(555) 000-0000"
+                value={walkInPhone}
+                onChange={(e) => setWalkInPhone(formatPhoneNumber(e.target.value))}
+                className="futuristic-text-input"
+                style={{
+                  width: '100%',
+                  padding: '14px 16px',
+                  background: 'var(--surface-pill, #27272A)',
+                  border: '1px solid var(--border-subtle, rgba(255,255,255,0.15))',
+                  borderRadius: '16px',
+                  color: 'var(--text-primary)',
+                  fontSize: '1.05rem',
+                  fontWeight: 600,
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
 
-              <div style={{ marginBottom: '20px' }}>
-                <label className="modal-input-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Phone size={15} />
-                    <span>Phone Number <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500 }}>(Optional)</span></span>
-                  </span>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Get notified when ready</span>
-                </label>
-                <input
-                  type="tel"
-                  placeholder="(555) 000-0000"
-                  value={walkInPhone}
-                  onChange={(e) => setWalkInPhone(formatPhoneNumber(e.target.value))}
-                  className="futuristic-text-input"
-                />
-              </div>
-
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <button
-                  type="button"
-                  onClick={() => setShowWalkInModal(false)}
-                  className="modal-cancel-btn"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="modal-submit-btn"
-                >
-                  <span>Join Line Now</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                type="button"
+                onClick={() => setShowWalkInModal(false)}
+                style={{
+                  flex: 1,
+                  padding: '14px',
+                  background: 'var(--surface-pill, #27272A)',
+                  border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
+                  color: 'var(--text-secondary)',
+                  borderRadius: '16px',
+                  fontSize: '0.95rem',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                style={{
+                  flex: 2,
+                  padding: '14px',
+                  background: 'linear-gradient(135deg, var(--accent-primary, #F59E0B) 0%, var(--accent-primary-hover, #D97706) 100%)',
+                  color: '#000000',
+                  border: 'none',
+                  borderRadius: '16px',
+                  fontSize: '1.02rem',
+                  fontWeight: 850,
+                  cursor: 'pointer',
+                  boxShadow: '0 8px 20px rgba(245, 158, 11, 0.35)'
+                }}
+              >
+                <span>Join Line Now</span>
+              </button>
+            </div>
+          </form>
+        </ModalOverlay>
       )}
     </div>
   );

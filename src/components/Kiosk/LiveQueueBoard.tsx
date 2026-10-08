@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { 
   ArrowLeft, 
-  Flame, 
   Users, 
   Scissors, 
   Timer, 
   Sparkles,
   Phone
 } from 'lucide-react';
+import { WalkingLegsIcon } from '../Shared/WalkingLegsIcon';
+import { ModalOverlay } from '../Shared/ModalOverlay';
 import type { Barber, CheckInRecord, ShopConfig } from '../../types';
 
 interface LiveQueueBoardProps {
@@ -137,7 +138,7 @@ export const LiveQueueBoard: React.FC<LiveQueueBoardProps> = ({
             transition: 'transform 0.2s ease'
           }}
         >
-          <Flame size={18} />
+          <WalkingLegsIcon size={18} strokeWidth={2.2} />
           <span>Join the Line Now</span>
         </button>
       </div>
@@ -339,7 +340,7 @@ export const LiveQueueBoard: React.FC<LiveQueueBoardProps> = ({
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
             <h3 style={{ fontSize: '1.1rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Flame size={18} style={{ color: '#F59E0B' }} />
+              <WalkingLegsIcon size={18} strokeWidth={2.2} style={{ color: '#F59E0B' }} />
               <span>Up Next in Line ({waitingQueue.length})</span>
             </h3>
             <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
@@ -459,169 +460,148 @@ export const LiveQueueBoard: React.FC<LiveQueueBoardProps> = ({
         </div>
       </div>
 
-      {/* Modal: Quick 10-Second Join Queue Form */}
+      {/* ================= MODAL: JOIN WALK-IN QUEUE (100% CENTERED VIA MODALOVERLAY) ================= */}
       {isJoinModalOpen && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.85)',
-          backdropFilter: 'blur(8px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 110,
-          padding: '16px'
-        }}>
-          <div style={{
-            width: '100%',
-            maxWidth: '460px',
-            background: 'var(--surface-card, #18181B)',
-            border: '1px solid var(--border-subtle, rgba(255,255,255,0.2))',
-            borderRadius: '28px',
-            padding: '28px 24px',
-            boxShadow: 'var(--shadow-lg)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ padding: '8px', background: 'rgba(245, 158, 11, 0.15)', color: '#F59E0B', borderRadius: '12px' }}>
-                  <Flame size={22} />
-                </div>
-                <div>
-                  <h3 style={{ fontSize: '1.25rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0 }}>
-                    Join the Walk-In Line
-                  </h3>
-                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '2px 0 0' }}>
-                    You'll be added as #{waitingQueue.length + 1} in line
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsJoinModalOpen(false)}
-                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '20px', cursor: 'pointer' }}
-              >
-                ✕
-              </button>
+        <ModalOverlay onClose={() => setIsJoinModalOpen(false)} maxWidth={460}>
+          <button
+            onClick={() => setIsJoinModalOpen(false)}
+            style={{ position: 'absolute', top: 18, right: 18, background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '20px', cursor: 'pointer' }}
+          >
+            ✕
+          </button>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
+            <div style={{ width: 44, height: 44, background: 'rgba(245, 158, 11, 0.15)', color: '#F59E0B', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <WalkingLegsIcon size={24} strokeWidth={2.2} />
+            </div>
+            <div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0 }}>
+                Join the Walk-In Line
+              </h3>
+              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '2px 0 0' }}>
+                You'll be added as #{waitingQueue.length + 1} in line
+              </p>
+            </div>
+          </div>
+
+          <form onSubmit={handleFormSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                Your First Name *
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="e.g. Jordan"
+                value={clientName}
+                onChange={(e) => setClientName(e.target.value)}
+                autoFocus
+                style={{
+                  width: '100%',
+                  padding: '14px 16px',
+                  background: 'var(--surface-pill, #27272A)',
+                  border: '1px solid var(--border-subtle, rgba(255,255,255,0.15))',
+                  borderRadius: '14px',
+                  color: 'var(--text-primary)',
+                  fontSize: '16px',
+                  fontWeight: 600,
+                  boxSizing: 'border-box'
+                }}
+              />
             </div>
 
-            <form onSubmit={handleFormSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                  Your First Name *
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)', margin: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <Phone size={13} />
+                  <span>Phone Number (Optional)</span>
                 </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Jordan"
-                  value={clientName}
-                  onChange={(e) => setClientName(e.target.value)}
-                  autoFocus
-                  style={{
-                    width: '100%',
-                    padding: '14px 16px',
-                    background: 'var(--surface-pill, #27272A)',
-                    border: '1px solid var(--border-subtle, rgba(255,255,255,0.15))',
-                    borderRadius: '14px',
-                    color: 'var(--text-primary)',
-                    fontSize: '16px',
-                    fontWeight: 600
-                  }}
-                />
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Get notified when ready</span>
               </div>
+              <input
+                type="tel"
+                placeholder="(555) 000-0000"
+                value={clientPhone}
+                onChange={(e) => setClientPhone(formatPhoneNumber(e.target.value))}
+                style={{
+                  width: '100%',
+                  padding: '14px 16px',
+                  background: 'var(--surface-pill, #27272A)',
+                  border: '1px solid var(--border-subtle, rgba(255,255,255,0.15))',
+                  borderRadius: '14px',
+                  color: 'var(--text-primary)',
+                  fontSize: '16px',
+                  fontWeight: 600,
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
 
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)', margin: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <Phone size={13} />
-                    <span>Phone Number (Optional)</span>
-                  </label>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Get notified when ready</span>
-                </div>
-                <input
-                  type="tel"
-                  placeholder="(555) 000-0000"
-                  value={clientPhone}
-                  onChange={(e) => setClientPhone(formatPhoneNumber(e.target.value))}
-                  style={{
-                    width: '100%',
-                    padding: '14px 16px',
-                    background: 'var(--surface-pill, #27272A)',
-                    border: '1px solid var(--border-subtle, rgba(255,255,255,0.15))',
-                    borderRadius: '14px',
-                    color: 'var(--text-primary)',
-                    fontSize: '16px',
-                    fontWeight: 600
-                  }}
-                />
-              </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                Barber Preference (Optional)
+              </label>
+              <select
+                value={preferredBarberId}
+                onChange={(e) => setPreferredBarberId(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '12px 14px',
+                  background: 'var(--surface-pill, #27272A)',
+                  border: '1px solid var(--border-subtle, rgba(255,255,255,0.15))',
+                  borderRadius: '14px',
+                  color: 'var(--text-primary)',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  boxSizing: 'border-box'
+                }}
+              >
+                <option value="first_available">First Available (Shortest Wait)</option>
+                {activeBarbers.map(b => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                  Barber Preference (Optional)
-                </label>
-                <select
-                  value={preferredBarberId}
-                  onChange={(e) => setPreferredBarberId(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '12px 14px',
-                    background: 'var(--surface-pill, #27272A)',
-                    border: '1px solid var(--border-subtle, rgba(255,255,255,0.15))',
-                    borderRadius: '14px',
-                    color: 'var(--text-primary)',
-                    fontSize: '14px',
-                    fontWeight: 600
-                  }}
-                >
-                  <option value="first_available">First Available (Shortest Wait)</option>
-                  {activeBarbers.map(b => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
-                <button
-                  type="button"
-                  onClick={() => setIsJoinModalOpen(false)}
-                  style={{
-                    flex: 1,
-                    padding: '14px',
-                    background: 'var(--surface-pill, #27272A)',
-                    border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
-                    color: 'var(--text-secondary)',
-                    borderRadius: '14px',
-                    fontSize: '14px',
-                    fontWeight: 700,
-                    cursor: 'pointer'
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  style={{
-                    flex: 2,
-                    padding: '14px',
-                    background: 'linear-gradient(135deg, var(--accent-primary, #F59E0B) 0%, var(--accent-primary-hover, #D97706) 100%)',
-                    color: '#000',
-                    borderRadius: '14px',
-                    fontSize: '15px',
-                    fontWeight: 800,
-                    cursor: 'pointer',
-                    boxShadow: '0 8px 20px rgba(245, 158, 11, 0.3)'
-                  }}
-                >
-                  Confirm & Join Line
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+              <button
+                type="button"
+                onClick={() => setIsJoinModalOpen(false)}
+                style={{
+                  flex: 1,
+                  padding: '14px',
+                  background: 'var(--surface-pill, #27272A)',
+                  border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
+                  color: 'var(--text-secondary)',
+                  borderRadius: '14px',
+                  fontSize: '14px',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                style={{
+                  flex: 2,
+                  padding: '14px',
+                  background: 'linear-gradient(135deg, var(--accent-primary, #F59E0B) 0%, var(--accent-primary-hover, #D97706) 100%)',
+                  color: '#000',
+                  borderRadius: '14px',
+                  fontSize: '15px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  boxShadow: '0 8px 20px rgba(245, 158, 11, 0.3)'
+                }}
+              >
+                Confirm & Join Line
+              </button>
+            </div>
+          </form>
+        </ModalOverlay>
       )}
     </div>
   );

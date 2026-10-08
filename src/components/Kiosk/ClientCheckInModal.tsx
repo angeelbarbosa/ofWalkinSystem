@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { X, Check, User, Clock, Keyboard as KeyboardIcon, Flame, AlertCircle, Phone } from 'lucide-react';
+import { X, Check, User, Clock, Keyboard as KeyboardIcon, AlertCircle, Phone } from 'lucide-react';
+import { WalkingLegsIcon } from '../Shared/WalkingLegsIcon';
 import type { Barber } from '../../types';
 import { OnScreenKeyboard } from '../Shared/OnScreenKeyboard';
 import { IosTimePicker, getCurrentFormattedTime } from '../Shared/IosTimePicker';
@@ -77,7 +78,7 @@ export const ClientCheckInModal: React.FC<ClientCheckInModalProps> = ({
             }}
           >
             {checkInType === 'walkin' ? (
-              <Flame size={28} strokeWidth={2.2} />
+              <WalkingLegsIcon size={28} strokeWidth={2.2} />
             ) : (
               <User size={28} strokeWidth={2.2} />
             )}

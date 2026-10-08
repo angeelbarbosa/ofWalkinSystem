@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle, Armchair, Check, Flame, Scissors } from 'lucide-react';
+import { CheckCircle, Armchair, Check, Scissors } from 'lucide-react';
+import { WalkingLegsIcon } from '../Shared/WalkingLegsIcon';
 import confetti from 'canvas-confetti';
 import type { CheckInRecord, ShopConfig } from '../../types';
 
@@ -100,7 +101,7 @@ export const ConfirmationScreen: React.FC<ConfirmationScreenProps> = ({ record, 
         marginBottom: '24px',
         border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))'
       }}>
-        {isWalkIn ? <Flame size={16} style={{ color: '#F59E0B' }} /> : <Scissors size={16} style={{ color: 'var(--accent-primary)' }} />}
+        {isWalkIn ? <WalkingLegsIcon size={16} color="#F59E0B" /> : <Scissors size={16} style={{ color: 'var(--accent-primary)' }} />}
         <span>{isWalkIn ? 'Walk-In Spot Reserved' : `Appointment Slot: ${record.appointmentTime || 'Scheduled'}`}</span>
       </div>
 
