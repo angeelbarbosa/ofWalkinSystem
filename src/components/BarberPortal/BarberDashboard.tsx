@@ -255,16 +255,18 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
     setWalkInToClaim(walkin);
   };
 
-  // Confirm Claim Walk-In Handler
-  const handleConfirmClaim = async (targetStatus: CheckInRecord['status'] = 'waiting') => {
+  // Confirm Claim Walk-In Handler (Unified 1-Tap: Claims walk-in, sets in chair, and directs to SMS)
+  const handleConfirmClaim = async (targetStatus: CheckInRecord['status'] = 'in_chair') => {
     if (!walkInToClaim) return;
     const targetId = walkInToClaim.id;
+    const targetPhone = walkInToClaim.clientPhone;
+    const targetName = walkInToClaim.clientName;
     setWalkInToClaim(null);
 
     // Hard block if chair is occupied
     if (isChairOccupied) {
       setChairOccupiedWarning({
-        attemptedClientName: walkInToClaim.clientName,
+        attemptedClientName: targetName,
         actionType: 'take_walkin'
       });
       return;
@@ -275,6 +277,11 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
     } else {
       storage.claimCheckIn(targetId, assignedBarber.id, assignedBarber.name, targetStatus);
       onUpdateStatus(targetId, targetStatus);
+    }
+
+    // Direct 1-tap seamless SMS trigger
+    if (targetPhone) {
+      window.location.href = getSmsUrl(targetPhone, targetName);
     }
   };
 
@@ -1204,69 +1211,17 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
 
           {/* Action Choices */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {/* Button 1 (Top): Send Text to Client */}
-            {walkInToClaim.clientPhone ? (
-              <a
-                href={getSmsUrl(walkInToClaim.clientPhone, walkInToClaim.clientName)}
-                style={{
-                  width: '100%',
-                  padding: '13px',
-                  borderRadius: 16,
-                  background: 'var(--surface-pill, #27272A)',
-                  color: 'var(--text-primary)',
-                  border: '1px solid var(--border-subtle, rgba(255,255,255,0.15))',
-                  fontSize: '0.92rem',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
-                  textDecoration: 'none',
-                  boxSizing: 'border-box',
-                  transition: 'all 0.15s ease'
-                }}
-              >
-                <MessageSquare size={17} style={{ color: 'var(--accent-primary)' }} />
-                <span>Send Text to Client</span>
-              </a>
-            ) : (
-              <button
-                type="button"
-                onClick={() => alert('Client did not provide a phone number at check-in.')}
-                style={{
-                  width: '100%',
-                  padding: '13px',
-                  borderRadius: 16,
-                  background: 'var(--surface-pill, #27272A)',
-                  color: 'var(--text-muted)',
-                  border: '1px solid var(--border-subtle, rgba(255,255,255,0.08))',
-                  fontSize: '0.92rem',
-                  fontWeight: 800,
-                  cursor: 'not-allowed',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
-                  boxSizing: 'border-box'
-                }}
-              >
-                <MessageSquare size={17} style={{ color: 'var(--text-muted)' }} />
-                <span>Text Client (No Phone Provided)</span>
-              </button>
-            )}
-
-            {/* Button 2: Seat in Chair Now (Start Cut) */}
+            {/* Unified Combined 1-Tap Action Button */}
             <button
               onClick={() => handleConfirmClaim('in_chair')}
               style={{
                 width: '100%',
-                padding: '14px',
+                padding: '15px',
                 borderRadius: 16,
                 background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
                 color: '#000000',
                 border: 'none',
-                fontSize: '0.96rem',
+                fontSize: '0.98rem',
                 fontWeight: 900,
                 cursor: 'pointer',
                 display: 'flex',
@@ -1278,7 +1233,9 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
               }}
             >
               <Scissors size={18} />
-              <span>Seat in Chair Now (Start Cut)</span>
+              <span>
+                {walkInToClaim.clientPhone ? 'Seat in Chair & Text Client' : 'Seat in Chair Now (Start Cut)'}
+              </span>
             </button>
 
             {/* Cancel Button */}
