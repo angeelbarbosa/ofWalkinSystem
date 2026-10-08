@@ -31,6 +31,7 @@ interface BarberDashboardProps {
   config: ShopConfig;
   onUpdateStatus: (id: string, status: CheckInRecord['status']) => void;
   onClaimWalkIn?: (checkInId: string, barber: Barber, newStatus?: CheckInRecord['status']) => Promise<void> | void;
+  onClearCompleted?: () => Promise<void> | void;
   onPayRent?: (barber: Barber, method: RentPaymentRecord['paymentMethod'], feeCovered: boolean) => Promise<RentPaymentRecord>;
   onSaveBarbers?: (barbers: Barber[]) => void;
   onLockStation?: () => void;
@@ -44,6 +45,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
   config: _config,
   onUpdateStatus,
   onClaimWalkIn,
+  onClearCompleted,
   onPayRent,
   onSaveBarbers,
   onLockStation
@@ -135,8 +137,23 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
   // Helper to determine if a check-in belongs to the general shop walk-in queue
   const isGeneralWalkIn = (record: CheckInRecord) => {
     if (record.type === 'shopping') return false;
-    if (record.status === 'in_chair') return false;
-    if (record.barberId && record.barberId !== 'first_available') return false;
+    const status = (record.status || 'waiting').toLowerCase();
+    if (status === 'in_chair' || status === 'completed') return false;
+
+    // If assigned to a specific barber ID
+    if (record.barberId && record.barberId !== 'first_available') {
+      return false;
+    }
+
+    // If assigned to a known barber name
+    if (record.barberName && 
+        record.barberName !== 'First Available' && 
+        record.barberName !== 'Front Register' && 
+        !record.barberName.toLowerCase().includes('first available')) {
+      const isKnown = barbers.some(b => b.name.toLowerCase() === record.barberName!.toLowerCase());
+      if (isKnown) return false;
+    }
+
     return (
       !record.barberId ||
       record.barberId === 'first_available' ||
@@ -146,32 +163,46 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
     );
   };
 
-  // Sort helper: Longest waiting at the top (#1 / Next Up)
+  // Safe sort helper: Longest waiting at the top (#1 / Next Up)
   const sortByLongestWait = (a: CheckInRecord, b: CheckInRecord) => {
-    return new Date(a.checkInTime).getTime() - new Date(b.checkInTime).getTime();
+    const timeA = a.checkInTime ? new Date(a.checkInTime).getTime() : 0;
+    const timeB = b.checkInTime ? new Date(b.checkInTime).getTime() : 0;
+    return timeA - timeB;
   };
 
   // General Shop Walk-Ins (Unassigned / First Available in lobby for all barbers)
   const unassignedWalkIns = checkIns
-    .filter(record => (record.status === 'waiting' || record.status === 'called') && isGeneralWalkIn(record))
+    .filter(record => {
+      const status = (record.status || 'waiting').toLowerCase();
+      return (status === 'waiting' || status === 'called') && isGeneralWalkIn(record);
+    })
     .sort(sortByLongestWait);
 
   // Filter checkins assigned specifically to THIS barber (appointments or claimed walk-ins)
   const filteredCheckIns = checkIns.filter(record => {
+    if (record.type === 'shopping') return false;
     if (isGeneralWalkIn(record)) return false;
-    const target = assignedBarber.name.toLowerCase();
+
+    const targetId = (assignedBarber.id || '').trim().toLowerCase();
+    const targetName = (assignedBarber.name || '').trim().toLowerCase();
+    const recordBarberId = (record.barberId || '').trim().toLowerCase();
+    const recordBarberName = (record.barberName || '').trim().toLowerCase();
+
     return (
-      record.barberId === assignedBarber.id ||
-      (record.barberName && record.barberName.toLowerCase() === target)
+      (recordBarberId.length > 0 && (recordBarberId === targetId || recordBarberId === assignedBarber.id)) ||
+      (recordBarberName.length > 0 && (recordBarberName === targetName || recordBarberName === assignedBarber.name.toLowerCase()))
     );
   });
 
   const waitingList = filteredCheckIns
-    .filter(r => r.status === 'waiting' || r.status === 'called')
+    .filter(r => {
+      const status = (r.status || 'waiting').toLowerCase();
+      return status === 'waiting' || status === 'called';
+    })
     .sort(sortByLongestWait);
 
-  const inChairList = filteredCheckIns.filter(r => r.status === 'in_chair');
-  const completedList = filteredCheckIns.filter(r => r.status === 'completed');
+  const inChairList = filteredCheckIns.filter(r => (r.status || '').toLowerCase() === 'in_chair');
+  const completedList = filteredCheckIns.filter(r => (r.status || '').toLowerCase() === 'completed');
 
   const isChairOccupied = inChairList.length > 0;
   const activeInChairClient = inChairList[0] as CheckInRecord | undefined;
@@ -243,7 +274,11 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
 
   const handleClearHistory = () => {
     if (confirm(`Clear completed cuts from ${barberDisplayName}'s history?`)) {
-      storage.clearCompletedCheckIns();
+      if (onClearCompleted) {
+        onClearCompleted();
+      } else {
+        storage.clearCompletedCheckIns();
+      }
     }
   };
 

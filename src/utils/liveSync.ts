@@ -75,8 +75,8 @@ export function useLiveSystem() {
               barberId: c.barberId,
               barberName: c.barberName,
               appointmentTime: c.appointmentTime,
-              checkInTime: c.checkInTime,
-              status: c.status as any,
+              checkInTime: c.checkInTime || new Date().toISOString(),
+              status: (c.status || 'waiting') as any,
               notes: c.notes
             }));
 
@@ -100,7 +100,18 @@ export function useLiveSystem() {
               });
             }
 
-            setCheckIns(mapped);
+            // Merge cloud records while preserving any fresh local optimistic records
+            setCheckIns(prev => {
+              const cloudIds = new Set(mapped.map(m => m.id));
+              const now = Date.now();
+              const pendingLocal = prev.filter(p => 
+                p.id.startsWith('chk-') && 
+                !cloudIds.has(p.id) &&
+                (now - new Date(p.checkInTime || now).getTime() < 15000)
+              );
+              const combined = [...pendingLocal, ...mapped];
+              return combined;
+            });
             storage.saveCheckIns(mapped);
           }
         });
@@ -308,6 +319,32 @@ export function useLiveSystem() {
       }
     });
 
+    // 5. Reconnect & Refresh on Mobile Screen Unlock / Tab Switch Focus
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refreshActiveShopData();
+      }
+    };
+    const handleWindowFocus = () => {
+      refreshActiveShopData();
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleWindowFocus);
+
+    // 6. Periodic safety heartbeat to keep state synchronized across backgrounded devices
+    const heartbeatInterval = setInterval(() => {
+      const current = storage.getCheckIns();
+      if (current && current.length > 0) {
+        setCheckIns(prev => {
+          // Only update if array serialized contents differ
+          if (JSON.stringify(prev) !== JSON.stringify(current)) {
+            return current;
+          }
+          return prev;
+        });
+      }
+    }, 5000);
+
     return () => {
       window.removeEventListener('barbers_updated', handleBarbersUpdate);
       window.removeEventListener('config_updated', handleConfigUpdate);
@@ -317,6 +354,9 @@ export function useLiveSystem() {
       window.removeEventListener('shop_switched', handleShopSwitched);
       window.removeEventListener('support_messages_updated', handleSupportUpdate);
       window.removeEventListener('storage', handleStorageEvent);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleWindowFocus);
+      clearInterval(heartbeatInterval);
       if (crossTabChannel) {
         crossTabChannel.close();
       }
@@ -389,59 +429,51 @@ export function useLiveSystem() {
     appointmentTime: string = 'Walk-In',
     type: CheckInRecord['type'] = 'appointment'
   ) => {
-    const isWalkIn = type === 'walkin' || !selectedBarber;
-    const barberId = selectedBarber?.id || (isWalkIn ? 'first_available' : undefined);
-    const barberName = selectedBarber?.name || (isWalkIn ? 'First Available' : undefined);
+    const isFirstAvailable = !selectedBarber || selectedBarber.id === 'first_available';
+    const isWalkIn = type === 'walkin' || isFirstAvailable;
+    const barberId = isFirstAvailable ? 'first_available' : selectedBarber?.id;
+    const barberName = isFirstAvailable ? 'First Available' : selectedBarber?.name;
+    const resolvedType = isWalkIn ? 'walkin' : type;
 
-    // Push to Convex Cloud if active
+    // 1. Immediately create local record in storage and broadcast
+    const localRecord = storage.addCheckIn({
+      clientName,
+      type: resolvedType,
+      barberId,
+      barberName,
+      appointmentTime
+    });
+
+    // 2. Immediately update local React state for instantaneous UI response (0ms lag)
+    setCheckIns(prev => [localRecord, ...prev.filter(c => c.id !== localRecord.id)]);
+
+    // 3. Push to Convex Cloud if active
     if (convexClient) {
       try {
-        await convexClient.mutation(api.checkins.add, {
+        const cloudId = await convexClient.mutation(api.checkins.add, {
           clientName,
-          type,
+          type: resolvedType,
           barberId,
           barberName,
           appointmentTime
         });
-      } catch {
-        storage.addCheckIn({
-          clientName,
-          type,
-          barberId,
-          barberName,
-          appointmentTime
-        });
+        if (cloudId) {
+          setCheckIns(prev => prev.map(c => c.id === localRecord.id ? { ...c, id: cloudId } : c));
+        }
+      } catch (err) {
+        console.warn('Convex add check-in sync error:', err);
       }
-    } else {
-      storage.addCheckIn({
-        clientName,
-        type,
-        barberId,
-        barberName,
-        appointmentTime
-      });
     }
 
-    // Trigger phone buzz & push
+    // 4. Trigger phone buzz & push
     notificationManager.sendBarberArrivalAlert(
       clientName, 
-      selectedBarber ? selectedBarber.name : 'All Barbers (Walk-In)', 
+      isFirstAvailable ? 'All Barbers (Walk-In)' : (selectedBarber ? selectedBarber.name : 'All Barbers (Walk-In)'), 
       appointmentTime, 
       barberId
     );
 
-    const newRecord: CheckInRecord = {
-      id: 'chk-' + Date.now(),
-      clientName,
-      type,
-      barberId,
-      barberName,
-      appointmentTime,
-      checkInTime: new Date().toISOString(),
-      status: 'waiting'
-    };
-
-    return newRecord;
+    return localRecord;
   };
 
   const updateStatus = async (
@@ -649,6 +681,18 @@ export function useLiveSystem() {
     syncToConvexCloud(updatedFleet);
   }, []);
 
+  const clearCompletedCheckIns = async () => {
+    storage.clearCompletedCheckIns();
+    setCheckIns(prev => prev.filter(r => r.status !== 'completed'));
+    if (convexClient) {
+      try {
+        await convexClient.mutation(api.checkins.clearCompleted, {});
+      } catch (e) {
+        console.warn('Convex clearCompleted error:', e);
+      }
+    }
+  };
+
   return {
     activeShopSlug,
     activeShop,
@@ -668,6 +712,7 @@ export function useLiveSystem() {
     addCheckIn,
     updateStatus,
     claimCheckIn,
+    clearCompletedCheckIns,
     saveBarbers,
     saveConfig,
     payBoothRent,

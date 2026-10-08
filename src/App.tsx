@@ -96,6 +96,7 @@ export function App() {
     addCheckIn,
     updateStatus,
     claimCheckIn,
+    clearCompletedCheckIns,
     saveBarbers,
     saveConfig,
     payBoothRent,
@@ -169,7 +170,16 @@ export function App() {
   ) => {
     if (!selectedBarber) return;
 
-    const record = await addCheckIn(clientName, selectedBarber, appointmentTime, checkInType);
+    const isFirstAvailable = selectedBarber.id === 'first_available';
+    const finalType = isFirstAvailable ? 'walkin' : checkInType;
+    const finalTime = isFirstAvailable ? 'Walk-In' : appointmentTime;
+
+    const record = await addCheckIn(
+      clientName, 
+      isFirstAvailable ? undefined : selectedBarber, 
+      finalTime, 
+      finalType
+    );
 
     setLatestConfirmedRecord(record);
     setIsCheckInModalOpen(false);
@@ -559,9 +569,22 @@ export function App() {
                       setIsCheckInModalOpen(true);
                     }}
                     onSelectFirstAvailable={() => {
-                      const working = barbers.filter(b => b.isWorking);
-                      const freeBarber = working.find(b => !checkIns.some(c => (c.barberId === b.id || c.barberName === b.name) && c.status === 'in_chair')) || working[0] || barbers[0];
-                      setSelectedBarber(freeBarber);
+                      const firstAvailableVirtual: Barber = {
+                        id: 'first_available',
+                        name: 'First Available',
+                        specialty: 'Next Open Chair',
+                        avatar: '',
+                        avatarColor: '#F59E0B',
+                        phone: '',
+                        stationNumber: 0,
+                        isWorking: true,
+                        weeklyRent: 0,
+                        rentCycle: 'weekly',
+                        rentDueDay: 'Monday',
+                        autoPayEnabled: false,
+                        passcode: '1111'
+                      };
+                      setSelectedBarber(firstAvailableVirtual);
                       setIsCheckInModalOpen(true);
                     }}
                     onBack={handleResetKiosk}
@@ -614,6 +637,7 @@ export function App() {
                     config={config}
                     onUpdateStatus={updateStatus}
                     onClaimWalkIn={claimCheckIn}
+                    onClearCompleted={clearCompletedCheckIns}
                     onPayRent={payBoothRent}
                     onSaveBarbers={(updated) => {
                       saveBarbers(updated);
