@@ -437,7 +437,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                     width: 6,
                     height: 6,
                     borderRadius: '50%',
-                    background: permission === 'granted' ? 'var(--pastel-green)' : 'var(--pastel-amber)',
+                    background: permission === 'granted' ? 'var(--pastel-green)' : 'var(--text-muted, #71717A)',
                     display: 'inline-block'
                   }}
                 />
@@ -508,17 +508,19 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                 justifyContent: 'center',
                 gap: 5,
                 padding: '10px',
-                background: 'var(--accent-primary, #F59E0B)',
-                color: '#000000',
-                border: 'none',
+                background: 'var(--surface-pill, #27272A)',
+                color: 'var(--text-secondary, #A1A1AA)',
+                border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
                 borderRadius: 14,
                 fontSize: '0.78rem',
-                fontWeight: 800,
-                cursor: 'pointer'
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
               }}
+              title="Click to enable live phone alerts & notifications"
             >
-              <Bell size={14} />
-              <span>Enable Alerts</span>
+              <Bell size={14} style={{ color: 'var(--text-muted, #71717A)' }} />
+              <span>Live Alerts</span>
             </button>
           ) : (
             <button
@@ -529,18 +531,18 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                 justifyContent: 'center',
                 gap: 5,
                 padding: '10px',
-                background: tested ? 'var(--pastel-green-bg)' : 'var(--surface-pill, #27272A)',
-                color: tested ? 'var(--pastel-green)' : 'var(--text-primary)',
-                border: `1px solid ${tested ? 'var(--pastel-green-border)' : 'var(--border-subtle, rgba(255,255,255,0.1))'}`,
+                background: 'var(--pastel-green-bg, rgba(16, 185, 129, 0.15))',
+                color: 'var(--pastel-green, #10B981)',
+                border: '1px solid var(--pastel-green-border, rgba(16, 185, 129, 0.3))',
                 borderRadius: 14,
                 fontSize: '0.78rem',
                 fontWeight: 750,
                 cursor: 'pointer',
                 transition: 'all 0.2s ease'
               }}
-              title="Test audio alert chime and phone vibration"
+              title="Live alerts are active! Click to test sound & vibration"
             >
-              <Bell size={14} style={{ color: tested ? 'var(--pastel-green)' : 'var(--accent-primary)' }} />
+              <Bell size={14} style={{ color: 'var(--pastel-green, #10B981)' }} />
               <span>{tested ? 'Alert Synced!' : 'Live Alerts'}</span>
             </button>
           )}

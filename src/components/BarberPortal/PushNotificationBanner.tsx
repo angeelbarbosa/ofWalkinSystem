@@ -131,21 +131,43 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
             {permission !== 'granted' ? (
               <button
                 onClick={handleEnablePush}
-                className="choice-card-action-btn"
-                style={{ padding: '8px 16px', fontSize: '0.85rem', width: 'auto' }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '8px 14px',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  background: 'var(--surface-pill, #27272A)',
+                  color: 'var(--text-secondary, #A1A1AA)',
+                  border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
+                  borderRadius: 12,
+                  cursor: 'pointer'
+                }}
               >
-                <Smartphone size={15} />
-                <span>Enable Alerts</span>
+                <Smartphone size={14} style={{ color: 'var(--text-muted, #71717A)' }} />
+                <span>Live Alerts</span>
               </button>
             ) : (
               <button
                 onClick={handleTestAlert}
-                className="back-pill-btn"
-                style={{ background: '#F4F4F5', color: '#09090B', padding: '8px 14px', fontSize: '0.82rem' }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '8px 14px',
+                  fontSize: '0.82rem',
+                  fontWeight: 750,
+                  background: 'var(--pastel-green-bg, rgba(16, 185, 129, 0.15))',
+                  color: 'var(--pastel-green, #10B981)',
+                  border: '1px solid var(--pastel-green-border, rgba(16, 185, 129, 0.3))',
+                  borderRadius: 12,
+                  cursor: 'pointer'
+                }}
                 title="Send a quick test notification to this phone"
               >
-                <Vibrate size={14} />
-                <span>{tested ? 'Buzzed!' : 'Test Buzz'}</span>
+                <Vibrate size={14} style={{ color: 'var(--pastel-green, #10B981)' }} />
+                <span>{tested ? 'Buzzed!' : 'Live Alerts'}</span>
               </button>
             )}
 
