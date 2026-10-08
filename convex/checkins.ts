@@ -47,10 +47,17 @@ export const add = mutation({
 export const updateStatus = mutation({
   args: {
     id: v.id("checkIns"),
-    status: v.string()
+    status: v.string(),
+    barberId: v.optional(v.string()),
+    barberName: v.optional(v.string()),
+    notes: v.optional(v.string())
   },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.id, { status: args.status });
+    const patch: any = { status: args.status };
+    if (args.barberId !== undefined) patch.barberId = args.barberId;
+    if (args.barberName !== undefined) patch.barberName = args.barberName;
+    if (args.notes !== undefined) patch.notes = args.notes;
+    await ctx.db.patch(args.id, patch);
   }
 });
 

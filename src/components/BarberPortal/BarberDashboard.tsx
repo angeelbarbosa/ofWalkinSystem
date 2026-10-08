@@ -135,6 +135,8 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
   // Helper to determine if a check-in belongs to the general shop walk-in queue
   const isGeneralWalkIn = (record: CheckInRecord) => {
     if (record.type === 'shopping') return false;
+    if (record.status === 'in_chair') return false;
+    if (record.barberId && record.barberId !== 'first_available') return false;
     return (
       !record.barberId ||
       record.barberId === 'first_available' ||
