@@ -55,6 +55,23 @@ export function useLiveSystem() {
     setShops(storage.getShops());
   }, []);
 
+  // Helper: Sync multi-tenant state & themes to Convex Cloud
+  const syncToConvexCloud = async (customShops?: Shop[]) => {
+    if (!convexClient) return;
+    try {
+      const all = customShops || storage.getShops();
+      const active = storage.getActiveShop();
+      await convexClient.mutation(api.config.update, {
+        shopsJson: JSON.stringify(all),
+        themeId: active?.themeId,
+        logoUrl: active?.logoUrl,
+        shopName: active?.name || active?.config?.shopName
+      });
+    } catch (err) {
+      console.warn('Convex cloud sync error:', err);
+    }
+  };
+
   useEffect(() => {
     // Initial sync
     refreshActiveShopData();
@@ -63,12 +80,17 @@ export function useLiveSystem() {
     let unsubscribeBarbers = () => {};
     let unsubscribeConfig = () => {};
     let applyCloudCheckIns = (_cloudCheckIns: any) => {};
+    let applyCloudConfig = (_cloudConfig: any) => {};
 
     // 1. If Convex Client is available, set up live cloud watch queries and instant initial fetch
     if (convexClient) {
       try {
-        // Processor for cloud check-ins
+        // Processor for cloud check-ins (Only for 'of' shop; other shops sync via shopsJson)
         applyCloudCheckIns = (cloudCheckIns: any) => {
+          const activeSlug = storage.getActiveShopSlug();
+          if (activeSlug !== 'of') {
+            return;
+          }
           if (Array.isArray(cloudCheckIns)) {
             const mapped: CheckInRecord[] = cloudCheckIns.map((c: any) => ({
               id: c._id || c.id,
@@ -119,8 +141,12 @@ export function useLiveSystem() {
           }
         };
 
-        // Processor for cloud barbers
+        // Processor for cloud barbers (Only for 'of' shop; other shops sync via shopsJson)
         const applyCloudBarbers = (cloudBarbers: any) => {
+          const activeSlug = storage.getActiveShopSlug();
+          if (activeSlug !== 'of') {
+            return;
+          }
           if (Array.isArray(cloudBarbers) && cloudBarbers.length > 0) {
             const mapped: Barber[] = cloudBarbers.map((b: any) => ({
               id: b._id || b.id,
@@ -146,8 +172,8 @@ export function useLiveSystem() {
           }
         };
 
-        // Processor for cloud config
-        const applyCloudConfig = (cloudConfig: any) => {
+        // Processor for cloud config & fleet state
+        applyCloudConfig = (cloudConfig: any) => {
           if (cloudConfig) {
             const merged = { ...storage.getConfig(), ...cloudConfig };
             setConfig(merged);
@@ -170,6 +196,9 @@ export function useLiveSystem() {
               } catch (e) {
                 console.warn('Convex shopsJson parse error:', e);
               }
+            } else {
+              // Initialize Convex cloud with local fleet
+              syncToConvexCloud(storage.getShops());
             }
 
             // 2. Sync theme across all devices in real-time
@@ -341,14 +370,20 @@ export function useLiveSystem() {
       if (document.visibilityState === 'visible') {
         refreshActiveShopData();
         if (convexClient) {
-          convexClient.query(api.checkins.get, {}).then(applyCloudCheckIns).catch(() => {});
+          convexClient.query(api.config.get, {}).then(applyCloudConfig).catch(() => {});
+          if (storage.getActiveShopSlug() === 'of') {
+            convexClient.query(api.checkins.get, {}).then(applyCloudCheckIns).catch(() => {});
+          }
         }
       }
     };
     const handleWindowFocus = () => {
       refreshActiveShopData();
       if (convexClient) {
-        convexClient.query(api.checkins.get, {}).then(applyCloudCheckIns).catch(() => {});
+        convexClient.query(api.config.get, {}).then(applyCloudConfig).catch(() => {});
+        if (storage.getActiveShopSlug() === 'of') {
+          convexClient.query(api.checkins.get, {}).then(applyCloudCheckIns).catch(() => {});
+        }
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -357,9 +392,8 @@ export function useLiveSystem() {
     // 6. Periodic safety heartbeat to keep state synchronized across backgrounded devices
     const heartbeatInterval = setInterval(() => {
       const current = storage.getCheckIns();
-      if (current && current.length > 0) {
+      if (current) {
         setCheckIns(prev => {
-          // Only update if array serialized contents differ
           if (JSON.stringify(prev) !== JSON.stringify(current)) {
             return current;
           }
@@ -388,23 +422,6 @@ export function useLiveSystem() {
       }
     };
   }, [refreshActiveShopData]);
-
-  // Helper: Sync multi-tenant state & themes to Convex Cloud
-  const syncToConvexCloud = async (customShops?: Shop[]) => {
-    if (!convexClient) return;
-    try {
-      const all = customShops || storage.getShops();
-      const active = storage.getActiveShop();
-      await convexClient.mutation(api.config.update, {
-        shopsJson: JSON.stringify(all),
-        themeId: active?.themeId,
-        logoUrl: active?.logoUrl,
-        shopName: active?.name || active?.config?.shopName
-      });
-    } catch (err) {
-      console.warn('Convex cloud sync error:', err);
-    }
-  };
 
   // Actions: Switch Active Barbershop
   const switchShop = (slug: string) => {
@@ -473,8 +490,13 @@ export function useLiveSystem() {
     // 2. Immediately update local React state for instantaneous UI response (0ms lag)
     setCheckIns(prev => [localRecord, ...prev.filter(c => c.id !== localRecord.id)]);
 
-    // 3. Push to Convex Cloud if active
-    if (convexClient) {
+    // 3. Sync full fleet state to Convex cloud (preserves multi-tenant shops across app close/reopen)
+    const currentFleet = storage.getShops();
+    setShops(currentFleet);
+    syncToConvexCloud(currentFleet);
+
+    // 4. Push to Convex Cloud if active shop is 'of'
+    if (convexClient && storage.getActiveShopSlug() === 'of') {
       try {
         const cloudId = await convexClient.mutation(api.checkins.add, {
           clientName,
@@ -491,7 +513,7 @@ export function useLiveSystem() {
       }
     }
 
-    // 4. Trigger phone buzz & push
+    // 5. Trigger phone buzz & push
     notificationManager.sendBarberArrivalAlert(
       clientName, 
       isFirstAvailable ? 'All Barbers (Walk-In)' : (selectedBarber ? selectedBarber.name : 'All Barbers (Walk-In)'), 
@@ -516,8 +538,13 @@ export function useLiveSystem() {
       c.id === id ? { ...c, status, statusUpdatedAt: new Date().toISOString() } : c
     ));
 
-    // 3. Convex cloud sync
-    if (convexClient && id.length > 20) {
+    // 3. Sync full fleet state to Convex cloud so when app closes/reopens, changes persist!
+    const currentFleet = storage.getShops();
+    setShops(currentFleet);
+    syncToConvexCloud(currentFleet);
+
+    // 4. Convex cloud sync for flat table if active shop is 'of'
+    if (convexClient && id.length > 20 && storage.getActiveShopSlug() === 'of') {
       try {
         const patchArgs: any = {
           id: id as any,
@@ -547,8 +574,13 @@ export function useLiveSystem() {
         : c
     ));
 
-    // 3. Convex cloud sync
-    if (convexClient && checkInId.length > 20) {
+    // 3. Sync full fleet state to Convex cloud
+    const currentFleet = storage.getShops();
+    setShops(currentFleet);
+    syncToConvexCloud(currentFleet);
+
+    // 4. Convex cloud sync if 'of'
+    if (convexClient && checkInId.length > 20 && storage.getActiveShopSlug() === 'of') {
       try {
         await convexClient.mutation(api.checkins.updateStatus, {
           id: checkInId as any,
@@ -566,12 +598,18 @@ export function useLiveSystem() {
   const saveBarbers = async (updated: Barber[]) => {
     storage.saveBarbers(updated);
     setBarbers(updated);
+    const currentFleet = storage.getShops();
+    setShops(currentFleet);
+    syncToConvexCloud(currentFleet);
   };
 
   const saveConfig = async (updated: ShopConfig) => {
     storage.saveConfig(updated);
     setConfig(updated);
-    if (convexClient) {
+    const currentFleet = storage.getShops();
+    setShops(currentFleet);
+    syncToConvexCloud(currentFleet);
+    if (convexClient && storage.getActiveShopSlug() === 'of') {
       try {
         await convexClient.mutation(api.config.update, {
           shopName: updated.shopName,
@@ -615,6 +653,9 @@ export function useLiveSystem() {
     });
 
     setRentRecords(storage.getRentRecords());
+    const currentFleet = storage.getShops();
+    setShops(currentFleet);
+    syncToConvexCloud(currentFleet);
     return newRecord;
   };
 
@@ -641,12 +682,18 @@ export function useLiveSystem() {
     });
 
     setRentRecords(storage.getRentRecords());
+    const currentFleet = storage.getShops();
+    setShops(currentFleet);
+    syncToConvexCloud(currentFleet);
     return newRecord;
   };
 
   const updateRentStatus = (recordId: string, status: RentPaymentRecord['status'], method?: RentPaymentRecord['paymentMethod'], notes?: string) => {
     storage.updateRentRecordStatus(recordId, status, method, notes);
     setRentRecords(storage.getRentRecords());
+    const currentFleet = storage.getShops();
+    setShops(currentFleet);
+    syncToConvexCloud(currentFleet);
   };
 
   const factoryReset = () => {
@@ -710,7 +757,11 @@ export function useLiveSystem() {
   const clearCompletedCheckIns = async () => {
     storage.clearCompletedCheckIns();
     setCheckIns(prev => prev.filter(r => r.status !== 'completed'));
-    if (convexClient) {
+    const currentFleet = storage.getShops();
+    setShops(currentFleet);
+    syncToConvexCloud(currentFleet);
+
+    if (convexClient && storage.getActiveShopSlug() === 'of') {
       try {
         await convexClient.mutation(api.checkins.clearCompleted, {});
       } catch (e) {
