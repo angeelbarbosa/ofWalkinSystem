@@ -9,7 +9,7 @@ interface WalkingLegsIconProps {
 }
 
 /**
- * Outlined Walking Legs & Feet Icon (From knee down walking)
+ * Outlined Full Walking Body Person Icon
  * Matches Lucide / Feather icon design language (crisp vector lines, round caps, 24x24 grid)
  */
 export const WalkingLegsIcon: React.FC<WalkingLegsIconProps> = ({
@@ -33,11 +33,15 @@ export const WalkingLegsIcon: React.FC<WalkingLegsIconProps> = ({
       className={className}
       style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0, ...style }}
     >
-      {/* Front Leg (stepping forward with shoe planted) */}
-      <path d="M11 3L8.5 12L6 18.5L2 20.5H7.5L9.5 18L12 12L14 3" />
-      
-      {/* Back Leg (knee angled back, heel lifted, pushing off toe) */}
-      <path d="M14.5 3L16.5 10.5L18.5 16L22 19L19.5 20.5L17 17L15 11L13 3" />
+      {/* Head */}
+      <circle cx="13.5" cy="4" r="1.8" />
+      {/* Torso & Leading Forward Leg */}
+      <path d="M13 6L12 11.5L8.5 16.5L6 21" />
+      {/* Trailing Back Leg */}
+      <path d="M12 11.5L14.8 16.2L18.5 21" />
+      {/* Swinging Arms */}
+      <path d="M12.5 8.2L9.5 10.8L7 9.8" />
+      <path d="M12.5 8.2L15.5 10.5L18 9.5" />
     </svg>
   );
 };
