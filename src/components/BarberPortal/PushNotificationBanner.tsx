@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Vibrate, Smartphone, RefreshCw, X, ShieldCheck } from 'lucide-react';
+import { Vibrate, RefreshCw, X, ShieldCheck } from 'lucide-react';
 import type { Barber } from '../../types';
 import { notificationManager } from '../../utils/notifications';
 
@@ -15,6 +15,7 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
   onSelectBarberFilter
 }) => {
   const [permission, setPermission] = useState<NotificationPermission>('default');
+  const [alertsActive, setAlertsActive] = useState<boolean>(() => notificationManager.isAlertsEnabled());
   const [isEditingIdentity, setIsEditingIdentity] = useState<boolean>(() => {
     const pref = notificationManager.getMyBarberPreference();
     return !pref || pref === 'all';
@@ -32,12 +33,23 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
   useEffect(() => {
     const status = notificationManager.getPermissionStatus();
     setPermission(status);
-    if (status === 'granted') {
+    if (status === 'granted' && notificationManager.isAlertsEnabled()) {
       const targetId = assignedBarber?.id || selectedBarberId || 'all';
       const targetName = assignedBarber?.name || (selectedBarberId === 'all' ? 'All Barbers' : selectedBarberId);
       notificationManager.requestPermissionAndSubscribe(targetId, targetName);
     }
   }, [assignedBarber, selectedBarberId]);
+
+  useEffect(() => {
+    const handleToggle = (e: Event) => {
+      const customEvent = e as CustomEvent<{ enabled: boolean }>;
+      if (customEvent.detail !== undefined) {
+        setAlertsActive(customEvent.detail.enabled);
+      }
+    };
+    window.addEventListener('barber_alerts_toggle', handleToggle);
+    return () => window.removeEventListener('barber_alerts_toggle', handleToggle);
+  }, []);
 
   const handleSelectDeviceBarber = (barber: Barber | 'all') => {
     const id = barber === 'all' ? 'all' : barber.id;
@@ -46,30 +58,39 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
     onSelectBarberFilter(id);
     setIsEditingIdentity(false);
 
-    if (permission === 'granted') {
+    if (permission === 'granted' && alertsActive) {
       notificationManager.requestPermissionAndSubscribe(id, name);
     }
   };
 
-  const handleEnablePush = async () => {
-    const targetId = assignedBarber?.id || selectedBarberId || 'all';
-    const targetName = assignedBarber?.name || (selectedBarberId === 'all' ? 'All Barbers' : selectedBarberId);
-    const result = await notificationManager.requestPermissionAndSubscribe(targetId, targetName);
-    setPermission(result.success ? 'granted' : 'denied');
-    if (result.success) {
-      const currentBarberName = assignedBarber?.name || 'Your Station';
-      notificationManager.sendBarberArrivalAlert('Test Client', currentBarberName, '2:30 PM', assignedBarber?.id);
-      setTested(true);
+  const handleToggleAlerts = async () => {
+    if (alertsActive) {
+      notificationManager.setAlertsEnabled(false);
+      setAlertsActive(false);
+    } else {
+      const perm = notificationManager.getPermissionStatus();
+      const targetId = assignedBarber?.id || selectedBarberId || 'all';
+      const targetName = assignedBarber?.name || (selectedBarberId === 'all' ? 'All Barbers' : selectedBarberId);
+      if (perm !== 'granted') {
+        const result = await notificationManager.requestPermissionAndSubscribe(targetId, targetName);
+        setPermission(result.success ? 'granted' : 'denied');
+        if (result.success) {
+          notificationManager.setAlertsEnabled(true);
+          setAlertsActive(true);
+          const currentBarberName = assignedBarber?.name || 'Your Station';
+          notificationManager.sendBarberArrivalAlert('Test Client', currentBarberName, '2:30 PM', assignedBarber?.id);
+          setTested(true);
+          setTimeout(() => setTested(false), 2500);
+        }
+      } else {
+        notificationManager.setAlertsEnabled(true);
+        setAlertsActive(true);
+        const currentBarberName = assignedBarber?.name || 'Your Station';
+        notificationManager.sendBarberArrivalAlert('Test Client', currentBarberName, '2:30 PM', assignedBarber?.id);
+        setTested(true);
+        setTimeout(() => setTested(false), 2000);
+      }
     }
-  };
-
-  const handleTestAlert = async () => {
-    const targetId = assignedBarber?.id || selectedBarberId || 'all';
-    const targetName = assignedBarber?.name || (selectedBarberId === 'all' ? 'All Barbers' : selectedBarberId);
-    await notificationManager.requestPermissionAndSubscribe(targetId, targetName);
-    const currentBarberName = assignedBarber?.name || 'Your Station';
-    notificationManager.sendBarberArrivalAlert('Test Client', currentBarberName, '2:30 PM', assignedBarber?.id);
-    setTested(true);
   };
 
   return (
@@ -118,58 +139,43 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
                     width: 7,
                     height: 7,
                     borderRadius: '50%',
-                    background: permission === 'granted' ? '#22C55E' : '#EAB308',
+                    background: alertsActive ? '#22C55E' : '#71717A',
                     display: 'inline-block'
                   }}
                 />
-                <span>{permission === 'granted' ? 'Phone Alerts Active' : 'Tap to enable lockscreen alerts'}</span>
+                <span>{alertsActive ? 'Phone Alerts Active' : 'Alerts Disabled'}</span>
               </div>
             </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {permission !== 'granted' ? (
-              <button
-                onClick={handleEnablePush}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '8px 14px',
-                  fontSize: '0.82rem',
-                  fontWeight: 700,
-                  background: 'var(--surface-pill, #27272A)',
-                  color: 'var(--text-secondary, #A1A1AA)',
-                  border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
-                  borderRadius: 12,
-                  cursor: 'pointer'
-                }}
-              >
-                <Smartphone size={14} style={{ color: 'var(--text-muted, #71717A)' }} />
-                <span>Live Alerts</span>
-              </button>
-            ) : (
-              <button
-                onClick={handleTestAlert}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '8px 14px',
-                  fontSize: '0.82rem',
-                  fontWeight: 750,
-                  background: 'var(--pastel-green-bg, rgba(16, 185, 129, 0.15))',
-                  color: 'var(--pastel-green, #10B981)',
-                  border: '1px solid var(--pastel-green-border, rgba(16, 185, 129, 0.3))',
-                  borderRadius: 12,
-                  cursor: 'pointer'
-                }}
-                title="Send a quick test notification to this phone"
-              >
-                <Vibrate size={14} style={{ color: 'var(--pastel-green, #10B981)' }} />
-                <span>{tested ? 'Buzzed!' : 'Live Alerts'}</span>
-              </button>
-            )}
+            <button
+              onClick={handleToggleAlerts}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '8px 14px',
+                fontSize: '0.82rem',
+                fontWeight: 750,
+                background: alertsActive 
+                  ? 'var(--pastel-green-bg, rgba(16, 185, 129, 0.15))' 
+                  : 'var(--surface-pill, #27272A)',
+                color: alertsActive 
+                  ? 'var(--pastel-green, #10B981)' 
+                  : 'var(--text-secondary, #A1A1AA)',
+                border: alertsActive 
+                  ? '1px solid var(--pastel-green-border, rgba(16, 185, 129, 0.3))' 
+                  : '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
+                borderRadius: 12,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              title={alertsActive ? 'Live Alerts are ON (Click to turn OFF / Mute)' : 'Live Alerts are OFF (Click to turn ON)'}
+            >
+              <Vibrate size={14} style={{ color: alertsActive ? 'var(--pastel-green, #10B981)' : 'var(--text-muted, #71717A)' }} />
+              <span>{tested ? 'Buzzed!' : 'Live Alerts'}</span>
+            </button>
 
             <button
               onClick={() => setIsEditingIdentity(true)}

@@ -8,6 +8,7 @@ import {
   Scissors, 
   Check, 
   Bell, 
+  BellOff,
   X, 
   CreditCard, 
   DollarSign, 
@@ -62,6 +63,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
   const [walkInToClaim, setWalkInToClaim] = useState<CheckInRecord | null>(null);
   const [chairOccupiedWarning, setChairOccupiedWarning] = useState<{ attemptedClientName: string; actionType: 'in_chair' | 'take_walkin' } | null>(null);
   const [permission, setPermission] = useState<NotificationPermission>('default');
+  const [alertsActive, setAlertsActive] = useState<boolean>(() => notificationManager.isAlertsEnabled());
   const [tested, setTested] = useState(false);
 
   const barberDisplayName = assignedBarber.name;
@@ -80,10 +82,22 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
   useEffect(() => {
     const status = notificationManager.getPermissionStatus();
     setPermission(status);
-    if (status === 'granted') {
+    if (status === 'granted' && notificationManager.isAlertsEnabled()) {
       notificationManager.requestPermissionAndSubscribe(assignedBarber.id, assignedBarber.name);
     }
   }, [assignedBarber]);
+
+  // Listen for real-time alert toggle changes
+  useEffect(() => {
+    const handleToggle = (e: Event) => {
+      const customEvent = e as CustomEvent<{ enabled: boolean }>;
+      if (customEvent.detail !== undefined) {
+        setAlertsActive(customEvent.detail.enabled);
+      }
+    };
+    window.addEventListener('barber_alerts_toggle', handleToggle);
+    return () => window.removeEventListener('barber_alerts_toggle', handleToggle);
+  }, []);
 
   // Listen for real-time in-app arrival toast events
   useEffect(() => {
@@ -110,21 +124,32 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
     }
   }, [activeToast]);
 
-  const handleEnablePush = async () => {
-    const result = await notificationManager.requestPermissionAndSubscribe(assignedBarber.id, assignedBarber.name);
-    setPermission(result.success ? 'granted' : 'denied');
-    if (result.success) {
-      notificationManager.sendBarberArrivalAlert('Test Client', assignedBarber.name, '2:30 PM', assignedBarber.id);
-      setTested(true);
-      setTimeout(() => setTested(false), 2500);
+  const handleToggleAlerts = async () => {
+    if (alertsActive) {
+      // Turn alerts OFF
+      notificationManager.setAlertsEnabled(false);
+      setAlertsActive(false);
+    } else {
+      // Turn alerts ON
+      const perm = notificationManager.getPermissionStatus();
+      if (perm !== 'granted') {
+        const result = await notificationManager.requestPermissionAndSubscribe(assignedBarber.id, assignedBarber.name);
+        setPermission(result.success ? 'granted' : 'denied');
+        if (result.success) {
+          notificationManager.setAlertsEnabled(true);
+          setAlertsActive(true);
+          notificationManager.sendBarberArrivalAlert('Test Client', assignedBarber.name, '2:30 PM', assignedBarber.id);
+          setTested(true);
+          setTimeout(() => setTested(false), 2500);
+        }
+      } else {
+        notificationManager.setAlertsEnabled(true);
+        setAlertsActive(true);
+        notificationManager.sendBarberArrivalAlert('Test Client', assignedBarber.name, '2:30 PM', assignedBarber.id);
+        setTested(true);
+        setTimeout(() => setTested(false), 2000);
+      }
     }
-  };
-
-  const handleTestAlert = async () => {
-    await notificationManager.requestPermissionAndSubscribe(assignedBarber.id, assignedBarber.name);
-    notificationManager.sendBarberArrivalAlert('Test Client', assignedBarber.name, '2:30 PM', assignedBarber.id);
-    setTested(true);
-    setTimeout(() => setTested(false), 2500);
   };
 
   const handleSaveNewPasscode = (newPasscode: string) => {
@@ -499,53 +524,38 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
 
         {/* Action Buttons Row (Live Alerts & Station PIN) */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, width: '100%' }}>
-          {permission !== 'granted' ? (
-            <button
-              onClick={handleEnablePush}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 5,
-                padding: '10px',
-                background: 'var(--surface-pill, #27272A)',
-                color: 'var(--text-secondary, #A1A1AA)',
-                border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
-                borderRadius: 14,
-                fontSize: '0.78rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
-              }}
-              title="Click to enable live phone alerts & notifications"
-            >
-              <Bell size={14} style={{ color: 'var(--text-muted, #71717A)' }} />
-              <span>Live Alerts</span>
-            </button>
-          ) : (
-            <button
-              onClick={handleTestAlert}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 5,
-                padding: '10px',
-                background: 'var(--pastel-green-bg, rgba(16, 185, 129, 0.15))',
-                color: 'var(--pastel-green, #10B981)',
-                border: '1px solid var(--pastel-green-border, rgba(16, 185, 129, 0.3))',
-                borderRadius: 14,
-                fontSize: '0.78rem',
-                fontWeight: 750,
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
-              }}
-              title="Live alerts are active! Click to test sound & vibration"
-            >
+          <button
+            onClick={handleToggleAlerts}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              padding: '10px',
+              background: alertsActive 
+                ? 'var(--pastel-green-bg, rgba(16, 185, 129, 0.15))' 
+                : 'var(--surface-pill, #27272A)',
+              color: alertsActive 
+                ? 'var(--pastel-green, #10B981)' 
+                : 'var(--text-secondary, #A1A1AA)',
+              border: alertsActive 
+                ? '1px solid var(--pastel-green-border, rgba(16, 185, 129, 0.3))' 
+                : '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
+              borderRadius: 14,
+              fontSize: '0.78rem',
+              fontWeight: 750,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+            title={alertsActive ? 'Live Alerts are ON (Tap to turn OFF / Mute)' : 'Live Alerts are OFF (Tap to turn ON)'}
+          >
+            {alertsActive ? (
               <Bell size={14} style={{ color: 'var(--pastel-green, #10B981)' }} />
-              <span>{tested ? 'Alert Synced!' : 'Live Alerts'}</span>
-            </button>
-          )}
+            ) : (
+              <BellOff size={14} style={{ color: 'var(--text-muted, #71717A)' }} />
+            )}
+            <span>{tested ? 'Alert Synced!' : 'Live Alerts'}</span>
+          </button>
 
           {/* Change PIN Button */}
           <button

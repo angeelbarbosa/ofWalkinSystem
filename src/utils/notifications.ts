@@ -153,6 +153,22 @@ export class NotificationManager {
     return res.success;
   }
 
+  // Barber In-App Notification Toggle (Active vs Muted/Off)
+  isAlertsEnabled(): boolean {
+    if (typeof window === 'undefined') return true;
+    const saved = localStorage.getItem('of_barber_alerts_enabled_v1');
+    if (saved !== null) {
+      return saved === 'true';
+    }
+    return this.getPermissionStatus() === 'granted';
+  }
+
+  setAlertsEnabled(enabled: boolean): void {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('of_barber_alerts_enabled_v1', String(enabled));
+      window.dispatchEvent(new CustomEvent('barber_alerts_toggle', { detail: { enabled } }));
+    }
+  }
 
   // Device Barber Association (e.g. Angel's phone vs All Barbers)
   getMyBarberPreference(): string {
@@ -167,6 +183,10 @@ export class NotificationManager {
   }
 
   isForThisDevice(barberName?: string, barberId?: string): boolean {
+    if (!this.isAlertsEnabled()) {
+      return false;
+    }
+
     const myBarberPref = (this.getMyBarberPreference() || 'all').trim().toLowerCase();
     if (myBarberPref === 'all' || myBarberPref === '') return true;
 
@@ -184,6 +204,7 @@ export class NotificationManager {
 
   // Vibrate mobile device (if supported)
   vibratePhone(pattern: number[] = [300, 150, 300, 150, 500]) {
+    if (!this.isAlertsEnabled()) return;
     if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
       try {
         navigator.vibrate(pattern);
@@ -195,6 +216,9 @@ export class NotificationManager {
 
   // Trigger alert locally on this browser / device
   async triggerLocalAlert(clientName: string, barberName: string, appointmentTime?: string, barberId?: string) {
+    if (!this.isAlertsEnabled()) {
+      return;
+    }
     if (!this.isForThisDevice(barberName, barberId)) {
       return;
     }
