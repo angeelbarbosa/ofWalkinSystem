@@ -181,7 +181,7 @@ export const ClientCheckInModal: React.FC<ClientCheckInModalProps> = ({
                 Phone Number <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 500 }}>(Optional)</span>
               </label>
               <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
-                For SMS when chair is ready
+                Get notified when ready
               </span>
             </div>
             <input

@@ -7,7 +7,6 @@ import {
   CreditCard, 
   ChevronRight, 
   Image as ImageIcon,
-  Zap, 
   User,
   Phone
 } from 'lucide-react';
@@ -349,7 +348,7 @@ export const KioskHome: React.FC<KioskHomeProps> = ({
                     <Phone size={15} />
                     <span>Phone Number <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500 }}>(Optional)</span></span>
                   </span>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>For text when chair is ready</span>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Get notified when ready</span>
                 </label>
                 <input
                   type="tel"
@@ -372,7 +371,6 @@ export const KioskHome: React.FC<KioskHomeProps> = ({
                   type="submit"
                   className="modal-submit-btn"
                 >
-                  <Zap size={18} />
                   <span>Join Line Now</span>
                 </button>
               </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, User, Scissors, Zap } from 'lucide-react';
+import { ArrowLeft, User, Scissors, Sparkles } from 'lucide-react';
 import type { Barber, CheckInRecord } from '../../types';
 
 interface BarberSelectProps {
@@ -120,7 +120,7 @@ export const BarberSelect: React.FC<BarberSelectProps> = ({
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <Zap size={30} />
+              <Sparkles size={28} />
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

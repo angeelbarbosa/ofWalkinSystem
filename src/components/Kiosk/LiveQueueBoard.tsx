@@ -537,7 +537,7 @@ export const LiveQueueBoard: React.FC<LiveQueueBoardProps> = ({
                     <Phone size={13} />
                     <span>Phone Number (Optional)</span>
                   </label>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>For text when chair is ready</span>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Get notified when ready</span>
                 </div>
                 <input
                   type="tel"
