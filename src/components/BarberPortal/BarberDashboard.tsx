@@ -1200,34 +1200,63 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
               )}
               {walkInToClaim.notes && <span>• {walkInToClaim.notes}</span>}
             </div>
-
-            {walkInToClaim.clientPhone && (
-              <div style={{ marginTop: 12 }}>
-                <a
-                  href={getSmsUrl(walkInToClaim.clientPhone, walkInToClaim.clientName)}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    padding: '6px 14px',
-                    background: 'rgba(245, 158, 11, 0.15)',
-                    border: '1px solid rgba(245, 158, 11, 0.3)',
-                    borderRadius: 9999,
-                    color: 'var(--accent-primary)',
-                    fontSize: '0.8rem',
-                    fontWeight: 800,
-                    textDecoration: 'none'
-                  }}
-                >
-                  <MessageSquare size={13} />
-                  <span>1-Tap SMS Ready Alert</span>
-                </a>
-              </div>
-            )}
           </div>
 
           {/* Action Choices */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {/* Button 1 (Top): Text client something... */}
+            {walkInToClaim.clientPhone ? (
+              <a
+                href={`sms:${walkInToClaim.clientPhone.replace(/[^\d+]/g, '')}`}
+                style={{
+                  width: '100%',
+                  padding: '13px',
+                  borderRadius: 16,
+                  background: 'var(--surface-pill, #27272A)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border-subtle, rgba(255,255,255,0.15))',
+                  fontSize: '0.92rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  textDecoration: 'none',
+                  boxSizing: 'border-box',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <MessageSquare size={17} style={{ color: 'var(--accent-primary)' }} />
+                <span>Text client something...</span>
+              </a>
+            ) : (
+              <button
+                type="button"
+                onClick={() => alert('Client did not provide a phone number at check-in.')}
+                style={{
+                  width: '100%',
+                  padding: '13px',
+                  borderRadius: 16,
+                  background: 'var(--surface-pill, #27272A)',
+                  color: 'var(--text-muted)',
+                  border: '1px solid var(--border-subtle, rgba(255,255,255,0.08))',
+                  fontSize: '0.92rem',
+                  fontWeight: 800,
+                  cursor: 'not-allowed',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  boxSizing: 'border-box'
+                }}
+              >
+                <MessageSquare size={17} style={{ color: 'var(--text-muted)' }} />
+                <span>Text client something... (No Phone)</span>
+              </button>
+            )}
+
+            {/* Button 2: Seat in Chair Now (Start Cut) */}
             <button
               onClick={() => handleConfirmClaim('in_chair')}
               style={{
@@ -1252,29 +1281,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
               <span>Seat in Chair Now (Start Cut)</span>
             </button>
 
-            <button
-              onClick={() => handleConfirmClaim('waiting')}
-              style={{
-                width: '100%',
-                padding: '13px',
-                borderRadius: 16,
-                background: 'var(--surface-pill, #27272A)',
-                color: 'var(--text-primary)',
-                border: '1px solid var(--border-subtle, rgba(255,255,255,0.15))',
-                fontSize: '0.9rem',
-                fontWeight: 800,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <Armchair size={17} style={{ color: 'var(--accent-primary)' }} />
-              <span>Add to My Station Queue</span>
-            </button>
-
+            {/* Cancel Button */}
             <button
               type="button"
               onClick={() => setWalkInToClaim(null)}
