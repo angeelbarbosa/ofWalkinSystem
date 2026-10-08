@@ -962,7 +962,7 @@ export function SuperAdminDashboard({
                 const walkInsCount = shop.checkIns?.length || 0;
                 const shopUnreadCount = supportMessages.filter(m => m.shopSlug === shop.slug && !m.readByHq && m.sender === 'shop_owner').length;
                 
-                const isComped = shop.subscriptionStatus === 'comped' || (shop.subscriptionMonthlyFee === 0 && shop.slug === 'of');
+                const isComped = shop.subscriptionStatus === 'comped' || shop.subscriptionMonthlyFee === 0;
                 const isPaid = shop.subscriptionStatus === 'active';
                 const isPastDue = shop.subscriptionStatus === 'past_due' || shop.subscriptionStatus === 'unpaid';
 

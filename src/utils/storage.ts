@@ -551,25 +551,28 @@ export const storage = {
       }
       const parsed: Shop[] = JSON.parse(data);
       
-      // Ensure shopping mode is only enabled for OF Supply, and subscription tracking is initialized
+      // Initialize defaults only if undefined
       parsed.forEach(s => {
-        if (s.slug === 'of' || s.name.toLowerCase().includes('of supply')) {
-          s.config.enableShoppingMode = true;
-          s.config.allowWalkinsWithoutAppointment = false;
-          if (!s.subscriptionStatus) s.subscriptionStatus = 'comped';
-          if (s.subscriptionMonthlyFee === undefined) s.subscriptionMonthlyFee = 0;
-          if (!s.ownerContactName) s.ownerContactName = 'Angel Barbosa';
-          if (!s.ownerPhone) s.ownerPhone = '(555) 234-5678';
-        } else {
-          s.config.enableShoppingMode = false;
-          s.config.allowWalkinsWithoutAppointment = true;
-          if (!s.subscriptionStatus) s.subscriptionStatus = s.slug === 'royalcuts' ? 'past_due' : 'active';
-          if (s.subscriptionMonthlyFee === undefined) s.subscriptionMonthlyFee = 49;
-          if (!s.subscriptionNextBillingDate) s.subscriptionNextBillingDate = s.slug === 'royalcuts' ? '2026-10-01' : '2026-11-01';
-          if (!s.subscriptionLastPaidDate) s.subscriptionLastPaidDate = s.slug === 'royalcuts' ? '2026-09-01' : '2026-10-01';
-          if (!s.subscriptionPaymentMethod) s.subscriptionPaymentMethod = 'stripe';
-          if (!s.ownerContactName) s.ownerContactName = s.slug === 'royalcuts' ? 'Dominic V.' : 'Marcus Rivera';
-          if (!s.ownerPhone) s.ownerPhone = s.slug === 'royalcuts' ? '(555) 888-1111' : '(555) 777-1010';
+        if (!s.config) {
+          s.config = { ...DEFAULT_OF_CONFIG, shopName: s.name };
+        }
+        if (s.config.enableShoppingMode === undefined) {
+          s.config.enableShoppingMode = s.slug === 'of';
+        }
+        if (s.config.allowWalkinsWithoutAppointment === undefined) {
+          s.config.allowWalkinsWithoutAppointment = s.slug !== 'of';
+        }
+        if (!s.subscriptionStatus) {
+          s.subscriptionStatus = s.slug === 'of' ? 'comped' : (s.slug === 'royalcuts' ? 'past_due' : 'active');
+        }
+        if (s.subscriptionMonthlyFee === undefined) {
+          s.subscriptionMonthlyFee = s.slug === 'of' ? 0 : 49;
+        }
+        if (!s.ownerContactName) {
+          s.ownerContactName = s.slug === 'of' ? 'Angel Barbosa' : (s.slug === 'royalcuts' ? 'Dominic V.' : 'Marcus Rivera');
+        }
+        if (!s.ownerPhone) {
+          s.ownerPhone = s.slug === 'of' ? '(555) 234-5678' : (s.slug === 'royalcuts' ? '(555) 888-1111' : '(555) 777-1010');
         }
       });
 
