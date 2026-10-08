@@ -226,12 +226,9 @@ export const BarberSelect: React.FC<BarberSelectProps> = ({
               </div>
 
               {/* Barber Name */}
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 12px' }}>
                 {barber.name}
               </h3>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '2px 0 12px' }}>
-                {barber.specialty || 'Master Barber'}
-              </p>
 
               {/* Live Status Badge */}
               <div

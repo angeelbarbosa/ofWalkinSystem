@@ -167,12 +167,9 @@ export const BarberLoginScreen: React.FC<BarberLoginScreenProps> = ({
                     {barber.name.charAt(0)}
                   </div>
                   <div style={{ minWidth: 0 }}>
-                    <h3 style={{ fontSize: '1.15rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {barber.name}
                     </h3>
-                    <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: 2 }}>
-                      {barber.specialty || 'Master Cuts'}
-                    </div>
                   </div>
                 </div>
 
