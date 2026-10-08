@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Check, User, Clock, Keyboard as KeyboardIcon, Flame, AlertCircle } from 'lucide-react';
+import { X, Check, User, Clock, Keyboard as KeyboardIcon, Flame, AlertCircle, Phone } from 'lucide-react';
 import type { Barber } from '../../types';
 import { OnScreenKeyboard } from '../Shared/OnScreenKeyboard';
 import { IosTimePicker, getCurrentFormattedTime } from '../Shared/IosTimePicker';
@@ -9,7 +9,7 @@ interface ClientCheckInModalProps {
   selectedBarber: Barber;
   checkInType?: 'appointment' | 'walkin';
   isBarberBusy?: boolean;
-  onSubmit: (clientName: string, appointmentTime: string, checkInType: 'appointment' | 'walkin') => void;
+  onSubmit: (clientName: string, appointmentTime: string, checkInType: 'appointment' | 'walkin', clientPhone?: string) => void;
   onCancel: () => void;
 }
 
@@ -21,10 +21,23 @@ export const ClientCheckInModal: React.FC<ClientCheckInModalProps> = ({
   onCancel
 }) => {
   const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
   const [appointmentTime, setAppointmentTime] = useState<string>(() => 
     checkInType === 'walkin' ? 'Walk-In' : getCurrentFormattedTime()
   );
   const [showKeyboard, setShowKeyboard] = useState(false);
+
+  const formatPhoneNumber = (value: string) => {
+    const digits = value.replace(/\D/g, '');
+    if (digits.length === 0) return '';
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPhone(formatPhoneNumber(e.target.value));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +45,12 @@ export const ClientCheckInModal: React.FC<ClientCheckInModalProps> = ({
       alert('Please enter your name.');
       return;
     }
-    onSubmit(name.trim(), checkInType === 'walkin' ? 'Walk-In' : appointmentTime, checkInType);
+    onSubmit(
+      name.trim(), 
+      checkInType === 'walkin' ? 'Walk-In' : appointmentTime, 
+      checkInType,
+      phone.trim() || undefined
+    );
   };
 
   return (
@@ -154,6 +172,36 @@ export const ClientCheckInModal: React.FC<ClientCheckInModalProps> = ({
               />
             </div>
           )}
+
+          {/* Client Phone Number Input (Optional) */}
+          <div className="form-group" style={{ marginBottom: 18 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <label style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+                <Phone size={15} style={{ display: 'inline', marginRight: 6, verticalAlign: 'text-bottom' }} />
+                Phone Number <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 500 }}>(Optional)</span>
+              </label>
+              <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
+                For SMS when chair is ready
+              </span>
+            </div>
+            <input
+              type="tel"
+              placeholder="(555) 000-0000"
+              value={phone}
+              onChange={handlePhoneChange}
+              className="bubbly-input"
+              style={{
+                width: '100%',
+                padding: '14px 16px',
+                background: 'var(--surface-pill, #27272A)',
+                border: '1px solid var(--border-subtle, rgba(255,255,255,0.15))',
+                borderRadius: '16px',
+                color: 'var(--text-primary)',
+                fontSize: '1.05rem',
+                fontWeight: 600
+              }}
+            />
+          </div>
 
           {/* Time Picker (Only needed for appointments) */}
           {checkInType === 'appointment' && (

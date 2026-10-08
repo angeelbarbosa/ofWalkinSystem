@@ -8,7 +8,8 @@ import {
   ChevronRight, 
   Image as ImageIcon,
   Zap, 
-  User
+  User,
+  Phone
 } from 'lucide-react';
 import type { ShopConfig, Barber, CheckInRecord } from '../../types';
 
@@ -20,7 +21,7 @@ interface KioskHomeProps {
   onSelectBrowsing: () => void;
   onSelectCheckout: () => void;
   onSelectAppointment: () => void;
-  onJoinWalkInDirect: (clientName: string) => void;
+  onJoinWalkInDirect: (clientName: string, clientPhone?: string) => void;
 }
 
 export const KioskHome: React.FC<KioskHomeProps> = ({
@@ -39,12 +40,22 @@ export const KioskHome: React.FC<KioskHomeProps> = ({
   // Walk-In Fast Modal State
   const [showWalkInModal, setShowWalkInModal] = useState(false);
   const [walkInName, setWalkInName] = useState('');
+  const [walkInPhone, setWalkInPhone] = useState('');
+
+  const formatPhoneNumber = (value: string) => {
+    const digits = value.replace(/\D/g, '');
+    if (digits.length === 0) return '';
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+  };
 
   const handleWalkInSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!walkInName.trim()) return;
-    onJoinWalkInDirect(walkInName.trim());
+    onJoinWalkInDirect(walkInName.trim(), walkInPhone.trim() || undefined);
     setWalkInName('');
+    setWalkInPhone('');
     setShowWalkInModal(false);
   };
 
@@ -316,7 +327,7 @@ export const KioskHome: React.FC<KioskHomeProps> = ({
             </div>
 
             <form onSubmit={handleWalkInSubmit}>
-              <div style={{ marginBottom: '20px' }}>
+              <div style={{ marginBottom: '16px' }}>
                 <label className="modal-input-label">
                   <User size={15} />
                   <span>Enter Your First Name *</span>
@@ -328,6 +339,23 @@ export const KioskHome: React.FC<KioskHomeProps> = ({
                   placeholder="e.g. Jordan"
                   value={walkInName}
                   onChange={(e) => setWalkInName(e.target.value)}
+                  className="futuristic-text-input"
+                />
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <label className="modal-input-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Phone size={15} />
+                    <span>Phone Number <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500 }}>(Optional)</span></span>
+                  </span>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>For text when chair is ready</span>
+                </label>
+                <input
+                  type="tel"
+                  placeholder="(555) 000-0000"
+                  value={walkInPhone}
+                  onChange={(e) => setWalkInPhone(formatPhoneNumber(e.target.value))}
                   className="futuristic-text-input"
                 />
               </div>

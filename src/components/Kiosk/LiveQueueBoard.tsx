@@ -5,7 +5,8 @@ import {
   Users, 
   Scissors, 
   Timer, 
-  Sparkles 
+  Sparkles,
+  Phone
 } from 'lucide-react';
 import type { Barber, CheckInRecord, ShopConfig } from '../../types';
 
@@ -13,7 +14,7 @@ interface LiveQueueBoardProps {
   config: ShopConfig;
   barbers: Barber[];
   checkIns: CheckInRecord[];
-  onJoinQueue: (clientName: string, selectedBarber?: Barber) => void;
+  onJoinQueue: (clientName: string, selectedBarber?: Barber, clientPhone?: string) => void;
   onBack: () => void;
 }
 
@@ -26,9 +27,18 @@ export const LiveQueueBoard: React.FC<LiveQueueBoardProps> = ({
 }) => {
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
   const [clientName, setClientName] = useState('');
+  const [clientPhone, setClientPhone] = useState('');
   const [preferredBarberId, setPreferredBarberId] = useState<string>('first_available');
 
   const activeBarbers = barbers.filter(b => b.isWorking);
+
+  const formatPhoneNumber = (value: string) => {
+    const digits = value.replace(/\D/g, '');
+    if (digits.length === 0) return '';
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+  };
 
   // Active in chair
   const inChairClients = checkIns.filter(c => c.status === 'in_chair');
@@ -51,9 +61,10 @@ export const LiveQueueBoard: React.FC<LiveQueueBoardProps> = ({
       ? undefined 
       : activeBarbers.find(b => b.id === preferredBarberId);
 
-    onJoinQueue(clientName.trim(), selectedBarber);
+    onJoinQueue(clientName.trim(), selectedBarber, clientPhone.trim() || undefined);
     setIsJoinModalOpen(false);
     setClientName('');
+    setClientPhone('');
   };
 
   // Helper for relative wait duration
@@ -507,6 +518,32 @@ export const LiveQueueBoard: React.FC<LiveQueueBoardProps> = ({
                   value={clientName}
                   onChange={(e) => setClientName(e.target.value)}
                   autoFocus
+                  style={{
+                    width: '100%',
+                    padding: '14px 16px',
+                    background: 'var(--surface-pill, #27272A)',
+                    border: '1px solid var(--border-subtle, rgba(255,255,255,0.15))',
+                    borderRadius: '14px',
+                    color: 'var(--text-primary)',
+                    fontSize: '16px',
+                    fontWeight: 600
+                  }}
+                />
+              </div>
+
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)', margin: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <Phone size={13} />
+                    <span>Phone Number (Optional)</span>
+                  </label>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>For text when chair is ready</span>
+                </div>
+                <input
+                  type="tel"
+                  placeholder="(555) 000-0000"
+                  value={clientPhone}
+                  onChange={(e) => setClientPhone(formatPhoneNumber(e.target.value))}
                   style={{
                     width: '100%',
                     padding: '14px 16px',

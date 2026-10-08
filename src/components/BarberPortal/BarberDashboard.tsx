@@ -15,7 +15,9 @@ import {
   LogOut, 
   KeyRound,
   Users,
-  AlertTriangle
+  AlertTriangle,
+  MessageSquare,
+  Phone
 } from 'lucide-react';
 import type { Barber, CheckInRecord, ShopConfig, RentPaymentRecord } from '../../types';
 import { storage } from '../../utils/storage';
@@ -43,7 +45,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
   barbers,
   checkIns,
   rentRecords = [],
-  config: _config,
+  config,
   onUpdateStatus,
   onClaimWalkIn,
   onClearCompleted,
@@ -276,8 +278,20 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
     }
   };
 
+  // 1-Tap Pre-filled Native SMS Link Generator (Free, instant, opens Messages on iOS / Android)
+  const getSmsUrl = (phone: string, clientName: string, customText?: string) => {
+    const cleanPhone = phone.replace(/[^\d+]/g, '');
+    const shopName = config?.shopName || 'the shop';
+    const defaultMsg = `Hey ${clientName}! ${assignedBarber.name} is ready for you in the chair at ${shopName}! 💈`;
+    const message = customText || defaultMsg;
+    return `sms:${cleanPhone}?&body=${encodeURIComponent(message)}`;
+  };
+
   const handleCallClient = (record: CheckInRecord) => {
     onUpdateStatus(record.id, 'called');
+    if (record.clientPhone) {
+      window.location.href = getSmsUrl(record.clientPhone, record.clientName);
+    }
   };
 
   // Safe In-Chair Handler with Chair Occupancy Protection
@@ -676,9 +690,15 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                   <h4 style={{ fontSize: '1.35rem', fontWeight: 900, color: 'var(--text-primary)', margin: 0 }}>
                     {record.clientName}
                   </h4>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: 3 }}>
-                    {record.appointmentTime ? `Appointment: ${record.appointmentTime}` : 'Walk-In Customer'}
-                    {record.notes && ` • ${record.notes}`}
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <span>{record.appointmentTime ? `Appointment: ${record.appointmentTime}` : 'Walk-In Customer'}</span>
+                    {record.clientPhone && (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--pastel-green)', fontWeight: 750 }}>
+                        <Phone size={12} />
+                        {record.clientPhone}
+                      </span>
+                    )}
+                    {record.notes && <span>• {record.notes}</span>}
                   </div>
                 </div>
 
@@ -805,6 +825,49 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                   </div>
                 </div>
 
+                {/* 1-Tap SMS Text Notification Bar (Pre-filled instant message) */}
+                {record.clientPhone && (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '8px 12px',
+                    background: 'rgba(245, 158, 11, 0.08)',
+                    borderRadius: 14,
+                    border: '1px solid rgba(245, 158, 11, 0.2)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', color: 'var(--text-primary)', fontWeight: 750 }}>
+                      <Phone size={13} style={{ color: 'var(--accent-primary)' }} />
+                      <span>{record.clientPhone}</span>
+                    </div>
+                    <a
+                      href={getSmsUrl(record.clientPhone, record.clientName)}
+                      onClick={() => {
+                        if (record.status === 'waiting') {
+                          onUpdateStatus(record.id, 'called');
+                        }
+                      }}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 5,
+                        padding: '6px 12px',
+                        background: 'var(--accent-primary, #F59E0B)',
+                        color: '#000000',
+                        borderRadius: 10,
+                        fontSize: '0.78rem',
+                        fontWeight: 850,
+                        textDecoration: 'none',
+                        boxShadow: '0 2px 8px rgba(245, 158, 11, 0.25)',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <MessageSquare size={13} />
+                      <span>💬 Text Client</span>
+                    </a>
+                  </div>
+                )}
+
                 {record.status === 'called' && (
                   <div style={{
                     background: 'rgba(245, 158, 11, 0.15)',
@@ -844,7 +907,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                     }}
                   >
                     <Megaphone size={15} style={{ color: 'var(--accent-primary)' }} />
-                    <span>Call In</span>
+                    <span>{record.clientPhone ? 'Call & Text' : 'Call In'}</span>
                   </button>
 
                   <button
@@ -959,36 +1022,79 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                   <div style={{ fontSize: '1.05rem', fontWeight: 850, color: 'var(--text-primary)' }}>
                     {walkin.clientName}
                   </div>
-                  <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
-                    <Clock size={11} />
-                    <span>Arrived {getElapsedTime(walkin.checkInTime)}</span>
+                  <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, flexWrap: 'wrap' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                      <Clock size={11} />
+                      <span>Arrived {getElapsedTime(walkin.checkInTime)}</span>
+                    </span>
+                    {walkin.clientPhone && (
+                      <a
+                        href={getSmsUrl(walkin.clientPhone, walkin.clientName)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 3,
+                          color: 'var(--accent-primary)',
+                          fontWeight: 750,
+                          textDecoration: 'none'
+                        }}
+                      >
+                        <Phone size={11} />
+                        <span>{walkin.clientPhone}</span>
+                      </a>
+                    )}
                     {walkin.notes && <span>• {walkin.notes}</span>}
                   </div>
                 </div>
 
-                <button
-                  onClick={() => handleInitiateTakeWalkIn(walkin)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    padding: '10px 16px',
-                    background: isChairOccupied ? 'var(--surface-pill, #27272A)' : 'var(--accent-primary, #F59E0B)',
-                    color: isChairOccupied ? 'var(--text-primary)' : '#000000',
-                    border: isChairOccupied ? '1px solid rgba(245, 158, 11, 0.3)' : 'none',
-                    borderRadius: 14,
-                    fontSize: '0.84rem',
-                    fontWeight: 850,
-                    cursor: 'pointer',
-                    boxShadow: isChairOccupied ? 'none' : '0 3px 10px rgba(245, 158, 11, 0.28)',
-                    whiteSpace: 'nowrap',
-                    transition: 'all 0.15s ease'
-                  }}
-                  title={isChairOccupied ? `Chair currently occupied by ${activeInChairClient?.clientName}` : 'Take walk-in'}
-                >
-                  <Scissors size={14} style={{ color: isChairOccupied ? 'var(--accent-primary)' : '#000000' }} />
-                  <span>Take Walk-In</span>
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {walkin.clientPhone && (
+                    <a
+                      href={getSmsUrl(walkin.clientPhone, walkin.clientName)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '10px 12px',
+                        background: 'var(--surface-pill, #27272A)',
+                        border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
+                        color: 'var(--accent-primary)',
+                        borderRadius: 14,
+                        fontSize: '0.82rem',
+                        fontWeight: 800,
+                        textDecoration: 'none',
+                        cursor: 'pointer'
+                      }}
+                      title="1-Tap Text Client"
+                    >
+                      <MessageSquare size={14} />
+                    </a>
+                  )}
+
+                  <button
+                    onClick={() => handleInitiateTakeWalkIn(walkin)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '10px 16px',
+                      background: isChairOccupied ? 'var(--surface-pill, #27272A)' : 'var(--accent-primary, #F59E0B)',
+                      color: isChairOccupied ? 'var(--text-primary)' : '#000000',
+                      border: isChairOccupied ? '1px solid rgba(245, 158, 11, 0.3)' : 'none',
+                      borderRadius: 14,
+                      fontSize: '0.84rem',
+                      fontWeight: 850,
+                      cursor: 'pointer',
+                      boxShadow: isChairOccupied ? 'none' : '0 3px 10px rgba(245, 158, 11, 0.28)',
+                      whiteSpace: 'nowrap',
+                      transition: 'all 0.15s ease'
+                    }}
+                    title={isChairOccupied ? `Chair currently occupied by ${activeInChairClient?.clientName}` : 'Take walk-in'}
+                  >
+                    <Scissors size={14} style={{ color: isChairOccupied ? 'var(--accent-primary)' : '#000000' }} />
+                    <span>Take Walk-In</span>
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -1084,11 +1190,40 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
             <div style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--text-primary)' }}>
               {walkInToClaim.clientName}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: '0.8rem', color: 'var(--accent-primary)', marginTop: 4, fontWeight: 750 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: '0.8rem', color: 'var(--accent-primary)', marginTop: 4, fontWeight: 750, flexWrap: 'wrap' }}>
               <Clock size={13} />
               <span>Waiting {getElapsedTime(walkInToClaim.checkInTime)}</span>
+              {walkInToClaim.clientPhone && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--text-primary)' }}>
+                  • <Phone size={12} style={{ color: 'var(--accent-primary)' }} /> {walkInToClaim.clientPhone}
+                </span>
+              )}
               {walkInToClaim.notes && <span>• {walkInToClaim.notes}</span>}
             </div>
+
+            {walkInToClaim.clientPhone && (
+              <div style={{ marginTop: 12 }}>
+                <a
+                  href={getSmsUrl(walkInToClaim.clientPhone, walkInToClaim.clientName)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '6px 14px',
+                    background: 'rgba(245, 158, 11, 0.15)',
+                    border: '1px solid rgba(245, 158, 11, 0.3)',
+                    borderRadius: 9999,
+                    color: 'var(--accent-primary)',
+                    fontSize: '0.8rem',
+                    fontWeight: 800,
+                    textDecoration: 'none'
+                  }}
+                >
+                  <MessageSquare size={13} />
+                  <span>1-Tap SMS Ready Alert</span>
+                </a>
+              </div>
+            )}
           </div>
 
           {/* Action Choices */}
@@ -1238,7 +1373,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
       {isRentModalOpen && onPayRent && (
         <BarberRentModal
           barber={assignedBarber}
-          config={_config}
+          config={config}
           existingRecord={myRentRecord}
           onPayRent={onPayRent}
           onClose={() => setIsRentModalOpen(false)}

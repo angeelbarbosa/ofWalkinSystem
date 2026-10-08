@@ -392,7 +392,8 @@ export function useLiveSystem() {
     clientName: string, 
     selectedBarber?: Barber, 
     appointmentTime: string = 'Walk-In',
-    type: CheckInRecord['type'] = 'appointment'
+    type: CheckInRecord['type'] = 'appointment',
+    clientPhone?: string
   ) => {
     const isFirstAvailable = !selectedBarber || selectedBarber.id === 'first_available';
     const isWalkIn = type === 'walkin' || isFirstAvailable;
@@ -403,6 +404,7 @@ export function useLiveSystem() {
     // 1. Immediately create local record in active shop's storage
     const localRecord = storage.addCheckIn({
       clientName,
+      clientPhone: clientPhone?.trim() || undefined,
       type: resolvedType,
       barberId,
       barberName,

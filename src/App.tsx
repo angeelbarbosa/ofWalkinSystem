@@ -166,7 +166,8 @@ export function App() {
   const handleCheckInSubmit = async (
     clientName: string, 
     appointmentTime: string, 
-    checkInType: 'appointment' | 'walkin' = 'appointment'
+    checkInType: 'appointment' | 'walkin' = 'appointment',
+    clientPhone?: string
   ) => {
     if (!selectedBarber) return;
 
@@ -178,7 +179,8 @@ export function App() {
       clientName, 
       isFirstAvailable ? undefined : selectedBarber, 
       finalTime, 
-      finalType
+      finalType,
+      clientPhone
     );
 
     setLatestConfirmedRecord(record);
@@ -517,8 +519,8 @@ export function App() {
                       setCheckInMode('appointment');
                       setKioskStep('barber_select');
                     }}
-                    onJoinWalkInDirect={async (clientName) => {
-                      const record = await addCheckIn(clientName, undefined, 'Walk-In', 'walkin');
+                    onJoinWalkInDirect={async (clientName, clientPhone) => {
+                      const record = await addCheckIn(clientName, undefined, 'Walk-In', 'walkin', clientPhone);
                       setLatestConfirmedRecord(record);
                       setKioskStep('confirmed');
                     }}
@@ -531,8 +533,8 @@ export function App() {
                     config={config}
                     barbers={barbers}
                     checkIns={checkIns}
-                    onJoinQueue={async (clientName, preferredBarber) => {
-                      const record = await addCheckIn(clientName, preferredBarber, 'Walk-In', 'walkin');
+                    onJoinQueue={async (clientName, preferredBarber, clientPhone) => {
+                      const record = await addCheckIn(clientName, preferredBarber, 'Walk-In', 'walkin', clientPhone);
                       setLatestConfirmedRecord(record);
                       setKioskStep('confirmed');
                     }}
