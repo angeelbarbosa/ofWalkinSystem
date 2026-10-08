@@ -59,13 +59,16 @@ export function useLiveSystem() {
     // Initial sync
     refreshActiveShopData();
 
-    // 1. If Convex Client is available, set up live cloud watch queries
+    let unsubscribeCheckIns = () => {};
+    let unsubscribeBarbers = () => {};
+    let unsubscribeConfig = () => {};
+    let applyCloudCheckIns = (_cloudCheckIns: any) => {};
+
+    // 1. If Convex Client is available, set up live cloud watch queries and instant initial fetch
     if (convexClient) {
       try {
-        // Watch checkIns
-        const checkInsWatch = convexClient.watchQuery(api.checkins.get, {});
-        const unsubscribeCheckIns = checkInsWatch.onUpdate(() => {
-          const cloudCheckIns = checkInsWatch.localQueryResult();
+        // Processor for cloud check-ins
+        applyCloudCheckIns = (cloudCheckIns: any) => {
           if (Array.isArray(cloudCheckIns)) {
             const mapped: CheckInRecord[] = cloudCheckIns.map((c: any) => ({
               id: c._id || c.id,
@@ -114,12 +117,10 @@ export function useLiveSystem() {
             });
             storage.saveCheckIns(mapped);
           }
-        });
+        };
 
-        // Watch barbers
-        const barbersWatch = convexClient.watchQuery(api.barbers.get, {});
-        const unsubscribeBarbers = barbersWatch.onUpdate(() => {
-          const cloudBarbers = barbersWatch.localQueryResult();
+        // Processor for cloud barbers
+        const applyCloudBarbers = (cloudBarbers: any) => {
           if (Array.isArray(cloudBarbers) && cloudBarbers.length > 0) {
             const mapped: Barber[] = cloudBarbers.map((b: any) => ({
               id: b._id || b.id,
@@ -143,12 +144,10 @@ export function useLiveSystem() {
           } else if (Array.isArray(cloudBarbers) && cloudBarbers.length === 0 && convexClient) {
             convexClient.mutation(api.barbers.seed, {}).catch(() => {});
           }
-        });
+        };
 
-        // Watch config & multi-tenant fleet state
-        const configWatch = convexClient.watchQuery(api.config.get, {});
-        const unsubscribeConfig = configWatch.onUpdate(() => {
-          const cloudConfig = configWatch.localQueryResult() as any;
+        // Processor for cloud config
+        const applyCloudConfig = (cloudConfig: any) => {
           if (cloudConfig) {
             const merged = { ...storage.getConfig(), ...cloudConfig };
             setConfig(merged);
@@ -182,7 +181,7 @@ export function useLiveSystem() {
               }
             }
 
-            // 3. Sync real-time support messages across ALL physical devices (iPhone, iPad, Mac, PC)
+            // 3. Sync real-time support messages across ALL physical devices
             if (cloudConfig.supportMessagesJson) {
               try {
                 const cloudMessages: SupportMessage[] = JSON.parse(cloudConfig.supportMessagesJson);
@@ -191,7 +190,6 @@ export function useLiveSystem() {
                   const map = new Map<string, SupportMessage>();
                   local.forEach(m => map.set(m.id, m));
                   cloudMessages.forEach(m => {
-                    // Cloud version takes priority or merges read flags
                     const existing = map.get(m.id);
                     if (existing) {
                       map.set(m.id, {
@@ -213,7 +211,6 @@ export function useLiveSystem() {
                 console.warn('Convex support messages parse error:', e);
               }
             } else {
-              // Initial sync to cloud if cloud is empty
               const local = storage.getSupportMessages();
               if (local.length > 0 && convexClient) {
                 convexClient.mutation(api.config.update, {
@@ -222,17 +219,37 @@ export function useLiveSystem() {
               }
             }
           }
+        };
+
+        // Instant Direct Fetch on Mount
+        convexClient.query(api.checkins.get, {}).then(applyCloudCheckIns).catch(() => {});
+        convexClient.query(api.barbers.get, {}).then(applyCloudBarbers).catch(() => {});
+        convexClient.query(api.config.get, {}).then(applyCloudConfig).catch(() => {});
+
+        // Watch checkIns for real-time live updates
+        const checkInsWatch = convexClient.watchQuery(api.checkins.get, {});
+        unsubscribeCheckIns = checkInsWatch.onUpdate(() => {
+          applyCloudCheckIns(checkInsWatch.localQueryResult());
         });
+        applyCloudCheckIns(checkInsWatch.localQueryResult());
+
+        // Watch barbers for real-time live updates
+        const barbersWatch = convexClient.watchQuery(api.barbers.get, {});
+        unsubscribeBarbers = barbersWatch.onUpdate(() => {
+          applyCloudBarbers(barbersWatch.localQueryResult());
+        });
+        applyCloudBarbers(barbersWatch.localQueryResult());
+
+        // Watch config & multi-tenant fleet state
+        const configWatch = convexClient.watchQuery(api.config.get, {});
+        unsubscribeConfig = configWatch.onUpdate(() => {
+          applyCloudConfig(configWatch.localQueryResult());
+        });
+        applyCloudConfig(configWatch.localQueryResult());
 
         // Initial seed check
         convexClient.mutation(api.barbers.seed, {}).catch(() => {});
         setIsCloudConnected(true);
-
-        return () => {
-          unsubscribeCheckIns();
-          unsubscribeBarbers();
-          unsubscribeConfig();
-        };
       } catch (err) {
         console.warn('Convex connection setup:', err);
       }
@@ -323,10 +340,16 @@ export function useLiveSystem() {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         refreshActiveShopData();
+        if (convexClient) {
+          convexClient.query(api.checkins.get, {}).then(applyCloudCheckIns).catch(() => {});
+        }
       }
     };
     const handleWindowFocus = () => {
       refreshActiveShopData();
+      if (convexClient) {
+        convexClient.query(api.checkins.get, {}).then(applyCloudCheckIns).catch(() => {});
+      }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('focus', handleWindowFocus);
@@ -346,6 +369,9 @@ export function useLiveSystem() {
     }, 5000);
 
     return () => {
+      unsubscribeCheckIns();
+      unsubscribeBarbers();
+      unsubscribeConfig();
       window.removeEventListener('barbers_updated', handleBarbersUpdate);
       window.removeEventListener('config_updated', handleConfigUpdate);
       window.removeEventListener('checkins_updated', handleCheckInsUpdate);
