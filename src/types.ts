@@ -19,6 +19,7 @@ export interface Barber {
   rentStartDate?: string; // YYYY-MM-DD e.g. "2026-10-15"
   autoPayEnabled?: boolean;
   passcode?: string; // e.g. "1111"
+  weeksOwed?: number; // Number of overdue weekly cycles (0 = paid, 1 = 1 week due, 2+ = backed up)
 }
 
 export type CheckInType = 'shopping' | 'appointment' | 'walkin';
@@ -58,6 +59,7 @@ export interface RentPaymentRecord {
   receiptNumber: string; // e.g. "REC-89241"
   transactionId?: string;
   notes?: string;
+  weeksCovered?: number; // Number of weekly cycles covered by this payment
 }
 
 export interface ShopConfig {

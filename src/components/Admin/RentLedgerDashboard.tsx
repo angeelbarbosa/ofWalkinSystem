@@ -9,7 +9,8 @@ import {
   X,
   Calendar,
   Search,
-  Filter
+  Filter,
+  AlertTriangle
 } from 'lucide-react';
 import type { Barber, RentPaymentRecord, ShopConfig } from '../../types';
 import { ModalOverlay } from '../Shared/ModalOverlay';
@@ -18,7 +19,7 @@ interface RentLedgerDashboardProps {
   barbers: Barber[];
   rentRecords: RentPaymentRecord[];
   config: ShopConfig;
-  onMarkPaidOffline: (barber: Barber, method?: RentPaymentRecord['paymentMethod'], notes?: string) => void;
+  onMarkPaidOffline: (barber: Barber, method?: RentPaymentRecord['paymentMethod'], notes?: string, paidAmount?: number, weeksCovered?: number) => void;
   onSaveBarbers: (barbers: Barber[]) => void;
 }
 
@@ -32,6 +33,10 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
   const [selectedBarberForCash, setSelectedBarberForCash] = useState<Barber | null>(null);
   const [cashPaymentMethod, setCashPaymentMethod] = useState<RentPaymentRecord['paymentMethod']>('manual');
   const [cashNotes, setCashNotes] = useState('');
+  const [cashWeeksToPay, setCashWeeksToPay] = useState<number>(1);
+  const [cashPayOption, setCashPayOption] = useState<'all' | 'one' | 'custom'>('all');
+  const [cashCustomAmount, setCashCustomAmount] = useState<string>('200');
+
   const [editingRentBarber, setEditingRentBarber] = useState<Barber | null>(null);
   const [newRentAmount, setNewRentAmount] = useState<string>('200');
   const [showRentConfirm, setShowRentConfirm] = useState(false);
@@ -57,31 +62,53 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
     }
   }, [editingRentBarber, selectedBarberForCash]);
 
-  // Rent Calculations for Current Period
+  // Rent Calculations for Current Period & Multi-Week Arrears
   const activeBarbers = barbers.filter(b => b.isWorking);
   const totalExpectedRent = activeBarbers.reduce((sum, b) => sum + (b.weeklyRent || config.defaultWeeklyRent || 200), 0);
 
-  // Group latest rent payment per barber
+  // Group rent payment status and cumulative weeks owed per barber
   const barberPaymentStatus = activeBarbers.map((barber) => {
+    const weeklyRate = barber.weeklyRent || config.defaultWeeklyRent || 200;
     const latestPayment = rentRecords.find(r => r.barberId === barber.id && r.status === 'paid');
-    const isPaidThisWeek = !!latestPayment;
+
+    let weeksOwed: number;
+    if (typeof barber.weeksOwed === 'number') {
+      weeksOwed = barber.weeksOwed;
+    } else {
+      if (latestPayment) {
+        const paidDate = new Date(latestPayment.paidAt || latestPayment.dueDate);
+        const days = Math.floor((Date.now() - paidDate.getTime()) / (1000 * 60 * 60 * 24));
+        weeksOwed = days < 7 ? 0 : Math.max(1, Math.floor(days / 7));
+      } else {
+        weeksOwed = 1;
+      }
+    }
+
+    const isPaid = weeksOwed === 0;
+    const totalOwed = weeksOwed * weeklyRate;
+
     return {
       barber,
-      isPaid: isPaidThisWeek,
+      isPaid,
+      weeksOwed,
+      totalOwed,
       latestPayment,
-      amount: barber.weeklyRent || config.defaultWeeklyRent || 200
+      weeklyRate,
+      amount: weeklyRate
     };
   });
 
-  const totalCollected = barberPaymentStatus
-    .filter(b => b.isPaid)
-    .reduce((sum, b) => sum + b.amount, 0);
+  const totalCollected = rentRecords
+    .filter(r => r.status === 'paid')
+    .reduce((sum, r) => sum + r.amount, 0);
 
-  const totalOutstanding = totalExpectedRent - totalCollected;
+  const totalOutstanding = barberPaymentStatus.reduce((sum, b) => sum + b.totalOwed, 0);
+  const totalOverdueWeeks = barberPaymentStatus.reduce((sum, b) => sum + b.weeksOwed, 0);
   const collectionRate = totalExpectedRent > 0 ? Math.round((totalCollected / totalExpectedRent) * 100) : 0;
 
   const paidCount = barberPaymentStatus.filter(b => b.isPaid).length;
   const dueCount = barberPaymentStatus.filter(b => !b.isPaid).length;
+  const backedUpCount = barberPaymentStatus.filter(b => b.weeksOwed > 1).length;
   const allCount = barberPaymentStatus.length;
 
   const filteredBarberPaymentStatus = barberPaymentStatus.filter(item => {
@@ -90,10 +117,46 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
     return true;
   });
 
+  const handleAdjustWeeksOwed = (barber: Barber, newWeeks: number) => {
+    const safeWeeks = Math.max(0, newWeeks);
+    const updated = barbers.map(b => b.id === barber.id ? { ...b, weeksOwed: safeWeeks } : b);
+    onSaveBarbers(updated);
+  };
+
+  const handleOpenRecordOffline = (barber: Barber) => {
+    const status = barberPaymentStatus.find(s => s.barber.id === barber.id);
+    const owed = status?.weeksOwed ?? 1;
+    const weeklyRate = barber.weeklyRent || config.defaultWeeklyRent || 200;
+    setSelectedBarberForCash(barber);
+    setCashWeeksToPay(owed > 0 ? owed : 1);
+    setCashPayOption(owed > 1 ? 'all' : 'one');
+    setCashCustomAmount(String((owed > 0 ? owed : 1) * weeklyRate));
+    setCashPaymentMethod('manual');
+    setCashNotes('');
+  };
+
   const handleRecordOfflinePayment = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedBarberForCash) return;
-    onMarkPaidOffline(selectedBarberForCash, cashPaymentMethod, cashNotes);
+    const barberStatus = barberPaymentStatus.find(b => b.barber.id === selectedBarberForCash.id);
+    const weeklyRate = selectedBarberForCash.weeklyRent || config.defaultWeeklyRent || 200;
+    
+    let finalAmount: number;
+    let weeksDeducted: number;
+
+    if (cashPayOption === 'custom') {
+      finalAmount = parseFloat(cashCustomAmount) || weeklyRate;
+      weeksDeducted = Math.max(1, Math.round(finalAmount / weeklyRate));
+    } else if (cashPayOption === 'all') {
+      const owed = barberStatus?.weeksOwed || 1;
+      weeksDeducted = owed;
+      finalAmount = weeklyRate * owed;
+    } else {
+      weeksDeducted = cashWeeksToPay || 1;
+      finalAmount = weeklyRate * weeksDeducted;
+    }
+
+    onMarkPaidOffline(selectedBarberForCash, cashPaymentMethod, cashNotes, finalAmount, weeksDeducted);
     setSelectedBarberForCash(null);
     setCashNotes('');
   };
@@ -122,8 +185,11 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
   };
 
   const handleSendReminder = (barber: Barber) => {
-    setReminderSentFor(barber.name);
-    setTimeout(() => setReminderSentFor(null), 3000);
+    const status = barberPaymentStatus.find(b => b.barber.id === barber.id);
+    const owed = status?.weeksOwed || 1;
+    const total = status?.totalOwed || (barber.weeklyRent || 200);
+    setReminderSentFor(`${barber.name} ($${total} — ${owed} wk${owed > 1 ? 's' : ''} overdue)`);
+    setTimeout(() => setReminderSentFor(null), 3500);
   };
 
   const handleExportCSV = () => {
@@ -233,7 +299,7 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
         <div style={{ background: 'var(--surface-card)', padding: '18px 20px', borderRadius: 20, border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
             <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Unpaid / Due</span>
-            <div style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--pastel-amber-bg)', color: 'var(--pastel-amber)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 32, height: 32, borderRadius: 10, background: totalOutstanding > 0 ? 'var(--pastel-red-bg)' : 'var(--pastel-green-bg)', color: totalOutstanding > 0 ? 'var(--pastel-red)' : 'var(--pastel-green)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Clock size={16} />
             </div>
           </div>
@@ -241,7 +307,7 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
             ${totalOutstanding.toLocaleString()}
           </div>
           <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600, marginTop: 3 }}>
-            {barberPaymentStatus.filter(b => !b.isPaid).length} barbers pending payment
+            {dueCount} barbers pending ({totalOverdueWeeks} total cycles overdue)
           </div>
         </div>
 
@@ -380,7 +446,7 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
                   fontWeight: 800
                 }}
               >
-                {dueCount}
+                {dueCount}{backedUpCount > 0 ? ` (${backedUpCount} late)` : ''}
               </span>
             </button>
           </div>
@@ -420,18 +486,23 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
             </div>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
-            {filteredBarberPaymentStatus.map(({ barber, isPaid, latestPayment, amount }) => (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: 12 }}>
+            {filteredBarberPaymentStatus.map(({ barber, isPaid, weeksOwed, totalOwed, latestPayment, weeklyRate }) => (
             <div
               key={barber.id}
               style={{
                 background: 'var(--surface-pill)',
-                border: isPaid ? '1px solid var(--border-subtle)' : '1.5px solid var(--pastel-red-border)',
+                border: isPaid 
+                  ? '1px solid var(--border-subtle)' 
+                  : weeksOwed > 1 
+                  ? '1.5px solid var(--pastel-red)' 
+                  : '1.5px solid var(--pastel-amber-border, rgba(245, 158, 11, 0.4))',
                 borderRadius: 18,
                 padding: '16px',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 10
+                gap: 10,
+                position: 'relative'
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -458,48 +529,101 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
                       {barber.name}
                     </div>
                     <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-                      ${amount} / week
+                      ${weeklyRate} / week
                     </div>
                   </div>
                 </div>
 
                 <span
                   style={{
-                    padding: '3px 8px',
+                    padding: '3px 9px',
                     borderRadius: 9999,
                     fontSize: '0.75rem',
-                    fontWeight: 800,
-                    background: isPaid ? 'var(--pastel-green-bg)' : 'var(--pastel-red-bg)',
-                    color: isPaid ? 'var(--pastel-green)' : 'var(--pastel-red)',
-                    border: isPaid ? '1px solid var(--pastel-green-border)' : '1px solid var(--pastel-red-border)'
+                    fontWeight: 850,
+                    background: isPaid 
+                      ? 'var(--pastel-green-bg)' 
+                      : weeksOwed > 1 
+                      ? 'var(--pastel-red-bg)' 
+                      : 'var(--pastel-amber-bg)',
+                    color: isPaid 
+                      ? 'var(--pastel-green)' 
+                      : weeksOwed > 1 
+                      ? 'var(--pastel-red)' 
+                      : 'var(--pastel-amber)',
+                    border: isPaid 
+                      ? '1px solid var(--pastel-green-border)' 
+                      : weeksOwed > 1 
+                      ? '1.5px solid var(--pastel-red-border)' 
+                      : '1px solid var(--pastel-amber-border)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4
                   }}
                 >
-                  {isPaid ? 'Paid' : 'Unpaid'}
+                  {weeksOwed > 1 && <AlertTriangle size={12} />}
+                  <span>
+                    {isPaid ? 'Paid' : weeksOwed > 1 ? `${weeksOwed} Wks Past Due` : '1 Wk Due'}
+                  </span>
                 </span>
               </div>
 
-              {latestPayment && isPaid ? (
+              {isPaid ? (
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', background: 'var(--surface-card)', padding: '7px 10px', borderRadius: 10, border: '1px solid var(--border-subtle)' }}>
-                  Paid via <strong>{latestPayment.paymentMethod === 'apple_pay' ? 'Apple Pay' : latestPayment.paymentMethod?.toUpperCase()}</strong> • {new Date(latestPayment.paidAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  Paid via <strong>{latestPayment?.paymentMethod === 'apple_pay' ? 'Apple Pay' : latestPayment?.paymentMethod?.toUpperCase() || 'STRIPE'}</strong> • {new Date(latestPayment?.paidAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </div>
+              ) : weeksOwed > 1 ? (
+                <div style={{ fontSize: '0.8rem', color: 'var(--pastel-red)', background: 'rgba(239, 68, 68, 0.12)', padding: '9px 12px', borderRadius: 12, border: '1px solid var(--pastel-red-border)', display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <strong style={{ fontSize: '0.98rem', color: 'var(--text-primary)' }}>${totalOwed.toLocaleString()}.00 Total Due</strong>
+                    <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--pastel-red)' }}>{weeksOwed} Weeks Overdue</span>
+                  </div>
+                  <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
+                    Backed up {weeksOwed} weekly cycles (@ ${weeklyRate}/wk)
+                  </span>
                 </div>
               ) : (
-                <div style={{ fontSize: '0.78rem', color: 'var(--pastel-red)', background: 'var(--pastel-red-bg)', padding: '7px 10px', borderRadius: 10, border: '1px solid var(--pastel-red-border)' }}>
-                  Rent due for current weekly cycle (${amount}.00)
+                <div style={{ fontSize: '0.78rem', color: 'var(--pastel-amber)', background: 'var(--pastel-amber-bg)', padding: '7px 10px', borderRadius: 10, border: '1px solid var(--pastel-amber-border)' }}>
+                  Rent due for current weekly cycle (${weeklyRate}.00)
                 </div>
               )}
+
+              {/* Overdue Cycles Stepper Control */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', background: 'var(--surface-card)', borderRadius: 10, fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
+                <span>Billing Cycles Owed:</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <button
+                    type="button"
+                    title="Reduce overdue weeks by 1"
+                    disabled={weeksOwed <= 0}
+                    onClick={() => handleAdjustWeeksOwed(barber, weeksOwed - 1)}
+                    style={{ width: 22, height: 22, borderRadius: 6, border: '1px solid var(--border-subtle)', background: 'var(--surface-pill)', color: 'var(--text-primary)', cursor: weeksOwed > 0 ? 'pointer' : 'default', opacity: weeksOwed > 0 ? 1 : 0.4 }}
+                  >
+                    -
+                  </button>
+                  <strong style={{ minWidth: 42, textAlign: 'center', color: weeksOwed > 1 ? 'var(--pastel-red)' : 'var(--text-primary)' }}>
+                    {weeksOwed} wk{weeksOwed === 1 ? '' : 's'}
+                  </strong>
+                  <button
+                    type="button"
+                    title="Add 1 overdue week"
+                    onClick={() => handleAdjustWeeksOwed(barber, weeksOwed + 1)}
+                    style={{ width: 22, height: 22, borderRadius: 6, border: '1px solid var(--border-subtle)', background: 'var(--surface-pill)', color: 'var(--text-primary)', cursor: 'pointer' }}
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
 
               {/* Owner Action Buttons for this Barber */}
               <div style={{ display: 'flex', gap: 6, marginTop: 'auto' }}>
                 {!isPaid && (
                   <button
-                    onClick={() => {
-                      setSelectedBarberForCash(barber);
-                    }}
+                    onClick={() => handleOpenRecordOffline(barber)}
                     className="choice-card-action-btn"
-                    style={{ padding: '7px 12px', fontSize: '0.78rem', borderRadius: 9999 }}
+                    style={{ padding: '7px 12px', fontSize: '0.78rem', borderRadius: 9999, flex: 1.5 }}
                   >
                     <DollarSign size={13} />
-                    <span>Record Manual / Paid</span>
+                    <span>{weeksOwed > 1 ? 'Record Catch-Up' : 'Record Paid'}</span>
                   </button>
                 )}
 
@@ -513,7 +637,7 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
                   className="back-pill-btn"
                   style={{ padding: '7px 12px', fontSize: '0.78rem' }}
                 >
-                  <span>Edit Rate</span>
+                  <span>Rate</span>
                 </button>
 
                 {!isPaid && (
@@ -548,73 +672,171 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
             </button>
           </div>
 
-          <form onSubmit={handleRecordOfflinePayment} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div>
-              <label className="form-label">Payment Method</label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
-                {(['manual', 'card', 'stripe'] as const).map((m) => (
+          {/* Offline Payment Form */}
+          {(() => {
+            const barberStatus = barberPaymentStatus.find(s => s.barber.id === selectedBarberForCash.id);
+            const owedWeeks = barberStatus?.weeksOwed || 1;
+            const weeklyRate = selectedBarberForCash.weeklyRent || config.defaultWeeklyRent || 200;
+            const fullArrears = weeklyRate * owedWeeks;
+            const activePayAmount = cashPayOption === 'custom' 
+              ? (parseFloat(cashCustomAmount) || 0)
+              : cashPayOption === 'all'
+              ? fullArrears
+              : weeklyRate;
+            const remainingOverdue = Math.max(0, owedWeeks - (cashPayOption === 'all' ? owedWeeks : 1));
+
+            return (
+              <form onSubmit={handleRecordOfflinePayment} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {/* Backed up notice in modal */}
+                {owedWeeks > 1 && (
+                  <div style={{
+                    background: 'rgba(239, 68, 68, 0.12)',
+                    border: '1px solid var(--pastel-red-border)',
+                    borderRadius: 14,
+                    padding: '12px 14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10
+                  }}>
+                    <AlertTriangle size={18} color="var(--pastel-red)" style={{ flexShrink: 0 }} />
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                      <strong style={{ color: 'var(--pastel-red)' }}>{barberStatus?.barber.name} is {owedWeeks} weeks behind</strong> (${fullArrears.toLocaleString()} total back rent).
+                    </div>
+                  </div>
+                )}
+
+                {/* Catch-Up Option Buttons if > 1 week */}
+                {owedWeeks > 1 && (
+                  <div>
+                    <label className="form-label">Payment Scope</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCashPayOption('all');
+                          setCashWeeksToPay(owedWeeks);
+                        }}
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: 12,
+                          border: cashPayOption === 'all' ? '2px solid var(--pastel-green)' : '1px solid var(--border-subtle)',
+                          background: cashPayOption === 'all' ? 'var(--pastel-green-bg)' : 'var(--surface-pill)',
+                          color: cashPayOption === 'all' ? 'var(--pastel-green)' : 'var(--text-primary)',
+                          fontWeight: 800,
+                          fontSize: '0.8rem',
+                          cursor: 'pointer',
+                          textAlign: 'left'
+                        }}
+                      >
+                        <div>Pay All Back Rent</div>
+                        <div style={{ fontSize: '0.72rem', opacity: 0.8, marginTop: 2 }}>
+                          ${fullArrears} ({owedWeeks} Weeks)
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCashPayOption('one');
+                          setCashWeeksToPay(1);
+                        }}
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: 12,
+                          border: cashPayOption === 'one' ? '2px solid var(--accent-primary)' : '1px solid var(--border-subtle)',
+                          background: cashPayOption === 'one' ? 'var(--surface-card)' : 'var(--surface-pill)',
+                          color: cashPayOption === 'one' ? 'var(--accent-primary)' : 'var(--text-primary)',
+                          fontWeight: 800,
+                          fontSize: '0.8rem',
+                          cursor: 'pointer',
+                          textAlign: 'left'
+                        }}
+                      >
+                        <div>Pay 1 Week</div>
+                        <div style={{ fontSize: '0.72rem', opacity: 0.8, marginTop: 2 }}>
+                          ${weeklyRate} (Leaves {owedWeeks - 1} due)
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="form-label">Payment Method</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+                    {(['manual', 'card', 'stripe'] as const).map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => setCashPaymentMethod(m)}
+                        style={{
+                          padding: '9px',
+                          borderRadius: 12,
+                          border: cashPaymentMethod === m ? '2px solid var(--text-primary)' : '1px solid var(--border-subtle)',
+                          background: cashPaymentMethod === m ? 'var(--surface-pill)' : 'var(--surface-card)',
+                          color: 'var(--text-primary)',
+                          fontWeight: 750,
+                          fontSize: '0.82rem',
+                          textTransform: 'capitalize',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {m === 'manual' ? 'Cash / Manual' : m}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                    <label className="form-label" style={{ margin: 0 }}>Amount Paid ($)</label>
+                    {owedWeeks > 1 && (
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                        {cashPayOption === 'all' ? `Clears all ${owedWeeks} weeks` : `Clears 1 week (${remainingOverdue} remaining)`}
+                      </span>
+                    )}
+                  </div>
+                  <input
+                    type="number"
+                    disabled={cashPayOption !== 'custom'}
+                    value={activePayAmount}
+                    onChange={(e) => setCashCustomAmount(e.target.value)}
+                    className="bubbly-input"
+                  />
+                </div>
+
+                <div>
+                  <label className="form-label">Notes / Reference (Optional)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. In-person cash to owner / Zelle"
+                    value={cashNotes}
+                    onChange={(e) => setCashNotes(e.target.value)}
+                    className="bubbly-input"
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
                   <button
-                    key={m}
                     type="button"
-                    onClick={() => setCashPaymentMethod(m)}
-                    style={{
-                      padding: '9px',
-                      borderRadius: 12,
-                      border: cashPaymentMethod === m ? '2px solid var(--text-primary)' : '1px solid var(--border-subtle)',
-                      background: cashPaymentMethod === m ? 'var(--surface-pill)' : 'var(--surface-card)',
-                      color: 'var(--text-primary)',
-                      fontWeight: 750,
-                      fontSize: '0.82rem',
-                      textTransform: 'capitalize',
-                      cursor: 'pointer'
-                    }}
+                    onClick={() => setSelectedBarberForCash(null)}
+                    className="back-pill-btn"
+                    style={{ flex: 1, justifyContent: 'center' }}
                   >
-                    {m === 'manual' ? 'Manual Credit' : m}
+                    Cancel
                   </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="form-label">Amount Paid ($)</label>
-              <input
-                type="number"
-                disabled
-                value={selectedBarberForCash.weeklyRent || 200}
-                className="bubbly-input"
-              />
-            </div>
-
-            <div>
-              <label className="form-label">Notes / Reference (Optional)</label>
-              <input
-                type="text"
-                placeholder="e.g. In-person card payment / shop credit"
-                value={cashNotes}
-                onChange={(e) => setCashNotes(e.target.value)}
-                className="bubbly-input"
-              />
-            </div>
-
-            <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-              <button
-                type="button"
-                onClick={() => setSelectedBarberForCash(null)}
-                className="back-pill-btn"
-                style={{ flex: 1, justifyContent: 'center' }}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="choice-card-action-btn"
-                style={{ flex: 2, justifyContent: 'center' }}
-              >
-                <Check size={16} />
-                <span>Confirm Paid</span>
-              </button>
-            </div>
-          </form>
+                  <button
+                    type="submit"
+                    className="choice-card-action-btn"
+                    style={{ flex: 2, justifyContent: 'center' }}
+                  >
+                    <Check size={16} />
+                    <span>Confirm Paid (${activePayAmount})</span>
+                  </button>
+                </div>
+              </form>
+            );
+          })()}
         </ModalOverlay>
       )}
 

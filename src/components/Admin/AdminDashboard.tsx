@@ -27,7 +27,7 @@ interface AdminDashboardProps {
   checkIns: CheckInRecord[];
   rentRecords?: RentPaymentRecord[];
   supportMessages?: SupportMessage[];
-  onMarkPaidOffline?: (barber: Barber, method?: RentPaymentRecord['paymentMethod'], notes?: string) => void;
+  onMarkPaidOffline?: (barber: Barber, method?: RentPaymentRecord['paymentMethod'], notes?: string, paidAmount?: number, weeksCovered?: number) => void;
   onSaveBarbers: (barbers: Barber[]) => void;
   onSaveConfig: (config: ShopConfig) => void;
   onSendSupportMessage?: (text: string) => void;

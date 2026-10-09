@@ -40,7 +40,7 @@ interface BarberDashboardProps {
   onDeleteCheckIn?: (checkInId: string) => Promise<void> | void;
   onRestoreCheckIn?: (record: CheckInRecord) => Promise<void> | void;
   onClearCompleted?: () => Promise<void> | void;
-  onPayRent?: (barber: Barber, method: RentPaymentRecord['paymentMethod'], feeCovered: boolean) => Promise<RentPaymentRecord>;
+  onPayRent?: (barber: Barber, method: RentPaymentRecord['paymentMethod'], feeCovered: boolean, weeksCovered?: number, customAmount?: number) => Promise<RentPaymentRecord>;
   onSaveBarbers?: (barbers: Barber[]) => void;
   onLockStation?: () => void;
 }
@@ -90,7 +90,13 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
 
   // Barber Booth Rent status
   const myRentRecord = rentRecords.find(r => r.barberId === assignedBarber.id && r.status === 'paid');
-  const isRentPaidThisCycle = !!myRentRecord;
+  const myWeeksOwed = typeof assignedBarber.weeksOwed === 'number'
+    ? assignedBarber.weeksOwed
+    : (myRentRecord ? 0 : 1);
+  const isRentPaidThisCycle = myWeeksOwed === 0;
+  const isBackedUp = myWeeksOwed > 1;
+  const myWeeklyRate = assignedBarber.weeklyRent || config.defaultWeeklyRent || 200;
+  const myTotalOwed = myWeeksOwed * myWeeklyRate;
 
   // Tick every second to update elapsed wait times live
   useEffect(() => {
@@ -600,20 +606,46 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                   alignItems: 'center',
                   gap: 5,
                   padding: '7px 12px',
-                  background: isRentPaidThisCycle ? 'var(--pastel-green-bg)' : 'var(--pastel-amber-bg)',
-                  border: `1px solid ${isRentPaidThisCycle ? 'var(--pastel-green-border)' : 'var(--pastel-amber-border)'}`,
-                  color: isRentPaidThisCycle ? 'var(--pastel-green)' : 'var(--pastel-amber)',
+                  background: isRentPaidThisCycle 
+                    ? 'var(--pastel-green-bg)' 
+                    : isBackedUp 
+                    ? 'var(--pastel-red-bg)' 
+                    : 'var(--pastel-amber-bg)',
+                  border: `1px solid ${
+                    isRentPaidThisCycle 
+                      ? 'var(--pastel-green-border)' 
+                      : isBackedUp 
+                      ? 'var(--pastel-red-border)' 
+                      : 'var(--pastel-amber-border)'
+                  }`,
+                  color: isRentPaidThisCycle 
+                    ? 'var(--pastel-green)' 
+                    : isBackedUp 
+                    ? 'var(--pastel-red)' 
+                    : 'var(--pastel-amber)',
                   borderRadius: 9999,
                   fontSize: '0.76rem',
-                  fontWeight: 800,
+                  fontWeight: 850,
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
                   transition: 'all 0.2s ease'
                 }}
-                title={isRentPaidThisCycle ? 'Rent Paid - View Receipt' : 'Rent Due - Pay Online'}
+                title={isRentPaidThisCycle ? 'Rent Paid - View Receipt' : isBackedUp ? `${myWeeksOwed} Weeks Overdue - Pay Online` : 'Rent Due - Pay Online'}
               >
-                {isRentPaidThisCycle ? <DollarSign size={13} /> : <CreditCard size={13} />}
-                <span>{isRentPaidThisCycle ? `Rent Paid ($${assignedBarber.weeklyRent || 200})` : `Pay Rent: $${assignedBarber.weeklyRent || 200}`}</span>
+                {isRentPaidThisCycle ? (
+                  <DollarSign size={13} />
+                ) : isBackedUp ? (
+                  <AlertTriangle size={13} />
+                ) : (
+                  <CreditCard size={13} />
+                )}
+                <span>
+                  {isRentPaidThisCycle
+                    ? `Rent Paid ($${myWeeklyRate})`
+                    : isBackedUp
+                    ? `${myWeeksOwed} Wks Due: $${myTotalOwed}`
+                    : `Pay Rent: $${myWeeklyRate}`}
+                </span>
               </button>
             )}
 

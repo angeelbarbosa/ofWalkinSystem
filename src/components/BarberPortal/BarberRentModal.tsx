@@ -10,7 +10,8 @@ import {
   Check, 
   Copy,
   Smartphone,
-  RefreshCw
+  RefreshCw,
+  AlertTriangle
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import type { Barber, RentPaymentRecord, ShopConfig } from '../../types';
@@ -20,7 +21,7 @@ interface BarberRentModalProps {
   barber: Barber;
   config?: ShopConfig;
   existingRecord?: RentPaymentRecord | null;
-  onPayRent: (barber: Barber, method: RentPaymentRecord['paymentMethod'], feeCovered: boolean) => Promise<RentPaymentRecord>;
+  onPayRent: (barber: Barber, method: RentPaymentRecord['paymentMethod'], feeCovered: boolean, weeksCovered?: number, customAmount?: number) => Promise<RentPaymentRecord>;
   onClose: () => void;
 }
 
@@ -34,9 +35,15 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
   const baseRent = barber.weeklyRent || barber.rentAmount || 200;
   const rentCycleText = barber.rentCycle === 'monthly' ? 'Monthly' : barber.rentCycle === 'biweekly' ? 'Bi-Weekly' : 'Weekly';
   
+  const weeksOwed = typeof barber.weeksOwed === 'number' ? barber.weeksOwed : (existingRecord ? 0 : 1);
+  const isBackedUp = weeksOwed > 1;
+  const [selectedWeeksToPay, setSelectedWeeksToPay] = useState<number>(isBackedUp ? weeksOwed : 1);
+
+  const activePayWeeks = Math.max(1, selectedWeeksToPay);
+  const activeBaseRent = baseRent * activePayWeeks;
   // Card/Apple Pay standard processing fee (2.9% + 30¢)
-  const processingFee = Number(((baseRent * 0.029) + 0.30).toFixed(2));
-  const totalAmount = Number((baseRent + processingFee).toFixed(2));
+  const processingFee = Number(((activeBaseRent * 0.029) + 0.30).toFixed(2));
+  const totalAmount = Number((activeBaseRent + processingFee).toFixed(2));
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [autoPayEnabled, setAutoPayEnabled] = useState(barber.autoPayEnabled ?? true);
@@ -51,7 +58,7 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
 
     // Simulate crisp 1.2s Stripe & Apple Pay payment processing
     setTimeout(async () => {
-      const record = await onPayRent(barber, 'apple_pay', true);
+      const record = await onPayRent(barber, 'apple_pay', true, activePayWeeks, activeBaseRent);
       setIsProcessing(false);
       setPaidRecord(record);
       setIsPayingNewCycle(false);
@@ -126,6 +133,91 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
               </div>
             </div>
 
+            {/* Backed Up Alert Notice */}
+            {isBackedUp && (
+              <div
+                style={{
+                  background: 'rgba(239, 68, 68, 0.12)',
+                  border: '1.5px solid var(--pastel-red-border, rgba(239, 68, 68, 0.3))',
+                  borderRadius: 18,
+                  padding: '14px 16px',
+                  marginBottom: 16,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12
+                }}
+              >
+                <div
+                  style={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: 12,
+                    background: 'var(--pastel-red-bg)',
+                    color: 'var(--pastel-red)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}
+                >
+                  <AlertTriangle size={20} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '0.92rem', fontWeight: 850, color: 'var(--pastel-red)' }}>
+                    {weeksOwed} Weeks Overdue (${(baseRent * weeksOwed).toFixed(2)})
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: 2 }}>
+                    Your booth rent is backed up {weeksOwed} cycles. Choose to pay full balance or catch up 1 week:
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Backed Up Catch-Up Option Pills */}
+            {isBackedUp && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginBottom: 16 }}>
+                <button
+                  type="button"
+                  onClick={() => setSelectedWeeksToPay(weeksOwed)}
+                  style={{
+                    padding: '12px 14px',
+                    borderRadius: 14,
+                    border: selectedWeeksToPay === weeksOwed ? '2px solid var(--pastel-green)' : '1px solid var(--border-subtle)',
+                    background: selectedWeeksToPay === weeksOwed ? 'var(--pastel-green-bg)' : 'var(--surface-pill)',
+                    color: selectedWeeksToPay === weeksOwed ? 'var(--pastel-green)' : 'var(--text-primary)',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <div style={{ fontSize: '0.82rem', fontWeight: 850 }}>Pay Full Balance</div>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 800, marginTop: 2 }}>
+                    ${(baseRent * weeksOwed).toFixed(2)} ({weeksOwed} Wks)
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedWeeksToPay(1)}
+                  style={{
+                    padding: '12px 14px',
+                    borderRadius: 14,
+                    border: selectedWeeksToPay === 1 ? '2px solid var(--accent-primary)' : '1px solid var(--border-subtle)',
+                    background: selectedWeeksToPay === 1 ? 'var(--surface-card)' : 'var(--surface-pill)',
+                    color: selectedWeeksToPay === 1 ? 'var(--accent-primary)' : 'var(--text-primary)',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <div style={{ fontSize: '0.82rem', fontWeight: 850 }}>Pay 1 Week</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 2 }}>
+                    ${baseRent.toFixed(2)} (Leaves {weeksOwed - 1} due)
+                  </div>
+                </button>
+              </div>
+            )}
+
             {/* Bill Summary Breakdown */}
             <div
               style={{
@@ -137,8 +229,8 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.86rem', color: 'var(--text-secondary)', marginBottom: 8 }}>
-                <span>{rentCycleText} Booth Rent:</span>
-                <span style={{ fontWeight: 750, color: 'var(--text-primary)' }}>${baseRent.toFixed(2)}</span>
+                <span>{rentCycleText} Booth Rent{activePayWeeks > 1 ? ` (${activePayWeeks} Weeks)` : ''}:</span>
+                <span style={{ fontWeight: 750, color: 'var(--text-primary)' }}>${activeBaseRent.toFixed(2)}</span>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.86rem', color: 'var(--text-secondary)', marginBottom: 12 }}>

@@ -531,12 +531,19 @@ export function useLiveSystem() {
   const payBoothRent = async (
     barber: Barber,
     method: RentPaymentRecord['paymentMethod'] = 'apple_pay',
-    feeCovered: boolean = true
+    feeCovered: boolean = true,
+    weeksCovered: number = 1,
+    customAmount?: number
   ): Promise<RentPaymentRecord> => {
-    const baseAmount = barber.weeklyRent || config.defaultWeeklyRent || 200;
+    const weeklyRate = barber.weeklyRent || config.defaultWeeklyRent || 200;
+    const baseAmount = customAmount !== undefined ? customAmount : weeklyRate * weeksCovered;
     const isZeroFeeMethod = method === 'manual';
     const fee = isZeroFeeMethod ? 0 : (feeCovered ? Number(((baseAmount * 0.029) + 0.30).toFixed(2)) : 0);
     const total = baseAmount + fee;
+
+    const periodDesc = weeksCovered > 1
+      ? `${weeksCovered} Weeks Rent (${weeksCovered} cycles caught up)`
+      : `Week of ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
 
     const newRecord = storage.recordRentPayment({
       barberId: barber.id,
@@ -546,13 +553,22 @@ export function useLiveSystem() {
       processingFee: fee,
       totalPaid: total,
       feeCoveredByBarber: feeCovered,
-      periodDescription: `Week of ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+      periodDescription: periodDesc,
       dueDate: new Date().toISOString().split('T')[0],
       paidAt: new Date().toISOString(),
       status: 'paid',
       paymentMethod: method,
-      notes: `Paid via ${method === 'apple_pay' ? 'Apple Pay' : method === 'card' ? 'Card' : method === 'stripe' ? 'Stripe' : 'Manual Override'}`
+      notes: `Paid via ${method === 'apple_pay' ? 'Apple Pay' : method === 'card' ? 'Card' : method === 'stripe' ? 'Stripe' : 'Manual Override'} (${weeksCovered} wk${weeksCovered > 1 ? 's' : ''})`,
+      weeksCovered
     });
+
+    // Update the barber's weeksOwed in storage and state
+    const currentOwed = typeof barber.weeksOwed === 'number' ? barber.weeksOwed : 1;
+    const remainingWeeks = Math.max(0, currentOwed - weeksCovered);
+    const currentBarbers = storage.getBarbers();
+    const updatedBarbers = currentBarbers.map(b => b.id === barber.id ? { ...b, weeksOwed: remainingWeeks } : b);
+    storage.saveBarbers(updatedBarbers);
+    setBarbers(updatedBarbers);
 
     setRentRecords(storage.getRentRecords());
     const currentFleet = storage.getShops();
@@ -564,9 +580,17 @@ export function useLiveSystem() {
   const markRentPaidOffline = (
     barber: Barber,
     method: RentPaymentRecord['paymentMethod'] = 'manual',
-    notes?: string
+    notes?: string,
+    paidAmount?: number,
+    weeksCovered: number = 1
   ): RentPaymentRecord => {
-    const baseAmount = barber.weeklyRent || config.defaultWeeklyRent || 200;
+    const weeklyRate = barber.weeklyRent || config.defaultWeeklyRent || 200;
+    const baseAmount = paidAmount !== undefined ? paidAmount : weeklyRate * weeksCovered;
+
+    const periodDesc = weeksCovered > 1
+      ? `${weeksCovered} Weeks Rent (${weeksCovered} cycles caught up)`
+      : `Week of ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+
     const newRecord = storage.recordRentPayment({
       barberId: barber.id,
       barberName: barber.name,
@@ -575,13 +599,22 @@ export function useLiveSystem() {
       processingFee: 0,
       totalPaid: baseAmount,
       feeCoveredByBarber: false,
-      periodDescription: `Week of ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+      periodDescription: periodDesc,
       dueDate: new Date().toISOString().split('T')[0],
       paidAt: new Date().toISOString(),
       status: 'paid',
       paymentMethod: method,
-      notes: notes || `Recorded by Shop Owner via ${method?.toUpperCase() || 'MANUAL OVERRIDE'}`
+      notes: notes || `Recorded by Shop Owner via ${method?.toUpperCase() || 'MANUAL OVERRIDE'} (${weeksCovered} wk${weeksCovered > 1 ? 's' : ''})`,
+      weeksCovered
     });
+
+    // Update the barber's weeksOwed in storage and state
+    const currentOwed = typeof barber.weeksOwed === 'number' ? barber.weeksOwed : 1;
+    const remainingWeeks = Math.max(0, currentOwed - weeksCovered);
+    const currentBarbers = storage.getBarbers();
+    const updatedBarbers = currentBarbers.map(b => b.id === barber.id ? { ...b, weeksOwed: remainingWeeks } : b);
+    storage.saveBarbers(updatedBarbers);
+    setBarbers(updatedBarbers);
 
     setRentRecords(storage.getRentRecords());
     const currentFleet = storage.getShops();

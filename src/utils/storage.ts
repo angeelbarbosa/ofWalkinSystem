@@ -61,7 +61,8 @@ export const DEFAULT_OF_BARBERS: Barber[] = [
     rentCycle: 'weekly',
     rentDueDay: 'Monday',
     autoPayEnabled: true,
-    passcode: '1111'
+    passcode: '1111',
+    weeksOwed: 0
   },
   {
     id: 'barber-2',
@@ -78,7 +79,8 @@ export const DEFAULT_OF_BARBERS: Barber[] = [
     rentCycle: 'weekly',
     rentDueDay: 'Monday',
     autoPayEnabled: false,
-    passcode: '1111'
+    passcode: '1111',
+    weeksOwed: 2
   },
   {
     id: 'barber-3',
@@ -95,7 +97,8 @@ export const DEFAULT_OF_BARBERS: Barber[] = [
     rentCycle: 'weekly',
     rentDueDay: 'Monday',
     autoPayEnabled: false,
-    passcode: '1111'
+    passcode: '1111',
+    weeksOwed: 0
   },
   {
     id: 'barber-4',
@@ -112,7 +115,8 @@ export const DEFAULT_OF_BARBERS: Barber[] = [
     rentCycle: 'weekly',
     rentDueDay: 'Monday',
     autoPayEnabled: true,
-    passcode: '1111'
+    passcode: '1111',
+    weeksOwed: 0
   },
   {
     id: 'barber-5',
@@ -129,7 +133,8 @@ export const DEFAULT_OF_BARBERS: Barber[] = [
     rentCycle: 'weekly',
     rentDueDay: 'Monday',
     autoPayEnabled: false,
-    passcode: '1111'
+    passcode: '1111',
+    weeksOwed: 1
   },
   {
     id: 'barber-6',
@@ -146,7 +151,8 @@ export const DEFAULT_OF_BARBERS: Barber[] = [
     rentCycle: 'weekly',
     rentDueDay: 'Monday',
     autoPayEnabled: false,
-    passcode: '1111'
+    passcode: '1111',
+    weeksOwed: 1
   },
   {
     id: 'barber-7',
@@ -163,7 +169,8 @@ export const DEFAULT_OF_BARBERS: Barber[] = [
     rentCycle: 'weekly',
     rentDueDay: 'Monday',
     autoPayEnabled: false,
-    passcode: '1111'
+    passcode: '1111',
+    weeksOwed: 1
   }
 ];
 
@@ -769,7 +776,17 @@ export const storage = {
 
   getBarbers(): Barber[] {
     const shop = this.getActiveShop();
-    return shop.barbers || [];
+    const barbers = shop.barbers || [];
+    return barbers.map(b => {
+      if (typeof b.weeksOwed === 'number') return b;
+      if (b.id === 'barber-2' || b.name === 'Micah') {
+        return { ...b, weeksOwed: 2 };
+      }
+      if (b.name === 'Brandon' || b.name === 'Ruben' || b.name === 'Angel') {
+        return { ...b, weeksOwed: 0 };
+      }
+      return { ...b, weeksOwed: 1 };
+    });
   },
 
   saveBarbers(barbers: Barber[]) {
