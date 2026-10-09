@@ -11,13 +11,15 @@ import {
   HelpCircle,
   CreditCard,
   Building2,
-  Lock
+  Lock,
+  Receipt
 } from 'lucide-react';
 import type { Barber, CheckInRecord, ShopConfig, RentPaymentRecord, Shop, SupportMessage, SubscriptionPaymentMethod } from '../../types';
 import { RentLedgerDashboard } from './RentLedgerDashboard';
 import { ShopPayoutSettings } from './ShopPayoutSettings';
 import { SupportChatDrawer } from '../Shared/SupportChatDrawer';
 import { ShopSubscriptionModal } from './ShopSubscriptionModal';
+import { BarberReceiptsHistoryModal } from '../BarberPortal/BarberReceiptsHistoryModal';
 import { ModalOverlay } from '../Shared/ModalOverlay';
 
 interface AdminDashboardProps {
@@ -52,6 +54,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [activeSubTab, setActiveSubTab] = useState<'roster' | 'rent' | 'payouts' | 'settings' | 'history' | 'subscription'>('rent');
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isPaySubscriptionOpen, setIsPaySubscriptionOpen] = useState(false);
+  const [selectedBarberForReceipts, setSelectedBarberForReceipts] = useState<Barber | null>(null);
   
   // Barbers Management State
   const [isAddingBarber, setIsAddingBarber] = useState(false);
@@ -447,9 +450,33 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         </div>
                       </td>
                       <td>
-                        <span style={{ fontWeight: 700, fontFamily: 'monospace', background: 'var(--surface-pill)', padding: '3px 8px', borderRadius: 8, fontSize: '0.82rem', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }}>
-                          {barber.passcode || '1111'}
-                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontWeight: 700, fontFamily: 'monospace', background: 'var(--surface-pill)', padding: '3px 8px', borderRadius: 8, fontSize: '0.82rem', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }}>
+                            {barber.passcode || '1111'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedBarberForReceipts(barber)}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              padding: '3px 7px',
+                              borderRadius: 6,
+                              background: 'rgba(245, 158, 11, 0.08)',
+                              border: '1px solid rgba(245, 158, 11, 0.25)',
+                              color: 'var(--accent-primary, #F59E0B)',
+                              fontSize: '0.72rem',
+                              fontWeight: 750,
+                              cursor: 'pointer',
+                              whiteSpace: 'nowrap'
+                            }}
+                            title={`View past rent receipts for ${barber.name}`}
+                          >
+                            <Receipt size={11} />
+                            <span>Receipts</span>
+                          </button>
+                        </div>
                       </td>
                       <td>
                         <button
@@ -1049,6 +1076,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             onPayShopSubscription(paymentMethod);
           }}
           onClose={() => setIsPaySubscriptionOpen(false)}
+        />
+      )}
+
+      {/* Barber Past Paid Rent Receipts Modal */}
+      {selectedBarberForReceipts && (
+        <BarberReceiptsHistoryModal
+          barber={selectedBarberForReceipts}
+          config={config}
+          rentRecords={rentRecords}
+          onClose={() => setSelectedBarberForReceipts(null)}
         />
       )}
     </div>

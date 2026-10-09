@@ -19,12 +19,14 @@ import {
   MessageSquare,
   Phone,
   CornerUpLeft,
-  Undo2
+  Undo2,
+  Receipt
 } from 'lucide-react';
 import type { Barber, CheckInRecord, ShopConfig, RentPaymentRecord } from '../../types';
 import { storage } from '../../utils/storage';
 import { BarberRentModal } from './BarberRentModal';
 import { ChangePasscodeModal } from './ChangePasscodeModal';
+import { BarberReceiptsHistoryModal } from './BarberReceiptsHistoryModal';
 import { ModalOverlay } from '../Shared/ModalOverlay';
 import { notificationManager, type ArrivalToastEventData } from '../../utils/notifications';
 
@@ -70,6 +72,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
   const [activeToast, setActiveToast] = useState<ArrivalToastEventData | null>(null);
   const [isRentModalOpen, setIsRentModalOpen] = useState(false);
   const [isPasscodeModalOpen, setIsPasscodeModalOpen] = useState(false);
+  const [isReceiptsHistoryOpen, setIsReceiptsHistoryOpen] = useState(false);
   const [walkInToClaim, setWalkInToClaim] = useState<CheckInRecord | null>(null);
   const [chairOccupiedWarning, setChairOccupiedWarning] = useState<{ attemptedClientName: string; actionType: 'in_chair' | 'take_walkin' } | null>(null);
   // Last reversible action (Mark Finished / Back to List / Remove Cut) — shown in a 5-second Undo toast
@@ -90,6 +93,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
 
   // Barber Booth Rent status
   const myRentRecord = rentRecords.find(r => r.barberId === assignedBarber.id && r.status === 'paid');
+  const myPaidRecordsCount = rentRecords.filter(r => r.barberId === assignedBarber.id && r.status === 'paid').length;
   const myWeeksOwed = typeof assignedBarber.weeksOwed === 'number'
     ? assignedBarber.weeksOwed
     : (myRentRecord ? 0 : 1);
@@ -673,16 +677,16 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
           </div>
         </div>
 
-        {/* Action Buttons Row (Live Alerts & Passcode PIN) */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, width: '100%' }}>
+        {/* Action Buttons Row (Live Alerts, Passcode PIN & Rent Receipts) */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, width: '100%' }}>
           <button
             onClick={handleToggleAlerts}
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 6,
-              padding: '10px',
+              gap: 5,
+              padding: '10px 4px',
               background: alertsActive 
                 ? 'var(--pastel-green-bg, rgba(16, 185, 129, 0.15))' 
                 : 'var(--surface-pill, #27272A)',
@@ -693,19 +697,20 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                 ? '1px solid var(--pastel-green-border, rgba(16, 185, 129, 0.3))' 
                 : '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
               borderRadius: 14,
-              fontSize: '0.78rem',
+              fontSize: '0.76rem',
               fontWeight: 750,
               cursor: 'pointer',
-              transition: 'all 0.2s ease'
+              transition: 'all 0.2s ease',
+              whiteSpace: 'nowrap'
             }}
             title={alertsActive ? 'Live Alerts are ON (Tap to turn OFF / Mute)' : 'Live Alerts are OFF (Tap to turn ON)'}
           >
             {alertsActive ? (
-              <Bell size={14} style={{ color: 'var(--pastel-green, #10B981)' }} />
+              <Bell size={13} style={{ color: 'var(--pastel-green, #10B981)' }} />
             ) : (
-              <BellOff size={14} style={{ color: 'var(--text-muted, #71717A)' }} />
+              <BellOff size={13} style={{ color: 'var(--text-muted, #71717A)' }} />
             )}
-            <span>{tested ? 'Alert Synced!' : 'Live Alerts'}</span>
+            <span>{tested ? 'Synced!' : 'Live Alerts'}</span>
           </button>
 
           {/* Change PIN Button */}
@@ -716,19 +721,58 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
               alignItems: 'center',
               justifyContent: 'center',
               gap: 5,
-              padding: '10px',
+              padding: '10px 4px',
               background: 'var(--surface-pill, #27272A)',
               color: 'var(--text-primary)',
               border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
               borderRadius: 14,
-              fontSize: '0.78rem',
+              fontSize: '0.76rem',
               fontWeight: 750,
-              cursor: 'pointer'
+              cursor: 'pointer',
+              whiteSpace: 'nowrap'
             }}
             title="Change 4-digit passcode"
           >
-            <KeyRound size={14} style={{ color: 'var(--accent-primary)' }} />
+            <KeyRound size={13} style={{ color: 'var(--accent-primary)' }} />
             <span>My PIN</span>
+          </button>
+
+          {/* Paid Rent Receipts Button */}
+          <button
+            onClick={() => setIsReceiptsHistoryOpen(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 5,
+              padding: '10px 4px',
+              background: 'rgba(245, 158, 11, 0.08)',
+              color: 'var(--accent-primary, #F59E0B)',
+              border: '1px solid rgba(245, 158, 11, 0.25)',
+              borderRadius: 14,
+              fontSize: '0.76rem',
+              fontWeight: 750,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              transition: 'all 0.2s ease'
+            }}
+            title="View past rent receipts and payment history"
+          >
+            <Receipt size={13} style={{ color: 'var(--accent-primary)' }} />
+            <span>Receipts</span>
+            {myPaidRecordsCount > 0 && (
+              <span style={{
+                background: 'var(--accent-primary, #F59E0B)',
+                color: 'var(--bg-main, #000000)',
+                fontSize: '0.64rem',
+                fontWeight: 900,
+                padding: '1px 5px',
+                borderRadius: 9999,
+                marginLeft: 2
+              }}>
+                {myPaidRecordsCount}
+              </span>
+            )}
           </button>
         </div>
       </div>
@@ -1595,6 +1639,20 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
           barber={assignedBarber}
           onSaveNewPasscode={handleSaveNewPasscode}
           onClose={() => setIsPasscodeModalOpen(false)}
+        />
+      )}
+
+      {/* Past Rent Receipts History Modal */}
+      {isReceiptsHistoryOpen && (
+        <BarberReceiptsHistoryModal
+          barber={assignedBarber}
+          config={config}
+          rentRecords={rentRecords}
+          onPayRent={() => {
+            setIsReceiptsHistoryOpen(false);
+            if (onPayRent) setIsRentModalOpen(true);
+          }}
+          onClose={() => setIsReceiptsHistoryOpen(false)}
         />
       )}
 
