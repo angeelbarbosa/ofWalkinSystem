@@ -414,9 +414,9 @@ export function App() {
                 }}
               >
                 <div style={{ maxWidth: '680px', margin: '0 auto', width: '100%' }}>
-                  {/* Navigation Controls Bar with Shop Identity Badge */}
-                  <div className="staff-nav-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', width: '100%', boxSizing: 'border-box' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flex: 1, overflow: 'hidden' }}>
+                  {/* Navigation Controls Bar with Centered Shop Logo */}
+                  <div className="staff-nav-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', width: '100%', boxSizing: 'border-box' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0, justifyContent: 'flex-start' }}>
                       {sessionStorage.getItem('walkin_super_admin_unlocked') === 'true' && (
                         <button
                           onClick={() => setCurrentTab('super_admin')}
@@ -453,12 +453,14 @@ export function App() {
                         <ArrowLeft size={13} />
                         <span>Kiosk</span>
                       </button>
+                    </div>
 
-                      {/* Isolated Shop Badge (No dropdown or leakage of other shops) */}
+                    {/* True Center: Shop Logo */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <ShopSwitcherBar currentShop={activeShop} />
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0, justifyContent: 'flex-end' }}>
                       {currentTab === 'barber_portal' && (
                         <div
                           style={{

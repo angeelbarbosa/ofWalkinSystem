@@ -74,6 +74,32 @@
   box-sizing: border-box;
 }
 
+/* Shop Header Center Logo */
+.shop-header-logo-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shop-header-logo {
+  height: 28px;
+  max-width: 100px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.shop-header-logo:hover {
+  transform: scale(1.05);
+}
+
+/* In dark mode, invert black monochrome logo to crisp white with a subtle glow */
+[data-theme="obsidian_noir"] .shop-header-logo.is-default-logo,
+:root:not([data-theme="clean_studio"]) .shop-header-logo.is-default-logo {
+  filter: brightness(0) invert(1) drop-shadow(0 2px 8px rgba(255, 255, 255, 0.15));
+}
+
 .nav-pill-btn {
   padding: 8px 16px;
   border-radius: var(--radius-full);

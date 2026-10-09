@@ -141,6 +141,7 @@ export function resolveTheme(themeId?: string): ThemePreset {
 export function applyTheme(themeId: ThemeId = 'clean_studio') {
   const theme = resolveTheme(themeId);
   const root = document.documentElement;
+  root.setAttribute('data-theme', theme.id);
 
   root.style.setProperty('--bg-main', theme.bgMain);
   root.style.setProperty('--bg-gradient', theme.bgGradient);
