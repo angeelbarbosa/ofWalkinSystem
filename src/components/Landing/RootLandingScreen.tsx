@@ -286,7 +286,7 @@ export const RootLandingScreen: React.FC<RootLandingScreenProps> = ({
               <Search size={18} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
               <input
                 type="text"
-                placeholder="Enter code (e.g. of)"
+                placeholder="Enter code (e.g. demo or of)"
                 value={searchCode}
                 onChange={(e) => {
                   setSearchCode(e.target.value);
@@ -323,6 +323,51 @@ export const RootLandingScreen: React.FC<RootLandingScreenProps> = ({
               >
                 <span>Launch</span>
                 <ArrowRight size={14} />
+              </button>
+            </div>
+
+            {/* Quick Demo & Live Shops Shortcuts */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginTop: '6px' }}>
+              <button
+                type="button"
+                onClick={() => onSelectShop('demo', targetMode)}
+                style={{
+                  padding: '7px 12px',
+                  borderRadius: '10px',
+                  background: 'rgba(245, 158, 11, 0.12)',
+                  border: '1px solid var(--accent-primary)',
+                  color: 'var(--accent-primary)',
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <Sparkles size={12} />
+                <span>🎯 Quick Demo (The Showcase Lounge)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onSelectShop('of', targetMode)}
+                style={{
+                  padding: '7px 12px',
+                  borderRadius: '10px',
+                  background: 'var(--surface-pill)',
+                  border: '1px solid var(--border-subtle)',
+                  color: 'var(--text-secondary)',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px'
+                }}
+              >
+                <Scissors size={12} />
+                <span>OF Supply & Lounge</span>
               </button>
             </div>
 

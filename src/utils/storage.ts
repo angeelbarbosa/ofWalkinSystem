@@ -285,6 +285,26 @@ export const INITIAL_OF_RENT: RentPaymentRecord[] = [
 // Initial Seed Support Messages
 export const INITIAL_SUPPORT_MESSAGES: SupportMessage[] = [
   {
+    id: 'msg-demo-1',
+    shopSlug: 'demo',
+    sender: 'shop_owner',
+    senderName: 'Alex (The Showcase Lounge)',
+    text: 'Hey Angel! Testing out the new 2-week backlog and cash recording features. The live receipts look clean!',
+    createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+    readByHq: true,
+    readByShop: true
+  },
+  {
+    id: 'msg-demo-2',
+    shopSlug: 'demo',
+    sender: 'platform_hq',
+    senderName: 'Angel (Platform HQ)',
+    text: 'Awesome Alex! You can also adjust past-due weeks directly with the [-] and [+] stepper buttons in the ledger.',
+    createdAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
+    readByHq: true,
+    readByShop: true
+  },
+  {
     id: 'msg-1',
     shopSlug: 'fademasters',
     sender: 'shop_owner',
@@ -392,7 +412,8 @@ export const SEED_SHOPS: Shop[] = [
         rentCycle: 'weekly',
         rentDueDay: 'Monday',
         autoPayEnabled: true,
-        passcode: '1111'
+        passcode: '1111',
+        weeksOwed: 0
       },
       {
         id: 'fm-2',
@@ -409,7 +430,8 @@ export const SEED_SHOPS: Shop[] = [
         rentCycle: 'weekly',
         rentDueDay: 'Monday',
         autoPayEnabled: false,
-        passcode: '1111'
+        passcode: '1111',
+        weeksOwed: 2
       },
       {
         id: 'fm-3',
@@ -426,7 +448,8 @@ export const SEED_SHOPS: Shop[] = [
         rentCycle: 'weekly',
         rentDueDay: 'Monday',
         autoPayEnabled: false,
-        passcode: '1111'
+        passcode: '1111',
+        weeksOwed: 1
       }
     ],
     checkIns: [
@@ -442,7 +465,25 @@ export const SEED_SHOPS: Shop[] = [
         status: 'in_chair'
       }
     ],
-    rentRecords: [],
+    rentRecords: [
+      {
+        id: 'rent-fm-1',
+        barberId: 'fm-1',
+        barberName: 'Marcus "FadeKing"',
+        stationNumber: 1,
+        amount: 250.00,
+        processingFee: 7.55,
+        totalPaid: 257.55,
+        feeCoveredByBarber: true,
+        periodDescription: 'Week of Oct 5 – Oct 11, 2026',
+        dueDate: '2026-10-05',
+        paidAt: new Date(Date.now() - 1000 * 60 * 60 * 18).toISOString(),
+        status: 'paid',
+        paymentMethod: 'apple_pay',
+        receiptNumber: 'REC-77012',
+        notes: 'Auto-charged via Apple Pay'
+      }
+    ],
     status: 'active',
     monthlyPlanPrice: 49,
     createdAt: '2026-03-01T00:00:00.000Z'
@@ -481,7 +522,8 @@ export const SEED_SHOPS: Shop[] = [
         rentCycle: 'weekly',
         rentDueDay: 'Monday',
         autoPayEnabled: true,
-        passcode: '1111'
+        passcode: '1111',
+        weeksOwed: 0
       },
       {
         id: 'rc-2',
@@ -498,11 +540,30 @@ export const SEED_SHOPS: Shop[] = [
         rentCycle: 'weekly',
         rentDueDay: 'Monday',
         autoPayEnabled: false,
-        passcode: '1111'
+        passcode: '1111',
+        weeksOwed: 2
       }
     ],
     checkIns: [],
-    rentRecords: [],
+    rentRecords: [
+      {
+        id: 'rent-rc-1',
+        barberId: 'rc-1',
+        barberName: 'Dominic "The Barber"',
+        stationNumber: 1,
+        amount: 200.00,
+        processingFee: 6.10,
+        totalPaid: 206.10,
+        feeCoveredByBarber: true,
+        periodDescription: 'Week of Oct 5 – Oct 11, 2026',
+        dueDate: '2026-10-05',
+        paidAt: new Date(Date.now() - 1000 * 60 * 60 * 22).toISOString(),
+        status: 'paid',
+        paymentMethod: 'stripe',
+        receiptNumber: 'REC-88045',
+        notes: 'Paid via Stripe / Verified by Owner'
+      }
+    ],
     status: 'active',
     monthlyPlanPrice: 49,
     subscriptionStatus: 'past_due',
@@ -514,6 +575,203 @@ export const SEED_SHOPS: Shop[] = [
     ownerPhone: '(555) 888-1111',
     ownerEmail: 'dominic@royalcuts.com',
     createdAt: '2026-03-10T00:00:00.000Z'
+  },
+  {
+    id: 'shop-demo',
+    slug: 'demo',
+    name: 'The Showcase Lounge (Demo)',
+    tagline: 'VIP Barbershop, Waitlist Kiosk & Live Rent Ledger Demo',
+    address: '777 Luxury Blvd, Suite 100',
+    logoUrl: '/logo.png',
+    themeId: 'midnight_gold',
+    pinCode: '1234',
+    config: {
+      ...DEFAULT_OF_CONFIG,
+      shopName: 'The Showcase Lounge',
+      tagline: 'VIP Barbershop & Master Grooming',
+      welcomeShoppingTitle: 'Welcome to The Showcase Lounge',
+      welcomeShoppingBody: 'Check in for your appointment or sign in for walk-in rotation.',
+      allowWalkinsWithoutAppointment: true,
+      enableShoppingMode: true,
+      defaultWeeklyRent: 200,
+      pinCode: '1234',
+      shoppingCategories: ['Styling Pomades', 'Organic Beard Care', 'Texture Sprays', 'Accessories'],
+      shoppingAnnouncement: 'Featured VIP Grooming Essentials Available at Front Counter'
+    },
+    barbers: [
+      {
+        id: 'demo-1',
+        name: 'Darius "The Fade Specialist"',
+        nickname: 'Darius',
+        specialty: 'Skin Tapers & Sharp Lineups',
+        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80',
+        avatarColor: '#F59E0B',
+        phone: '(555) 333-1001',
+        stationNumber: 1,
+        isWorking: true,
+        pushSubscriptionActive: true,
+        weeklyRent: 200,
+        rentCycle: 'weekly',
+        rentDueDay: 'Monday',
+        autoPayEnabled: false,
+        passcode: '1111',
+        weeksOwed: 2
+      },
+      {
+        id: 'demo-2',
+        name: 'Marcus "FadeKing"',
+        nickname: 'Marcus',
+        specialty: 'Master Scissor Cuts & Beard Sculpting',
+        avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&auto=format&fit=crop&q=80',
+        avatarColor: '#10B981',
+        phone: '(555) 333-1002',
+        stationNumber: 2,
+        isWorking: true,
+        pushSubscriptionActive: true,
+        weeklyRent: 250,
+        rentCycle: 'weekly',
+        rentDueDay: 'Monday',
+        autoPayEnabled: true,
+        passcode: '1111',
+        weeksOwed: 0
+      },
+      {
+        id: 'demo-3',
+        name: 'Julian Vance',
+        nickname: 'Julian',
+        specialty: 'Modern Textures & Burst Fades',
+        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
+        avatarColor: '#3B82F6',
+        phone: '(555) 333-1003',
+        stationNumber: 3,
+        isWorking: true,
+        pushSubscriptionActive: true,
+        weeklyRent: 220,
+        rentCycle: 'weekly',
+        rentDueDay: 'Monday',
+        autoPayEnabled: false,
+        passcode: '1111',
+        weeksOwed: 1
+      },
+      {
+        id: 'demo-4',
+        name: 'Ruben "The Craftsman"',
+        nickname: 'Ruben',
+        specialty: 'Hot Towel Shaves & Precision Beards',
+        avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=300&auto=format&fit=crop&q=80',
+        avatarColor: '#8B5CF6',
+        phone: '(555) 333-1004',
+        stationNumber: 4,
+        isWorking: true,
+        pushSubscriptionActive: true,
+        weeklyRent: 200,
+        rentCycle: 'weekly',
+        rentDueDay: 'Monday',
+        autoPayEnabled: false,
+        passcode: '1111',
+        weeksOwed: 0
+      },
+      {
+        id: 'demo-5',
+        name: 'Leo Blade',
+        nickname: 'Leo',
+        specialty: 'Classic Scissor Cuts',
+        avatar: '',
+        avatarColor: '#6B7280',
+        phone: '(555) 333-1005',
+        stationNumber: 5,
+        isWorking: false,
+        pushSubscriptionActive: false,
+        weeklyRent: 200,
+        rentCycle: 'weekly',
+        rentDueDay: 'Monday',
+        autoPayEnabled: false,
+        passcode: '1111',
+        weeksOwed: 0
+      }
+    ],
+    checkIns: [
+      {
+        id: 'demo-chk-1',
+        clientName: 'Jordan Ramirez',
+        clientPhone: '(555) 901-4455',
+        type: 'appointment',
+        barberId: 'demo-2',
+        barberName: 'Marcus "FadeKing"',
+        appointmentTime: 'Appointment',
+        checkInTime: new Date(Date.now() - 1000 * 60 * 14).toISOString(),
+        status: 'in_chair'
+      },
+      {
+        id: 'demo-chk-2',
+        clientName: 'Devon Brooks',
+        clientPhone: '(555) 901-7788',
+        type: 'appointment',
+        barberId: 'demo-1',
+        barberName: 'Darius "The Fade Specialist"',
+        appointmentTime: 'Appointment',
+        checkInTime: new Date(Date.now() - 1000 * 60 * 6).toISOString(),
+        status: 'waiting'
+      },
+      {
+        id: 'demo-chk-3',
+        clientName: 'Tyler Hayes',
+        clientPhone: '(555) 901-2233',
+        type: 'walkin',
+        barberId: 'first_available',
+        barberName: 'First Available Barber',
+        appointmentTime: 'Walk-in',
+        checkInTime: new Date(Date.now() - 1000 * 60 * 2).toISOString(),
+        status: 'waiting'
+      }
+    ],
+    rentRecords: [
+      {
+        id: 'rent-demo-1',
+        barberId: 'demo-2',
+        barberName: 'Marcus "FadeKing"',
+        stationNumber: 2,
+        amount: 250.00,
+        processingFee: 7.55,
+        totalPaid: 257.55,
+        feeCoveredByBarber: true,
+        periodDescription: 'Week of Oct 5 – Oct 11, 2026',
+        dueDate: '2026-10-05',
+        paidAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
+        status: 'paid',
+        paymentMethod: 'apple_pay',
+        receiptNumber: 'REC-DEMO-01',
+        notes: 'Auto-charged via Apple Pay (Covered fee)'
+      },
+      {
+        id: 'rent-demo-2',
+        barberId: 'demo-4',
+        barberName: 'Ruben "The Craftsman"',
+        stationNumber: 4,
+        amount: 200.00,
+        processingFee: 0.00,
+        totalPaid: 200.00,
+        feeCoveredByBarber: false,
+        periodDescription: 'Week of Oct 5 – Oct 11, 2026',
+        dueDate: '2026-10-05',
+        paidAt: new Date(Date.now() - 1000 * 60 * 60 * 36).toISOString(),
+        status: 'paid',
+        paymentMethod: 'manual',
+        receiptNumber: 'REC-DEMO-02',
+        notes: 'Paid $200 cash at morning check-in / Verified by Owner'
+      }
+    ],
+    status: 'active',
+    monthlyPlanPrice: 49,
+    subscriptionStatus: 'active',
+    subscriptionMonthlyFee: 49,
+    subscriptionNextBillingDate: '2026-11-15',
+    subscriptionLastPaidDate: '2026-10-15',
+    subscriptionPaymentMethod: 'stripe',
+    ownerContactName: 'Alex Vance (Demo Owner)',
+    ownerPhone: '(555) 333-DEMO',
+    ownerEmail: 'demo@apexbarber.com',
+    createdAt: '2026-03-01T00:00:00.000Z'
   }
 ];
 
@@ -581,7 +839,112 @@ export const storage = {
         if (!s.ownerPhone) {
           s.ownerPhone = s.slug === 'of' ? '(555) 234-5678' : (s.slug === 'royalcuts' ? '(555) 888-1111' : '(555) 777-1010');
         }
+
+        // Hydrate 2-week overdue example barber on each shop for testing
+        if (s.barbers) {
+          s.barbers.forEach(b => {
+            if (b.id === 'barber-2' || b.name === 'Micah') {
+              if (b.weeksOwed === undefined || b.weeksOwed === 1) b.weeksOwed = 2;
+            }
+            if (b.id === 'fm-2' || b.name.includes('Diego')) {
+              if (b.weeksOwed === undefined || b.weeksOwed === 1) b.weeksOwed = 2;
+            }
+            if (b.id === 'rc-2' || b.name.includes('Lucas')) {
+              if (b.weeksOwed === undefined || b.weeksOwed === 1) b.weeksOwed = 2;
+            }
+            if (b.id === 'fm-1' || b.name.includes('Marcus')) {
+              if (b.weeksOwed === undefined) b.weeksOwed = 0;
+            }
+            if (b.id === 'rc-1' || b.name.includes('Dominic')) {
+              if (b.weeksOwed === undefined) b.weeksOwed = 0;
+            }
+          });
+        }
+
+        // Hydrate sample rent records if empty so ledger demonstrates full functionality
+        if (s.slug === 'fademasters' && (!s.rentRecords || s.rentRecords.length === 0)) {
+          s.rentRecords = [
+            {
+              id: 'rent-fm-1',
+              barberId: 'fm-1',
+              barberName: 'Marcus "FadeKing"',
+              stationNumber: 1,
+              amount: 250.00,
+              processingFee: 7.55,
+              totalPaid: 257.55,
+              feeCoveredByBarber: true,
+              periodDescription: 'Week of Oct 5 – Oct 11, 2026',
+              dueDate: '2026-10-05',
+              paidAt: new Date(Date.now() - 1000 * 60 * 60 * 18).toISOString(),
+              status: 'paid',
+              paymentMethod: 'apple_pay',
+              receiptNumber: 'REC-77012',
+              notes: 'Auto-charged via Apple Pay'
+            }
+          ];
+        }
+
+        if (s.slug === 'royalcuts' && (!s.rentRecords || s.rentRecords.length === 0)) {
+          s.rentRecords = [
+            {
+              id: 'rent-rc-1',
+              barberId: 'rc-1',
+              barberName: 'Dominic "The Barber"',
+              stationNumber: 1,
+              amount: 200.00,
+              processingFee: 6.10,
+              totalPaid: 206.10,
+              feeCoveredByBarber: true,
+              periodDescription: 'Week of Oct 5 – Oct 11, 2026',
+              dueDate: '2026-10-05',
+              paidAt: new Date(Date.now() - 1000 * 60 * 60 * 22).toISOString(),
+              status: 'paid',
+              paymentMethod: 'stripe',
+              receiptNumber: 'REC-88045',
+              notes: 'Paid via Stripe / Verified by Owner'
+            }
+          ];
+        }
+
+        // Hydrate demo shop barbers, check-ins, and rent records
+        if (s.slug === 'demo') {
+          if (s.barbers) {
+            s.barbers.forEach(b => {
+              if (b.id === 'demo-1' || b.name.includes('Darius')) {
+                if (b.weeksOwed === undefined || b.weeksOwed === 1) b.weeksOwed = 2;
+              }
+              if (b.id === 'demo-2' || b.name.includes('FadeKing')) {
+                if (b.weeksOwed === undefined) b.weeksOwed = 0;
+              }
+              if (b.id === 'demo-3' || b.name.includes('Julian')) {
+                if (b.weeksOwed === undefined) b.weeksOwed = 1;
+              }
+              if (b.id === 'demo-4' || b.name.includes('Craftsman')) {
+                if (b.weeksOwed === undefined) b.weeksOwed = 0;
+              }
+              if (b.id === 'demo-5') {
+                if (b.weeksOwed === undefined) b.weeksOwed = 0;
+              }
+            });
+          }
+          if (!s.rentRecords || s.rentRecords.length === 0) {
+            const demoSeed = SEED_SHOPS.find(shop => shop.slug === 'demo');
+            if (demoSeed?.rentRecords) s.rentRecords = demoSeed.rentRecords;
+          }
+          if (!s.checkIns || s.checkIns.length === 0) {
+            const demoSeed = SEED_SHOPS.find(shop => shop.slug === 'demo');
+            if (demoSeed?.checkIns) s.checkIns = demoSeed.checkIns;
+          }
+        }
       });
+
+      // Ensure 'demo' exists
+      if (!parsed.some(s => s.slug === 'demo')) {
+        const demoShop = SEED_SHOPS.find(s => s.slug === 'demo');
+        if (demoShop) {
+          parsed.push(demoShop);
+        }
+      }
 
       // Ensure 'of' exists
       if (!parsed.some(s => s.slug === 'of')) {
@@ -779,10 +1142,19 @@ export const storage = {
     const barbers = shop.barbers || [];
     return barbers.map(b => {
       if (typeof b.weeksOwed === 'number') return b;
-      if (b.id === 'barber-2' || b.name === 'Micah') {
+      if (
+        b.id === 'barber-2' || b.name === 'Micah' || 
+        b.id === 'fm-2' || b.name.includes('Diego') || 
+        b.id === 'rc-2' || b.name.includes('Lucas') ||
+        b.id === 'demo-1' || b.name.includes('Darius')
+      ) {
         return { ...b, weeksOwed: 2 };
       }
-      if (b.name === 'Brandon' || b.name === 'Ruben' || b.name === 'Angel') {
+      if (
+        b.name === 'Brandon' || b.name === 'Ruben' || b.name === 'Angel' || 
+        b.name.includes('Marcus') || b.name.includes('Dominic') ||
+        b.id === 'demo-2' || b.id === 'demo-4' || b.id === 'demo-5'
+      ) {
         return { ...b, weeksOwed: 0 };
       }
       return { ...b, weeksOwed: 1 };
@@ -940,6 +1312,10 @@ export const storage = {
       } else {
         const parsed = JSON.parse(data);
         messages = Array.isArray(parsed) ? parsed : INITIAL_SUPPORT_MESSAGES;
+        if (!messages.some(m => m.shopSlug === 'demo')) {
+          messages = [...INITIAL_SUPPORT_MESSAGES.filter(m => m.shopSlug === 'demo'), ...messages];
+          localStorage.setItem(SUPPORT_MESSAGES_KEY, JSON.stringify(messages));
+        }
       }
       if (shopSlug) {
         const cleanSlug = shopSlug.toLowerCase().trim();
