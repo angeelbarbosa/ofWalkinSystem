@@ -33,6 +33,7 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
   const [newRentAmount, setNewRentAmount] = useState<string>('200');
   const [showRentConfirm, setShowRentConfirm] = useState(false);
   const [reminderSentFor, setReminderSentFor] = useState<string | null>(null);
+  const [rentFilter, setRentFilter] = useState<'all' | 'paid' | 'due'>('all');
 
   // Lock body scroll when popup/modal is open
   useEffect(() => {
@@ -70,6 +71,16 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
 
   const totalOutstanding = totalExpectedRent - totalCollected;
   const collectionRate = totalExpectedRent > 0 ? Math.round((totalCollected / totalExpectedRent) * 100) : 0;
+
+  const paidCount = barberPaymentStatus.filter(b => b.isPaid).length;
+  const dueCount = barberPaymentStatus.filter(b => !b.isPaid).length;
+  const allCount = barberPaymentStatus.length;
+
+  const filteredBarberPaymentStatus = barberPaymentStatus.filter(item => {
+    if (rentFilter === 'paid') return item.isPaid;
+    if (rentFilter === 'due') return !item.isPaid;
+    return true;
+  });
 
   const handleRecordOfflinePayment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -186,14 +197,116 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
             </p>
           </div>
 
-          <button
-            onClick={handleExportCSV}
-            className="back-pill-btn"
-            style={{ padding: '7px 12px', fontSize: '0.8rem' }}
+          {/* Quick Rent Status Filter (All / Paid / Due) */}
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              background: 'var(--surface-pill, #1C1C21)',
+              padding: '3px',
+              borderRadius: '9999px',
+              border: '1px solid var(--border-subtle, rgba(255,255,255,0.08))',
+              gap: '2px'
+            }}
           >
-            <Download size={13} />
-            <span>Export CSV</span>
-          </button>
+            <button
+              type="button"
+              onClick={() => setRentFilter('all')}
+              style={{
+                background: rentFilter === 'all' ? 'var(--surface-card, #27272A)' : 'transparent',
+                border: rentFilter === 'all' ? '1px solid var(--border-subtle, rgba(255,255,255,0.12))' : 'none',
+                color: rentFilter === 'all' ? 'var(--text-primary, #FFFFFF)' : 'var(--text-muted, #71717A)',
+                padding: '5px 12px',
+                borderRadius: '9999px',
+                fontSize: '0.78rem',
+                fontWeight: rentFilter === 'all' ? 850 : 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <span>All</span>
+              <span
+                style={{
+                  fontSize: '0.68rem',
+                  padding: '1px 5px',
+                  borderRadius: '9999px',
+                  background: rentFilter === 'all' ? 'rgba(255,255,255,0.12)' : 'var(--surface-card-subtle)',
+                  fontWeight: 800
+                }}
+              >
+                {allCount}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setRentFilter('paid')}
+              style={{
+                background: rentFilter === 'paid' ? 'var(--pastel-green-bg, rgba(16, 185, 129, 0.15))' : 'transparent',
+                border: rentFilter === 'paid' ? '1px solid var(--pastel-green-border, rgba(16, 185, 129, 0.3))' : 'none',
+                color: rentFilter === 'paid' ? 'var(--pastel-green, #10B981)' : 'var(--text-muted, #71717A)',
+                padding: '5px 12px',
+                borderRadius: '9999px',
+                fontSize: '0.78rem',
+                fontWeight: rentFilter === 'paid' ? 850 : 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <span>Paid</span>
+              <span
+                style={{
+                  fontSize: '0.68rem',
+                  padding: '1px 5px',
+                  borderRadius: '9999px',
+                  background: rentFilter === 'paid' ? 'rgba(16, 185, 129, 0.25)' : 'var(--surface-card-subtle)',
+                  color: rentFilter === 'paid' ? 'var(--pastel-green, #10B981)' : 'var(--text-muted)',
+                  fontWeight: 800
+                }}
+              >
+                {paidCount}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setRentFilter('due')}
+              style={{
+                background: rentFilter === 'due' ? 'var(--pastel-red-bg, rgba(239, 68, 68, 0.15))' : 'transparent',
+                border: rentFilter === 'due' ? '1px solid var(--pastel-red-border, rgba(239, 68, 68, 0.3))' : 'none',
+                color: rentFilter === 'due' ? 'var(--pastel-red, #EF4444)' : 'var(--text-muted, #71717A)',
+                padding: '5px 12px',
+                borderRadius: '9999px',
+                fontSize: '0.78rem',
+                fontWeight: rentFilter === 'due' ? 850 : 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <span>Due</span>
+              <span
+                style={{
+                  fontSize: '0.68rem',
+                  padding: '1px 5px',
+                  borderRadius: '9999px',
+                  background: rentFilter === 'due' ? 'rgba(239, 68, 68, 0.25)' : 'var(--surface-card-subtle)',
+                  color: rentFilter === 'due' ? 'var(--pastel-red, #EF4444)' : 'var(--text-muted)',
+                  fontWeight: 800
+                }}
+              >
+                {dueCount}
+              </span>
+            </button>
+          </div>
         </div>
 
         {/* Reminder toast */}
@@ -204,8 +317,34 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
-          {barberPaymentStatus.map(({ barber, isPaid, latestPayment, amount }) => (
+        {filteredBarberPaymentStatus.length === 0 ? (
+          <div
+            style={{
+              padding: '36px 16px',
+              textAlign: 'center',
+              background: 'var(--surface-pill)',
+              borderRadius: 18,
+              border: '1px dashed var(--border-subtle)',
+              color: 'var(--text-muted)'
+            }}
+          >
+            <div style={{ fontSize: '1.5rem', marginBottom: 6 }}>
+              {rentFilter === 'due' ? '🎉' : '📋'}
+            </div>
+            <div style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: 2 }}>
+              {rentFilter === 'due' ? 'No Rent Outstanding' : rentFilter === 'paid' ? 'No Payments Recorded Yet' : 'No Barbers Found'}
+            </div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+              {rentFilter === 'due' 
+                ? 'All working barbers have paid their booth rent for this cycle!' 
+                : rentFilter === 'paid'
+                ? 'No barbers have marked their rent as paid for this cycle yet.'
+                : 'No active barbers currently assigned to stations.'}
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+            {filteredBarberPaymentStatus.map(({ barber, isPaid, latestPayment, amount }) => (
             <div
               key={barber.id}
               style={{
@@ -313,7 +452,8 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* 3. Record Offline Payment Modal */}
@@ -518,9 +658,26 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
 
       {/* 5. Historical Payment Ledger Table */}
       <div style={{ background: 'var(--surface-card)', borderRadius: 24, padding: '20px', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
-        <h3 style={{ fontSize: '1.15rem', fontWeight: 850, color: 'var(--text-primary)', marginBottom: 14 }}>
-          Payment History & Receipts
-        </h3>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
+          <div>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0 }}>
+              Payment History & Receipts
+            </h3>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '2px 0 0' }}>
+              Complete audit trail of all rent receipts and transactions
+            </p>
+          </div>
+
+          <button
+            onClick={handleExportCSV}
+            className="back-pill-btn"
+            style={{ padding: '7px 14px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 6 }}
+            title="Export payment records to CSV"
+          >
+            <Download size={13} />
+            <span>Export CSV</span>
+          </button>
+        </div>
 
         <div className="table-responsive">
           <table className="bubbly-table">
