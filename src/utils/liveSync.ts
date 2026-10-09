@@ -473,6 +473,21 @@ export function useLiveSystem() {
     syncToConvexCloud(currentFleet);
   };
 
+  // Actions: Release a claimed walk-in back to the shared walk-in line (keeps original spot)
+  const releaseCheckIn = async (checkInId: string) => {
+    storage.releaseCheckIn(checkInId);
+
+    setCheckIns(prev => prev.map(c => 
+      c.id === checkInId 
+        ? { ...c, barberId: 'first_available', barberName: 'First Available', status: 'waiting', notes: undefined, statusUpdatedAt: new Date().toISOString() } 
+        : c
+    ));
+
+    const currentFleet = storage.getShops();
+    setShops(currentFleet);
+    syncToConvexCloud(currentFleet);
+  };
+
   // Actions: Save Barbers (Strictly scoped to active shop)
   const saveBarbers = async (updated: Barber[]) => {
     storage.saveBarbers(updated);
@@ -647,6 +662,7 @@ export function useLiveSystem() {
     addCheckIn,
     updateStatus,
     claimCheckIn,
+    releaseCheckIn,
     clearCompletedCheckIns,
     saveBarbers,
     saveConfig,

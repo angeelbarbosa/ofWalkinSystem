@@ -1470,30 +1470,31 @@
   }
 }
 
-/* ===== Barber Portal: No-Show button ===== */
-.no-show-btn {
+/* ===== Barber Portal: Return to Walk-In List button ===== */
+.send-back-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  background: transparent;
-  border: 1px solid rgba(239, 68, 68, 0.35);
-  color: #F87171;
+  background: var(--surface-pill, #27272A);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
+  color: var(--text-secondary, #A1A1AA);
   border-radius: 14px;
   font-size: 0.86rem;
   font-weight: 800;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  transition: all 0.15s ease;
 }
 
-.no-show-btn:hover {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.6);
+.send-back-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary, #FAFAFA);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
-.no-show-btn:active {
-  transform: scale(0.97);
+.send-back-btn:active {
+  transform: scale(0.98);
 }
 
 /* ===== Barber Portal: 5-second Undo toast ===== */

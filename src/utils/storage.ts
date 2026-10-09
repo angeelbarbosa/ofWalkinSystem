@@ -837,6 +837,18 @@ export const storage = {
     this.saveCheckIns(updated);
   },
 
+  // Reverse of claimCheckIn: send a claimed walk-in back to the shared walk-in line.
+  // checkInTime is kept, so the client returns to their original spot in line.
+  releaseCheckIn(id: string) {
+    const records = this.getCheckIns();
+    const updated = records.map(r => 
+      r.id === id 
+        ? { ...r, barberId: 'first_available', barberName: 'First Available', status: 'waiting' as const, statusUpdatedAt: new Date().toISOString(), notes: undefined } 
+        : r
+    );
+    this.saveCheckIns(updated);
+  },
+
   clearCompletedCheckIns() {
     const records = this.getCheckIns();
     const updated = records.filter(r => r.status === 'waiting' || r.status === 'in_chair' || r.status === 'called');

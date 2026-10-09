@@ -18,7 +18,7 @@ import {
   AlertTriangle,
   MessageSquare,
   Phone,
-  UserX,
+  CornerUpLeft,
   Undo2
 } from 'lucide-react';
 import type { Barber, CheckInRecord, ShopConfig, RentPaymentRecord } from '../../types';
@@ -36,6 +36,7 @@ interface BarberDashboardProps {
   config: ShopConfig;
   onUpdateStatus: (id: string, status: CheckInRecord['status']) => void;
   onClaimWalkIn?: (checkInId: string, barber: Barber, newStatus?: CheckInRecord['status']) => Promise<void> | void;
+  onReleaseWalkIn?: (checkInId: string) => Promise<void> | void;
   onClearCompleted?: () => Promise<void> | void;
   onPayRent?: (barber: Barber, method: RentPaymentRecord['paymentMethod'], feeCovered: boolean) => Promise<RentPaymentRecord>;
   onSaveBarbers?: (barbers: Barber[]) => void;
@@ -50,6 +51,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
   config,
   onUpdateStatus,
   onClaimWalkIn,
+  onReleaseWalkIn,
   onClearCompleted,
   onPayRent,
   onSaveBarbers,
@@ -66,8 +68,9 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
   const [isPasscodeModalOpen, setIsPasscodeModalOpen] = useState(false);
   const [walkInToClaim, setWalkInToClaim] = useState<CheckInRecord | null>(null);
   const [chairOccupiedWarning, setChairOccupiedWarning] = useState<{ attemptedClientName: string; actionType: 'in_chair' | 'take_walkin' } | null>(null);
-  // Last reversible action (Mark Finished / No-Show) — shown in a 5-second Undo toast
+  // Last reversible action (Mark Finished / Back to List) — shown in a 5-second Undo toast
   const [undoAction, setUndoAction] = useState<{
+    kind: 'status' | 'release';
     recordId: string;
     previousStatus: CheckInRecord['status'];
     message: string;
@@ -259,6 +262,15 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
     return `${mins}m ${secs}s ago`;
   };
 
+  // Duration without "ago" (e.g. "Cutting for 4m 10s")
+  const getDuration = (isoString?: string) => getElapsedTime(isoString).replace(/ ago$/, '');
+
+  // Hide internal bookkeeping notes like "claimed" from the cards
+  const getVisibleNote = (notes?: string) => (notes && notes !== 'claimed' ? notes : undefined);
+
+  const isWalkInRecord = (record: CheckInRecord) =>
+    record.type === 'walkin' || (record.appointmentTime || '').toLowerCase() === 'walk-in';
+
   // Initiate Taking a Walk-In (with Chair Occupancy Guard)
   const handleInitiateTakeWalkIn = (walkin: CheckInRecord) => {
     if (isChairOccupied && activeInChairClient) {
@@ -330,31 +342,51 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
     onUpdateStatus(record.id, 'in_chair');
   };
 
-  // Apply a status change and offer a 5-second Undo
-  const applyWithUndo = (record: CheckInRecord, newStatus: CheckInRecord['status'], message: string) => {
-    const previousStatus = (record.status || 'waiting') as CheckInRecord['status'];
-    onUpdateStatus(record.id, newStatus);
-    setUndoAction({ recordId: record.id, previousStatus, message, key: Date.now() });
-  };
-
-  const handleUndo = () => {
+  const handleUndo = async () => {
     if (!undoAction) return;
-    // If another client was seated in the meantime, don't put two people in one chair
-    const chairTakenByOther = inChairList.some(r => r.id !== undoAction.recordId);
-    const restoreStatus = undoAction.previousStatus === 'in_chair' && chairTakenByOther
-      ? 'waiting'
-      : undoAction.previousStatus;
-    onUpdateStatus(undoAction.recordId, restoreStatus);
+    const { kind, recordId, previousStatus } = undoAction;
     setUndoAction(null);
+
+    // If another client was seated in the meantime, don't put two people in one chair
+    const chairTakenByOther = inChairList.some(r => r.id !== recordId);
+    const restoreStatus = previousStatus === 'in_chair' && chairTakenByOther ? 'waiting' : previousStatus;
+
+    if (kind === 'release') {
+      // Don't pull the client back if another barber already took them from the line
+      const current = checkIns.find(c => c.id === recordId);
+      if (current && !isGeneralWalkIn(current)) return;
+      if (onClaimWalkIn) {
+        await onClaimWalkIn(recordId, assignedBarber, restoreStatus);
+      } else {
+        storage.claimCheckIn(recordId, assignedBarber.id, assignedBarber.name, restoreStatus);
+        onUpdateStatus(recordId, restoreStatus);
+      }
+    } else {
+      onUpdateStatus(recordId, restoreStatus);
+    }
   };
 
   const handleSetCompleted = (record: CheckInRecord) => {
-    applyWithUndo(record, 'completed', `${record.clientName} marked finished`);
+    const previousStatus = (record.status || 'waiting') as CheckInRecord['status'];
+    onUpdateStatus(record.id, 'completed');
+    setUndoAction({ kind: 'status', recordId: record.id, previousStatus, message: `${record.clientName} marked finished`, key: Date.now() });
   };
 
-  // No-Show: client left or never came up — remove them from the line
-  const handleNoShow = (record: CheckInRecord) => {
-    applyWithUndo(record, 'cancelled', `${record.clientName} removed as no-show`);
+  // Send a client back: walk-ins return to the shared walk-in line (original spot),
+  // appointments return to this barber's own waiting list.
+  const handleSendBack = (record: CheckInRecord) => {
+    const previousStatus = (record.status || 'waiting') as CheckInRecord['status'];
+    if (isWalkInRecord(record)) {
+      if (onReleaseWalkIn) {
+        onReleaseWalkIn(record.id);
+      } else {
+        storage.releaseCheckIn(record.id);
+      }
+      setUndoAction({ kind: 'release', recordId: record.id, previousStatus, message: `${record.clientName} moved back to the walk-in list`, key: Date.now() });
+    } else {
+      onUpdateStatus(record.id, 'waiting');
+      setUndoAction({ kind: 'status', recordId: record.id, previousStatus, message: `${record.clientName} moved back to your waiting list`, key: Date.now() });
+    }
   };
 
   const handleClearHistory = () => {
@@ -730,21 +762,21 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                     </span>
                     <span style={{ fontSize: '0.76rem', color: 'var(--pastel-green, #10B981)', fontWeight: 750, display: 'flex', alignItems: 'center', gap: 4 }}>
                       <Clock size={12} />
-                      <span>Cutting for {getElapsedTime(record.statusUpdatedAt || record.checkInTime)}</span>
+                      <span>Cutting for {getDuration(record.statusUpdatedAt || record.checkInTime)}</span>
                     </span>
                   </div>
-                  <h4 style={{ fontSize: '1.35rem', fontWeight: 900, color: 'var(--text-primary)', margin: 0 }}>
+                  <h4 style={{ fontSize: '1.35rem', fontWeight: 900, color: 'var(--text-primary)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {record.clientName}
                   </h4>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <span>{record.appointmentTime ? `Appointment: ${record.appointmentTime}` : 'Walk-In Customer'}</span>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <span>{isWalkInRecord(record) ? 'Walk-In' : `Appointment: ${record.appointmentTime || '—'}`}</span>
                     {record.clientPhone && (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--pastel-green)', fontWeight: 750 }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--pastel-green)', fontWeight: 750, whiteSpace: 'nowrap' }}>
                         <Phone size={12} />
                         {record.clientPhone}
                       </span>
                     )}
-                    {record.notes && <span>• {record.notes}</span>}
+                    {getVisibleNote(record.notes) && <span>{getVisibleNote(record.notes)}</span>}
                   </div>
                 </div>
 
@@ -773,13 +805,13 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                 </button>
 
                 <button
-                  id={`no-show-inchair-${record.id}`}
-                  onClick={() => handleNoShow(record)}
-                  className="no-show-btn"
+                  id={`send-back-inchair-${record.id}`}
+                  onClick={() => handleSendBack(record)}
+                  className="send-back-btn"
                   style={{ width: '100%', padding: '11px' }}
                 >
-                  <UserX size={16} />
-                  <span>No-Show — Remove</span>
+                  <CornerUpLeft size={16} />
+                  <span>{isWalkInRecord(record) ? 'Remove Back to Walk-In List' : 'Remove Back to Waiting List'}</span>
                 </button>
               </div>
             ))}
@@ -850,46 +882,33 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                 }}
               >
                 {/* Client info top row */}
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                      <span
-                        style={{
-                          fontSize: '0.72rem',
-                          fontWeight: 800,
-                          padding: '2px 8px',
-                          borderRadius: 6,
-                          background: index === 0 ? 'var(--accent-primary, #F59E0B)' : 'var(--surface-pill, #27272A)',
-                          color: index === 0 ? '#000000' : 'var(--text-primary)',
-                          textTransform: 'uppercase'
-                        }}
-                      >
-                        {index === 0 ? 'Next Up' : `#${index + 1} in line`}
-                      </span>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        {record.appointmentTime || 'Walk-In'}
-                      </span>
-                    </div>
-                    <h4 style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.01em' }}>
-                      {record.clientName}
-                    </h4>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
-                      <Clock size={12} />
-                      <span>Arrived {getElapsedTime(record.checkInTime)}</span>
-                      {record.notes && <span>• {record.notes}</span>}
-                    </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                    <span
+                      style={{
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        padding: '2px 8px',
+                        borderRadius: 6,
+                        background: index === 0 ? 'var(--accent-primary, #F59E0B)' : 'var(--surface-pill, #27272A)',
+                        color: index === 0 ? '#000000' : 'var(--text-primary)',
+                        textTransform: 'uppercase'
+                      }}
+                    >
+                      {index === 0 ? 'Next Up' : `#${index + 1} in line`}
+                    </span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      {record.appointmentTime || 'Walk-In'}
+                    </span>
                   </div>
-
-                  <button
-                    id={`no-show-waiting-${record.id}`}
-                    onClick={() => handleNoShow(record)}
-                    className="no-show-btn"
-                    style={{ padding: '7px 11px', fontSize: '0.76rem', flexShrink: 0 }}
-                    title="Client left — remove from line"
-                  >
-                    <UserX size={14} />
-                    <span>No-Show</span>
-                  </button>
+                  <h4 style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {record.clientName}
+                  </h4>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
+                    <Clock size={12} />
+                    <span>Arrived {getElapsedTime(record.checkInTime)}</span>
+                    {getVisibleNote(record.notes) && <span>• {getVisibleNote(record.notes)}</span>}
+                  </div>
                 </div>
 
                 {/* 1-Tap SMS Text Notification Bar (Pre-filled instant message) */}
@@ -1003,6 +1022,19 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                     <span>{isChairOccupied ? 'Chair Busy' : 'In Chair'}</span>
                   </button>
                 </div>
+
+                {/* Claimed walk-ins can be sent back to the shared line */}
+                {isWalkInRecord(record) && (
+                  <button
+                    id={`send-back-waiting-${record.id}`}
+                    onClick={() => handleSendBack(record)}
+                    className="send-back-btn"
+                    style={{ width: '100%', padding: '10px' }}
+                  >
+                    <CornerUpLeft size={15} />
+                    <span>Remove Back to Walk-In List</span>
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -1066,66 +1098,49 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                   borderRadius: 18,
                   padding: '14px 16px',
                   display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
+                  flexDirection: 'column',
                   gap: 12,
                   boxShadow: index === 0 ? '0 4px 16px rgba(245, 158, 11, 0.12)' : undefined
                 }}
               >
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                {/* Info: badge + wait time, name, phone */}
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
                     <span style={{ 
                       fontSize: '0.7rem', 
                       fontWeight: 800, 
-                      padding: '1px 6px', 
-                      borderRadius: 4, 
+                      padding: '2px 8px', 
+                      borderRadius: 6, 
                       background: index === 0 ? 'var(--accent-primary)' : 'var(--surface-pill)', 
                       color: index === 0 ? '#000000' : 'var(--accent-primary)', 
-                      textTransform: 'uppercase' 
+                      textTransform: 'uppercase',
+                      whiteSpace: 'nowrap'
                     }}>
-                      {index === 0 ? 'Longest Wait • Next' : `#${index + 1} Walk-In`}
+                      {index === 0 ? 'Next Up' : `#${index + 1} in line`}
+                    </span>
+                    <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}>
+                      <Clock size={11} />
+                      <span>{getElapsedTime(walkin.checkInTime)}</span>
                     </span>
                   </div>
-                  <div style={{ fontSize: '1.05rem', fontWeight: 850, color: 'var(--text-primary)' }}>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 850, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {walkin.clientName}
                   </div>
-                  <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, flexWrap: 'wrap' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-                      <Clock size={11} />
-                      <span>Arrived {getElapsedTime(walkin.checkInTime)}</span>
-                    </span>
-                    {walkin.clientPhone && (
-                      <a
-                        href={getSmsUrl(walkin.clientPhone, walkin.clientName)}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 3,
-                          color: 'var(--accent-primary)',
-                          fontWeight: 750,
-                          textDecoration: 'none'
-                        }}
-                      >
-                        <Phone size={11} />
-                        <span>{walkin.clientPhone}</span>
-                      </a>
-                    )}
-                    {walkin.notes && <span>• {walkin.notes}</span>}
-                  </div>
+                  {walkin.clientPhone && (
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 5, marginTop: 3, whiteSpace: 'nowrap' }}>
+                      <Phone size={12} />
+                      <span>{walkin.clientPhone}</span>
+                    </div>
+                  )}
+                  {getVisibleNote(walkin.notes) && (
+                    <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: 3 }}>
+                      {getVisibleNote(walkin.notes)}
+                    </div>
+                  )}
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <button
-                    id={`no-show-walkin-${walkin.id}`}
-                    onClick={() => handleNoShow(walkin)}
-                    className="no-show-btn"
-                    style={{ padding: '10px 12px' }}
-                    title="No-show — remove from line"
-                    aria-label={`Remove ${walkin.clientName} as no-show`}
-                  >
-                    <UserX size={14} />
-                  </button>
-
+                {/* Actions: Text button + full-width Take Walk-In */}
+                <div style={{ display: 'flex', alignItems: 'stretch', gap: 8 }}>
                   {walkin.clientPhone && (
                     <a
                       href={getSmsUrl(walkin.clientPhone, walkin.clientName)}
@@ -1133,34 +1148,40 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        padding: '10px 12px',
-                        background: 'var(--surface-pill, #27272A)',
-                        border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
+                        gap: 6,
+                        padding: '12px 14px',
+                        background: 'rgba(245, 158, 11, 0.12)',
+                        border: '1px solid rgba(245, 158, 11, 0.3)',
                         color: 'var(--accent-primary)',
                         borderRadius: 14,
-                        fontSize: '0.82rem',
+                        fontSize: '0.84rem',
                         fontWeight: 800,
                         textDecoration: 'none',
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap'
                       }}
-                      title="1-Tap Text Client"
+                      title="Text client"
+                      aria-label={`Text ${walkin.clientName}`}
                     >
-                      <MessageSquare size={14} />
+                      <MessageSquare size={15} />
+                      <span>Text</span>
                     </a>
                   )}
 
                   <button
                     onClick={() => handleInitiateTakeWalkIn(walkin)}
                     style={{
+                      flex: 1,
                       display: 'flex',
                       alignItems: 'center',
+                      justifyContent: 'center',
                       gap: 6,
-                      padding: '10px 16px',
+                      padding: '12px 16px',
                       background: isChairOccupied ? 'var(--surface-pill, #27272A)' : 'var(--accent-primary, #F59E0B)',
                       color: isChairOccupied ? 'var(--text-primary)' : '#000000',
                       border: isChairOccupied ? '1px solid rgba(245, 158, 11, 0.3)' : 'none',
                       borderRadius: 14,
-                      fontSize: '0.84rem',
+                      fontSize: '0.9rem',
                       fontWeight: 850,
                       cursor: 'pointer',
                       boxShadow: isChairOccupied ? 'none' : '0 3px 10px rgba(245, 158, 11, 0.28)',
@@ -1169,7 +1190,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                     }}
                     title={isChairOccupied ? `Chair currently occupied by ${activeInChairClient?.clientName}` : 'Take walk-in'}
                   >
-                    <Scissors size={14} style={{ color: isChairOccupied ? 'var(--accent-primary)' : '#000000' }} />
+                    <Scissors size={15} style={{ color: isChairOccupied ? 'var(--accent-primary)' : '#000000' }} />
                     <span>Take Walk-In</span>
                   </button>
                 </div>

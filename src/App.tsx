@@ -96,6 +96,7 @@ export function App() {
     addCheckIn,
     updateStatus,
     claimCheckIn,
+    releaseCheckIn,
     clearCompletedCheckIns,
     saveBarbers,
     saveConfig,
@@ -638,6 +639,7 @@ export function App() {
                     config={config}
                     onUpdateStatus={updateStatus}
                     onClaimWalkIn={claimCheckIn}
+                    onReleaseWalkIn={releaseCheckIn}
                     onClearCompleted={clearCompletedCheckIns}
                     onPayRent={payBoothRent}
                     onSaveBarbers={(updated) => {
