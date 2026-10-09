@@ -96,7 +96,7 @@ export const BarberLoginScreen: React.FC<BarberLoginScreenProps> = ({
               Barber Hub Access
             </h2>
             <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', maxWidth: 420, margin: '0 auto' }}>
-              Select your station
+              Select your name
             </p>
           </div>
 
@@ -188,7 +188,7 @@ export const BarberLoginScreen: React.FC<BarberLoginScreenProps> = ({
                     color: 'var(--accent-primary, #F59E0B)'
                   }}
                 >
-                  <span>Open Station</span>
+                  <span>Sign In</span>
                   <span>→</span>
                 </div>
               </div>

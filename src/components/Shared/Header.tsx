@@ -76,7 +76,7 @@ export const Header: React.FC<HeaderProps> = ({
             type="button"
             className={`nav-pill-btn ${currentTab === 'barber_portal' ? 'active' : ''}`}
             onClick={() => handleTabClick('barber_portal')}
-            title="Barber Live Alerts & Station Screen"
+            title="Barber Live Alerts & Hub Screen"
           >
             <Bell size={16} />
             <span>Barber Hub</span>

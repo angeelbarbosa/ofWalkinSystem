@@ -184,10 +184,10 @@ export const RootLandingScreen: React.FC<RootLandingScreenProps> = ({
             Enter Barbershop Code
           </h2>
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 24px', lineHeight: 1.5 }}>
-            Please enter your barbershop code below to access your digital kiosk or staff station.
+            Please enter your barbershop code below to access your digital kiosk or staff hub.
           </p>
 
-          {/* Mode Selector Pill (Kiosk / Barber Station / Admin) */}
+          {/* Mode Selector Pill (Kiosk / Barber Hub / Admin) */}
           <div style={{
             display: 'flex',
             alignItems: 'center',

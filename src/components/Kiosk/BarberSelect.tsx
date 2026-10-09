@@ -41,7 +41,7 @@ export const BarberSelect: React.FC<BarberSelectProps> = ({
           <p className="step-subtitle" style={{ fontSize: '0.92rem', color: 'var(--text-secondary)', margin: '4px 0 0' }}>
             {mode === 'walkin'
               ? 'Join the walk-in rotation queue below'
-              : 'Tap your barber to notify their station you have arrived'}
+              : 'Tap your barber to notify them you have arrived'}
           </p>
         </div>
       </div>

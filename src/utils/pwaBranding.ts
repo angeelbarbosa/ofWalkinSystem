@@ -130,7 +130,7 @@ export function updatePwaBranding(shop: Shop, currentTab?: string) {
     startUrl = '/?portal=super_admin';
     iconUrl = generateSuperAdminAppIconDataUrl();
   } else if (isBarberPortal) {
-    title = `${shop.name} — Barber Station`;
+    title = `${shop.name} — Barber Hub`;
     appName = `${shop.name} Barber`;
     startUrl = `/?shop=${shop.slug}&portal=barber`;
     if (!iconUrl || iconUrl.trim() === '') {

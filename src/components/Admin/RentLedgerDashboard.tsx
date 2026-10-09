@@ -128,9 +128,9 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
 
   const handleExportCSV = () => {
     const recordsToExport = filteredRentRecords.length > 0 ? filteredRentRecords : rentRecords;
-    const headers = ['Receipt #,Barber Name,Station,Amount,Fee,Total,Status,Method,Date,Notes\n'];
+    const headers = ['Receipt #,Barber Name,Amount,Fee,Total,Status,Method,Date,Notes\n'];
     const rows = recordsToExport.map(r => 
-      `"${r.receiptNumber}","${r.barberName}",${r.stationNumber || ''},$${r.amount},$${r.processingFee || 0},$${r.totalPaid},"${r.status}","${r.paymentMethod || 'Card'}","${r.paidAt || r.dueDate}","${r.notes || ''}"`
+      `"${r.receiptNumber}","${r.barberName}",$${r.amount},$${r.processingFee || 0},$${r.totalPaid},"${r.status}","${r.paymentMethod || 'Card'}","${r.paidAt || r.dueDate}","${r.notes || ''}"`
     );
     const blob = new Blob([...headers, ...rows.join('\n')], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -241,7 +241,7 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
             ${totalOutstanding.toLocaleString()}
           </div>
           <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600, marginTop: 3 }}>
-            {barberPaymentStatus.filter(b => !b.isPaid).length} chairs pending payment
+            {barberPaymentStatus.filter(b => !b.isPaid).length} barbers pending payment
           </div>
         </div>
 
@@ -267,10 +267,10 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
           <div>
             <h3 style={{ fontSize: '1.2rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0 }}>
-              Station Rent Status
+              Barber Rent Status
             </h3>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '2px 0 0' }}>
-              Track payments, record offline cash/Zelle, and adjust chair fees
+              Track payments, record offline cash/Zelle, and adjust rent fees
             </p>
           </div>
 
@@ -416,7 +416,7 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
                 ? 'All working barbers have paid their booth rent for this cycle!' 
                 : rentFilter === 'paid'
                 ? 'No barbers have marked their rent as paid for this cycle yet.'
-                : 'No active barbers currently assigned to stations.'}
+                : 'No active barbers currently in shop.'}
             </div>
           </div>
         ) : (
@@ -458,7 +458,7 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
                       {barber.name}
                     </div>
                     <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-                      Station #{barber.stationNumber} • ${amount}/week
+                      ${amount} / week
                     </div>
                   </div>
                 </div>
@@ -922,7 +922,7 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
                   <tr key={r.id}>
                     <td style={{ fontWeight: 750, color: 'var(--text-primary)' }}>{r.receiptNumber}</td>
                     <td>
-                      <strong>{r.barberName}</strong> (Station #{r.stationNumber})
+                      <strong>{r.barberName}</strong>
                     </td>
                     <td style={{ fontWeight: 800, color: 'var(--text-primary)' }}>
                       ${r.totalPaid.toFixed(2)}

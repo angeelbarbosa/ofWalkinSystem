@@ -365,7 +365,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
             <div>
               <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>Barber Team</h3>
-              <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: '2px 0 0' }}>Manage active barbers, station assignments & rent schedules</p>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: '2px 0 0' }}>Manage active barbers & rent schedules</p>
             </div>
 
             <button
@@ -395,10 +395,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <table className="bubbly-table">
               <thead>
                 <tr>
-                  <th>Station</th>
                   <th>Barber</th>
                   <th>Booth Rent Plan</th>
-                  <th>Station PIN</th>
+                  <th>PIN Code</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
@@ -411,11 +410,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
                   return (
                     <tr key={barber.id}>
-                      <td>
-                        <span style={{ fontWeight: 800, background: 'var(--surface-pill)', color: 'var(--text-primary)', padding: '4px 10px', borderRadius: 9999, fontSize: '0.82rem', border: '1px solid var(--border-subtle)' }}>
-                          #{barber.stationNumber}
-                        </span>
-                      </td>
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <div
@@ -598,17 +592,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
                       <div className="form-group">
-                        <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Station #</label>
-                        <input
-                          type="number"
-                          value={newBarberStation}
-                          onChange={e => setNewBarberStation(Number(e.target.value))}
-                          className="bubbly-input"
-                        />
-                      </div>
-
-                      <div className="form-group">
-                        <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Station PIN</label>
+                        <label className="form-label" style={{ color: 'var(--text-secondary)' }}>PIN Code (4-digit)</label>
                         <input
                           type="text"
                           maxLength={4}
@@ -618,9 +602,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           className="bubbly-input"
                         />
                       </div>
-                    </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
                       <div className="form-group">
                         <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Phone Number</label>
                         <input
@@ -631,17 +613,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           className="bubbly-input"
                         />
                       </div>
+                    </div>
 
-                      <div className="form-group">
-                        <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Specialty</label>
-                        <input
-                          type="text"
-                          placeholder="Fades & Beard Care"
-                          value={newBarberSpec}
-                          onChange={e => setNewBarberSpec(e.target.value)}
-                          className="bubbly-input"
-                        />
-                      </div>
+                    <div className="form-group" style={{ marginBottom: 14 }}>
+                      <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Specialty</label>
+                      <input
+                        type="text"
+                        placeholder="Fades & Beard Care"
+                        value={newBarberSpec}
+                        onChange={e => setNewBarberSpec(e.target.value)}
+                        className="bubbly-input"
+                      />
                     </div>
 
                     {/* Booth Rent Schedule Configuration Box */}
@@ -962,7 +944,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 {currentShop.name} License
               </h3>
               <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: '2px 0 0' }}>
-                Your dedicated walk-in kiosk, booth rent tracking, and barber station software
+                Your dedicated walk-in kiosk, booth rent tracking, and barber management software
               </p>
             </div>
 
@@ -1028,7 +1010,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 10 }}>
               {[
                 'Unlimited Client Walk-In & Appointment Queue Check-Ins',
-                'Dedicated Barber Station Hubs with Personal PINs',
+                'Dedicated Barber Hubs with Personal PINs',
                 'Automated Weekly Booth Rent Collection & Ledgers',
                 'Live Multi-Device Cloud Sync (iPhone, iPad, Mac)',
                 'Direct In-App Platform Support Line to Platform HQ',

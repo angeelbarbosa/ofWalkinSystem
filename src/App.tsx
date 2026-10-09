@@ -478,7 +478,7 @@ export function App() {
                           }}
                         >
                           <Scissors size={13} />
-                          <span>{authenticatedBarber ? `${authenticatedBarber.name} (#${authenticatedBarber.stationNumber})` : 'Barber Hub'}</span>
+                          <span>{authenticatedBarber ? authenticatedBarber.name : 'Barber Hub'}</span>
                         </div>
                       )}
 
@@ -688,7 +688,7 @@ export function App() {
                     setCurrentTab('barber_portal');
                   }}
                   className="staff-trigger-pill barber-btn"
-                  title="Barber Station Hub & Booth Rent"
+                  title="Barber Hub & Booth Rent"
                 >
                   <Scissors size={14} />
                   <span>Barber Hub</span>

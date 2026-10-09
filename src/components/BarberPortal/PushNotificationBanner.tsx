@@ -77,7 +77,7 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
         if (result.success) {
           notificationManager.setAlertsEnabled(true);
           setAlertsActive(true);
-          const currentBarberName = assignedBarber?.name || 'Your Station';
+          const currentBarberName = assignedBarber?.name || 'Your Hub';
           notificationManager.sendBarberArrivalAlert('Test Client', currentBarberName, '2:30 PM', assignedBarber?.id);
           setTested(true);
           setTimeout(() => setTested(false), 2500);
@@ -85,7 +85,7 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
       } else {
         notificationManager.setAlertsEnabled(true);
         setAlertsActive(true);
-        const currentBarberName = assignedBarber?.name || 'Your Station';
+        const currentBarberName = assignedBarber?.name || 'Your Hub';
         notificationManager.sendBarberArrivalAlert('Test Client', currentBarberName, '2:30 PM', assignedBarber?.id);
         setTested(true);
         setTimeout(() => setTested(false), 2000);
@@ -131,7 +131,7 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
             </div>
             <div>
               <div style={{ fontSize: '1.25rem', fontWeight: 850, color: '#09090B', lineHeight: 1.2 }}>
-                {displayName === 'All Barbers (Shop Manager)' ? 'All Stations (Shop Manager)' : `${displayName}'s Station`}
+                {displayName === 'All Barbers (Shop Manager)' ? 'All Barbers (Shop Manager)' : `${displayName}'s Hub`}
               </div>
               <div style={{ fontSize: '0.8rem', color: '#71717A', display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
                 <span

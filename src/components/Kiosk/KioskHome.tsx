@@ -280,7 +280,7 @@ export const KioskHome: React.FC<KioskHomeProps> = ({
             </h2>
             
             <p className="choice-card-desc">
-              Already booked? Tap to select your barber and notify their station you have arrived.
+              Already booked? Tap to select your barber and notify them you have arrived.
             </p>
 
             <div style={{ width: '100%', marginTop: 'auto' }}>

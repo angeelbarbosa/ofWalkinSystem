@@ -633,7 +633,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                   fontWeight: 700,
                   cursor: 'pointer'
                 }}
-                title="Switch Station / Exit"
+                title="Switch Barber / Sign Out"
               >
                 <LogOut size={13} />
               </button>
@@ -641,7 +641,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
           </div>
         </div>
 
-        {/* Action Buttons Row (Live Alerts & Station PIN) */}
+        {/* Action Buttons Row (Live Alerts & Passcode PIN) */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, width: '100%' }}>
           <button
             onClick={handleToggleAlerts}
@@ -693,10 +693,10 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
               fontWeight: 750,
               cursor: 'pointer'
             }}
-            title="Change station 4-digit passcode"
+            title="Change 4-digit passcode"
           >
             <KeyRound size={14} style={{ color: 'var(--accent-primary)' }} />
-            <span>Station PIN</span>
+            <span>My PIN</span>
           </button>
         </div>
       </div>

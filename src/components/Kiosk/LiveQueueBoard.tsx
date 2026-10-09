@@ -241,19 +241,19 @@ export const LiveQueueBoard: React.FC<LiveQueueBoardProps> = ({
               Barbers on Duty
             </p>
             <p style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--text-primary)', margin: 0 }}>
-              {activeBarbers.length} Stations Active
+              {activeBarbers.length} Barbers Active
             </p>
           </div>
         </div>
       </div>
 
-      {/* Main Grid: Live Stations (Left) + Queue Line (Right) */}
+      {/* Main Grid: Live Barbers (Left) + Queue Line (Right) */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
         gap: '20px'
       }}>
-        {/* Column 1: Live Barber Stations Status */}
+        {/* Column 1: Live Barber Status */}
         <div style={{
           background: 'var(--surface-card, #18181B)',
           border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
@@ -263,7 +263,7 @@ export const LiveQueueBoard: React.FC<LiveQueueBoardProps> = ({
         }}>
           <h3 style={{ fontSize: '1.1rem', fontWeight: 850, color: 'var(--text-primary)', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Scissors size={18} style={{ color: 'var(--accent-primary)' }} />
-            <span>Stations & Chairs on Duty</span>
+            <span>Barbers on Duty</span>
           </h3>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -296,7 +296,7 @@ export const LiveQueueBoard: React.FC<LiveQueueBoardProps> = ({
                       fontWeight: 800,
                       fontSize: '14px'
                     }}>
-                      #{barber.stationNumber}
+                      {barber.name.charAt(0)}
                     </div>
                     <div>
                       <p style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>

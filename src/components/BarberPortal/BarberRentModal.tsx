@@ -137,7 +137,7 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.86rem', color: 'var(--text-secondary)', marginBottom: 8 }}>
-                <span>{rentCycleText} Station Rent:</span>
+                <span>{rentCycleText} Booth Rent:</span>
                 <span style={{ fontWeight: 750, color: 'var(--text-primary)' }}>${baseRent.toFixed(2)}</span>
               </div>
 
@@ -395,7 +395,7 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
                   cursor: 'pointer'
                 }}
               >
-                <span>Back to Barber Station</span>
+                <span>Back to Barber Hub</span>
               </button>
 
               <button
