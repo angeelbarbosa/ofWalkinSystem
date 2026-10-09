@@ -79,6 +79,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [alertsActive, setAlertsActive] = useState<boolean>(() => notificationManager.isAlertsEnabled());
   const [tested, setTested] = useState(false);
+  const [showAllFinished, setShowAllFinished] = useState(false);
 
   const barberDisplayName = assignedBarber.name;
 
@@ -399,8 +400,40 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
     }
   };
 
+  const formatCompletedTime = (isoString?: string) => {
+    if (!isoString) return '';
+    try {
+      const d = new Date(isoString);
+      return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    } catch {
+      return '';
+    }
+  };
+
+  const handleRestoreFinishedCut = async (record: CheckInRecord) => {
+    const isWalkIn = isWalkInRecord(record);
+    if (isWalkIn) {
+      if (!isChairOccupied) {
+        if (onClaimWalkIn) {
+          await onClaimWalkIn(record.id, assignedBarber, 'in_chair');
+        } else {
+          storage.claimCheckIn(record.id, assignedBarber.id, assignedBarber.name, 'in_chair');
+          onUpdateStatus(record.id, 'in_chair');
+        }
+      } else {
+        if (onReleaseWalkIn) {
+          await onReleaseWalkIn(record.id);
+        } else {
+          storage.releaseCheckIn(record.id);
+        }
+      }
+    } else {
+      onUpdateStatus(record.id, !isChairOccupied ? 'in_chair' : 'waiting');
+    }
+  };
+
   return (
-    <div className="pop-in" style={{ position: 'relative', width: '100%', maxWidth: 680, margin: '0 auto' }}>
+    <div className="pop-in" style={{ position: 'relative', width: '100%', maxWidth: 680, margin: '0 auto', paddingBottom: 96 }}>
       {/* Floating In-App Arrival Toast Banner */}
       {activeToast && (
         <div
@@ -948,8 +981,8 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                         cursor: 'pointer'
                       }}
                     >
-                      <MessageSquare size={13} />
-                      <span>💬 Text Client</span>
+                      <MessageSquare size={14} />
+                      <span>Text Client</span>
                     </a>
                   </div>
                 )}
@@ -1203,10 +1236,27 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
       {/* SECTION 4: Finished Today */}
       {completedList.length > 0 && (
         <div style={{ marginBottom: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-muted)', margin: 0 }}>
-              Finished Today ({completedList.length})
-            </h3>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0 }}>
+                Finished Today
+              </h3>
+              <span style={{
+                fontSize: '0.74rem',
+                fontWeight: 800,
+                padding: '2px 8px',
+                borderRadius: 9999,
+                background: 'rgba(16, 185, 129, 0.15)',
+                color: '#10B981',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4
+              }}>
+                <CheckCircle size={12} />
+                <span>{completedList.length} {completedList.length === 1 ? 'Cut' : 'Cuts'}</span>
+              </span>
+            </div>
+
             <button
               onClick={handleClearHistory}
               style={{
@@ -1214,39 +1264,114 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                 border: 'none',
                 color: 'var(--text-muted)',
                 fontSize: '0.76rem',
-                fontWeight: 700,
+                fontWeight: 750,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 4
+                gap: 4,
+                padding: '4px 8px',
+                borderRadius: 8
               }}
+              title="Clear completed history"
             >
               <Trash2 size={12} />
               <span>Clear</span>
             </button>
           </div>
 
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {completedList.map((record) => (
-              <div
-                key={record.id}
-                style={{
-                  background: 'var(--surface-pill, #27272A)',
-                  border: '1px solid var(--border-subtle, rgba(255,255,255,0.08))',
-                  borderRadius: 12,
-                  padding: '6px 12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  fontSize: '0.8rem',
-                  color: 'var(--text-primary)'
-                }}
-              >
-                <CheckCircle size={13} style={{ color: '#10B981' }} />
-                <span style={{ fontWeight: 750 }}>{record.clientName}</span>
-              </div>
-            ))}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 8 }}>
+            {(showAllFinished ? completedList : completedList.slice(0, 6)).map((record) => {
+              const timeStr = formatCompletedTime(record.statusUpdatedAt || record.checkInTime);
+              const isWalkIn = isWalkInRecord(record);
+
+              return (
+                <div
+                  key={record.id}
+                  className="finished-cut-card"
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 9, minWidth: 0, flex: 1 }}>
+                    <div style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: '50%',
+                      background: 'rgba(16, 185, 129, 0.15)',
+                      color: '#10B981',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                      <Check size={14} strokeWidth={2.8} />
+                    </div>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{
+                        fontSize: '0.88rem',
+                        fontWeight: 800,
+                        color: 'var(--text-primary)',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {record.clientName}
+                      </div>
+                      <div style={{
+                        fontSize: '0.72rem',
+                        color: 'var(--text-muted)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        marginTop: 1
+                      }}>
+                        <span>{isWalkIn ? 'Walk-In' : 'Appt'}</span>
+                        {timeStr && <span>• {timeStr}</span>}
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => handleRestoreFinishedCut(record)}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: 'var(--text-muted)',
+                      padding: 6,
+                      borderRadius: 8,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      transition: 'color 0.15s ease'
+                    }}
+                    title={`Restore ${record.clientName} back to queue`}
+                    aria-label={`Restore ${record.clientName}`}
+                  >
+                    <CornerUpLeft size={13} />
+                  </button>
+                </div>
+              );
+            })}
           </div>
+
+          {completedList.length > 6 && (
+            <button
+              onClick={() => setShowAllFinished(!showAllFinished)}
+              style={{
+                width: '100%',
+                padding: '8px',
+                marginTop: 8,
+                background: 'transparent',
+                border: '1px dashed var(--border-subtle, rgba(255,255,255,0.12))',
+                borderRadius: 12,
+                color: 'var(--text-secondary)',
+                fontSize: '0.76rem',
+                fontWeight: 750,
+                cursor: 'pointer'
+              }}
+            >
+              {showAllFinished ? 'Show Less' : `Show all ${completedList.length} finished cuts`}
+            </button>
+          )}
         </div>
       )}
 

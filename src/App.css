@@ -1497,32 +1497,37 @@
   transform: scale(0.98);
 }
 
-/* ===== Barber Portal: 5-second Undo toast ===== */
+/* ===== Barber Portal: 5-second Undo toast (Stable, Fixed Shape) ===== */
 .undo-toast {
   position: fixed;
   left: 50%;
-  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-  transform: translateX(-50%);
+  transform: translate(-50%, 0);
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   z-index: 10000;
   display: flex;
   align-items: center;
-  gap: 14px;
-  width: max-content;
-  max-width: calc(100vw - 24px);
-  padding: 12px 12px 12px 18px;
-  background: rgba(24, 24, 27, 0.96);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 16px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  justify-content: space-between;
+  gap: 12px;
+  width: calc(100% - 32px);
+  max-width: 420px;
+  height: 54px;
+  box-sizing: border-box;
+  padding: 0 8px 0 18px;
+  background: rgba(24, 24, 27, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 9999px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   overflow: hidden;
-  animation: undoToastIn 0.2s ease-out;
+  animation: undoToastIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .undo-toast-message {
+  flex: 1;
+  min-width: 0;
   font-size: 0.88rem;
-  font-weight: 700;
+  font-weight: 750;
   color: var(--text-primary, #FAFAFA);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1532,16 +1537,24 @@
 .undo-toast-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  padding: 8px 14px;
+  height: 38px;
+  padding: 0 16px;
   background: var(--accent-primary, #F59E0B);
   color: #000000;
   border: none;
-  border-radius: 12px;
+  border-radius: 9999px;
   font-size: 0.86rem;
   font-weight: 900;
   cursor: pointer;
   flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.undo-toast-btn:active {
+  transform: scale(0.96);
 }
 
 .undo-toast-progress {
@@ -1556,11 +1569,34 @@
 }
 
 @keyframes undoToastIn {
-  from { opacity: 0; transform: translate(-50%, 12px); }
-  to { opacity: 1; transform: translate(-50%, 0); }
+  from {
+    opacity: 0;
+    transform: translate(-50%, 16px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
 }
 
 @keyframes undoCountdown {
   from { transform: scaleX(1); }
   to { transform: scaleX(0); }
+}
+
+/* ===== Finished Cuts Card Styles ===== */
+.finished-cut-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--surface-card, #18181B);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: 16px;
+  padding: 10px 14px;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.finished-cut-card:hover {
+  border-color: rgba(16, 185, 129, 0.3);
 }
