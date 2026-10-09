@@ -49,10 +49,7 @@ export const BarberReceiptsHistoryModal: React.FC<BarberReceiptsHistoryModalProp
   const isPaidCurrentCycle = weeksOwed === 0;
   const totalOutstanding = weeksOwed * weeklyRate;
 
-  // 3. Lifetime paid calculations
-  const totalPaidLifetime = myPaidRecords.reduce((sum, r) => sum + (r.totalPaid || r.amount), 0);
-
-  // 4. Handle copy receipt number
+  // 3. Handle copy receipt number
   const handleCopyReceipt = (num: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     navigator.clipboard.writeText(num);
@@ -261,37 +258,6 @@ export const BarberReceiptsHistoryModal: React.FC<BarberReceiptsHistoryModalProp
                 <ArrowRight size={13} />
               </button>
             )}
-          </div>
-
-          {/* Quick Stats: Paid Weeks & Lifetime Total */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
-            <div style={{
-              background: 'var(--surface-pill, #1C1C21)',
-              border: '1px solid var(--border-subtle, rgba(255,255,255,0.08))',
-              borderRadius: 14,
-              padding: '10px 14px'
-            }}>
-              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
-                Paid Weeks on File
-              </div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-primary)', marginTop: 2 }}>
-                {myPaidRecords.length} {myPaidRecords.length === 1 ? 'Week' : 'Weeks'}
-              </div>
-            </div>
-
-            <div style={{
-              background: 'var(--surface-pill, #1C1C21)',
-              border: '1px solid var(--border-subtle, rgba(255,255,255,0.08))',
-              borderRadius: 14,
-              padding: '10px 14px'
-            }}>
-              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
-                Total Rent Paid
-              </div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--pastel-green, #10B981)', marginTop: 2 }}>
-                ${totalPaidLifetime.toFixed(2)}
-              </div>
-            </div>
           </div>
 
           {/* Search / Filter Receipts Bar if there are multiple */}
