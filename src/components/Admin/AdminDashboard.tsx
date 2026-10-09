@@ -268,6 +268,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </button>
 
           <button
+            onClick={() => setActiveSubTab('settings')}
+            className={`barber-tab-chip ${activeSubTab === 'settings' ? 'active' : ''}`}
+            style={{ padding: '8px 14px', borderRadius: 9999, fontSize: '0.82rem', fontWeight: 750, display: 'flex', alignItems: 'center', gap: 6, background: activeSubTab === 'settings' ? 'var(--accent-primary)' : 'var(--surface-pill)', color: activeSubTab === 'settings' ? 'var(--bg-main)' : 'var(--text-primary)', border: '1px solid var(--border-subtle)', cursor: 'pointer' }}
+          >
+            <Settings size={15} />
+            <span>Settings</span>
+          </button>
+
+          <button
             onClick={() => setActiveSubTab('subscription')}
             className={`barber-tab-chip ${activeSubTab === 'subscription' ? 'active' : ''}`}
             style={{ 
@@ -311,91 +320,62 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </button>
         </div>
 
-        {/* Row 2: Settings (left) and Support Chat (right) */}
-        <div style={{
-          marginTop: 10,
-          paddingTop: 10,
-          borderTop: '1px solid var(--border-subtle, rgba(255,255,255,0.06))',
-          display: 'grid',
-          gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-          gap: 10
-        }}>
-          {/* Settings Button (moved from scrollable chip row to leftover space on left) */}
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('settings')}
-            className={`barber-tab-chip ${activeSubTab === 'settings' ? 'active' : ''}`}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              padding: '9px 12px',
-              borderRadius: 14,
-              fontSize: '0.82rem',
-              fontWeight: 750,
-              background: activeSubTab === 'settings' ? 'var(--accent-primary)' : 'var(--surface-pill, rgba(255,255,255,0.05))',
-              color: activeSubTab === 'settings' ? 'var(--bg-main)' : 'var(--text-primary)',
-              border: activeSubTab === 'settings' ? '1px solid var(--accent-primary)' : '1px solid var(--border-subtle)',
-              cursor: 'pointer',
-              transition: 'all 0.18s ease',
-              boxSizing: 'border-box',
-              width: '100%'
-            }}
-          >
-            <Settings size={15} />
-            <span>Settings</span>
-          </button>
-
-          {/* Support Chat Button (passed to the right side) */}
+        {/* Support Chat Bar - Full-width wide blue bar */}
+        <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border-subtle, rgba(255,255,255,0.06))' }}>
           <button
             type="button"
             className="support-bar-btn"
             onClick={() => setIsSupportOpen(true)}
             style={{
+              width: '100%',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              padding: '9px 12px',
+              justifyContent: 'space-between',
+              padding: '10px 14px',
               borderRadius: 14,
               background: 'rgba(59, 130, 246, 0.08)',
               border: '1px solid rgba(59, 130, 246, 0.25)',
               color: 'var(--text-primary)',
               cursor: 'pointer',
               transition: 'all 0.18s ease',
-              boxSizing: 'border-box',
-              width: '100%'
+              boxSizing: 'border-box'
             }}
           >
-            <div style={{
-              width: 22,
-              height: 22,
-              borderRadius: 7,
-              background: 'rgba(59, 130, 246, 0.22)',
-              color: '#60A5FA',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}>
-              <MessageSquare size={13} />
-            </div>
-            <span style={{ fontSize: '0.82rem', fontWeight: 750, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
               Support Chat
             </span>
-            {unreadSupportCount > 0 && (
-              <span style={{
-                background: 'var(--pastel-red, #EF4444)',
-                color: '#FFFFFF',
-                fontSize: '10px',
-                fontWeight: 900,
-                padding: '1px 6px',
-                borderRadius: 9999
-              }}>
-                {unreadSupportCount}
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {unreadSupportCount > 0 && (
+                <span style={{
+                  background: 'var(--pastel-red, #EF4444)',
+                  color: '#FFFFFF',
+                  fontSize: '11px',
+                  fontWeight: 900,
+                  padding: '2px 8px',
+                  borderRadius: 9999
+                }}>
+                  {unreadSupportCount} New
+                </span>
+              )}
+              <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#60A5FA', whiteSpace: 'nowrap' }}>
+                Open Chat
               </span>
-            )}
+              <div style={{
+                width: 28,
+                height: 28,
+                borderRadius: 8,
+                background: 'rgba(59, 130, 246, 0.22)',
+                border: '1px solid rgba(59, 130, 246, 0.35)',
+                color: '#60A5FA',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <MessageSquare size={14} />
+              </div>
+            </div>
           </button>
         </div>
       </div>
