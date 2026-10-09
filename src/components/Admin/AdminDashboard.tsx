@@ -20,6 +20,7 @@ import { ShopPayoutSettings } from './ShopPayoutSettings';
 import { SupportChatDrawer } from '../Shared/SupportChatDrawer';
 import { ShopSubscriptionModal } from './ShopSubscriptionModal';
 import { BarberReceiptsHistoryModal } from '../BarberPortal/BarberReceiptsHistoryModal';
+import { ShopSettingsModal } from './ShopSettingsModal';
 import { ModalOverlay } from '../Shared/ModalOverlay';
 
 interface AdminDashboardProps {
@@ -51,8 +52,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onMarkSupportRead = () => {},
   onPayShopSubscription = () => {}
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'roster' | 'rent' | 'payouts' | 'settings' | 'history' | 'subscription'>('rent');
+  const [activeSubTab, setActiveSubTab] = useState<'roster' | 'rent' | 'payouts' | 'history' | 'subscription'>('rent');
   const [isSupportOpen, setIsSupportOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isPaySubscriptionOpen, setIsPaySubscriptionOpen] = useState(false);
   const [selectedBarberForReceipts, setSelectedBarberForReceipts] = useState<Barber | null>(null);
 
@@ -88,27 +90,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   }, [isAddingBarber, isPaySubscriptionOpen, isSupportOpen]);
 
-  // Shop Settings State
-  const [welcomeShoppingBody, setWelcomeShoppingBody] = useState(config.welcomeShoppingBody);
-  const [autoResetShoppingSec, setAutoResetShoppingSec] = useState(config.autoResetShoppingSec);
-  const [autoResetAppointmentSec, setAutoResetAppointmentSec] = useState(config.autoResetAppointmentSec);
-  const [pinCode, setPinCode] = useState(config.pinCode);
-
-  // Save Settings
-  const handleSaveShopSettings = (e: React.FormEvent) => {
-    e.preventDefault();
-    const updated: ShopConfig = {
-      ...config,
-      shopName: config.shopName,
-      welcomeShoppingBody,
-      autoResetShoppingSec: Number(autoResetShoppingSec),
-      autoResetAppointmentSec: Number(autoResetAppointmentSec),
-      soundAlertsEnabled: false,
-      pinCode
-    };
-    onSaveConfig(updated);
-    alert('Settings saved successfully!');
-  };
 
   const executeSaveBarber = () => {
     const rentNum = parseFloat(newBarberRentAmount) || 0;
@@ -268,15 +249,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </button>
 
           <button
-            onClick={() => setActiveSubTab('settings')}
-            className={`barber-tab-chip ${activeSubTab === 'settings' ? 'active' : ''}`}
-            style={{ padding: '8px 14px', borderRadius: 9999, fontSize: '0.82rem', fontWeight: 750, display: 'flex', alignItems: 'center', gap: 6, background: activeSubTab === 'settings' ? 'var(--accent-primary)' : 'var(--surface-pill)', color: activeSubTab === 'settings' ? 'var(--bg-main)' : 'var(--text-primary)', border: '1px solid var(--border-subtle)', cursor: 'pointer' }}
-          >
-            <Settings size={15} />
-            <span>Settings</span>
-          </button>
-
-          <button
             onClick={() => setActiveSubTab('subscription')}
             className={`barber-tab-chip ${activeSubTab === 'subscription' ? 'active' : ''}`}
             style={{ 
@@ -320,14 +292,52 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </button>
         </div>
 
-        {/* Support Chat Bar - Full-width wide blue bar */}
-        <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border-subtle, rgba(255,255,255,0.06))' }}>
+        {/* Row 2: Settings Popup Button (left) and Full-Width Support Chat (right) */}
+        <div style={{
+          marginTop: 10,
+          paddingTop: 10,
+          borderTop: '1px solid var(--border-subtle, rgba(255,255,255,0.06))',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          width: '100%',
+          boxSizing: 'border-box'
+        }}>
+          {/* Settings Popup Button - Opens Modal Dialog Without Changing Screen Content */}
+          <button
+            type="button"
+            onClick={() => setIsSettingsModalOpen(true)}
+            className="barber-tab-chip"
+            style={{
+              flexShrink: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 7,
+              padding: '10px 16px',
+              borderRadius: 14,
+              fontSize: '0.82rem',
+              fontWeight: 750,
+              background: 'var(--surface-pill, rgba(255,255,255,0.06))',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--border-subtle)',
+              cursor: 'pointer',
+              transition: 'all 0.18s ease',
+              boxSizing: 'border-box'
+            }}
+          >
+            <Settings size={15} />
+            <span>Settings</span>
+          </button>
+
+          {/* Blue Live Chat Bar - Spans ALL Remaining Width to the Right Edge (flex: 1) */}
           <button
             type="button"
             className="support-bar-btn"
             onClick={() => setIsSupportOpen(true)}
             style={{
-              width: '100%',
+              flex: 1,
+              minWidth: 0,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -341,40 +351,42 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               boxSizing: 'border-box'
             }}
           >
-            <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
-              Support Chat
-            </span>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              {unreadSupportCount > 0 && (
-                <span style={{
-                  background: 'var(--pastel-red, #EF4444)',
-                  color: '#FFFFFF',
-                  fontSize: '11px',
-                  fontWeight: 900,
-                  padding: '2px 8px',
-                  borderRadius: 9999
-                }}>
-                  {unreadSupportCount} New
-                </span>
-              )}
-              <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#60A5FA', whiteSpace: 'nowrap' }}>
-                Open Chat
-              </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, overflow: 'hidden' }}>
               <div style={{
-                width: 28,
-                height: 28,
-                borderRadius: 8,
+                width: 22,
+                height: 22,
+                borderRadius: 7,
                 background: 'rgba(59, 130, 246, 0.22)',
-                border: '1px solid rgba(59, 130, 246, 0.35)',
                 color: '#60A5FA',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0
               }}>
-                <MessageSquare size={14} />
+                <MessageSquare size={13} />
               </div>
+              <span style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+                Support Chat
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+              {unreadSupportCount > 0 ? (
+                <span style={{
+                  background: 'var(--pastel-red, #EF4444)',
+                  color: '#FFFFFF',
+                  fontSize: '10px',
+                  fontWeight: 900,
+                  padding: '1px 6px',
+                  borderRadius: 9999
+                }}>
+                  {unreadSupportCount}
+                </span>
+              ) : (
+                <span style={{ fontSize: '0.76rem', fontWeight: 750, color: '#60A5FA', whiteSpace: 'nowrap' }}>
+                  Open Chat →
+                </span>
+              )}
             </div>
           </button>
         </div>
@@ -844,76 +856,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         />
       )}
 
-      {/* Sub-Tab 2: Settings */}
-      {activeSubTab === 'settings' && (
-        <div className="admin-card slide-up" style={{ background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderRadius: '24px', padding: '20px' }}>
-          <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: 4 }}>
-            Kiosk Settings
-          </h3>
-          <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 20 }}>
-            Tailor greetings, auto-reset timers, and security PIN
-          </p>
 
-          <form onSubmit={handleSaveShopSettings}>
-            <div className="form-group" style={{ marginBottom: 14 }}>
-              <label className="form-label" style={{ color: 'var(--text-secondary)' }}>
-                {config.enableShoppingMode ? 'Shopping Welcome Message' : 'Kiosk Welcome Greeting'}
-              </label>
-              <textarea
-                rows={3}
-                value={welcomeShoppingBody}
-                onChange={e => setWelcomeShoppingBody(e.target.value)}
-                className="bubbly-input"
-                style={{ resize: 'vertical' }}
-              />
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12 }}>
-              {config.enableShoppingMode && (
-                <div className="form-group">
-                  <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Shopping Reset (s)</label>
-                  <input
-                    type="number"
-                    value={autoResetShoppingSec}
-                    onChange={e => setAutoResetShoppingSec(Number(e.target.value))}
-                    className="bubbly-input"
-                  />
-                </div>
-              )}
-
-              <div className="form-group">
-                <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Check-in Reset (s)</label>
-                <input
-                  type="number"
-                  value={autoResetAppointmentSec}
-                  onChange={e => setAutoResetAppointmentSec(Number(e.target.value))}
-                  className="bubbly-input"
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Manager PIN</label>
-                <input
-                  type="text"
-                  maxLength={4}
-                  value={pinCode}
-                  onChange={e => setPinCode(e.target.value)}
-                  className="bubbly-input"
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              className="choice-card-action-btn"
-              style={{ maxWidth: 220, marginTop: 16 }}
-            >
-              <Check size={16} />
-              <span>Save Settings</span>
-            </button>
-          </form>
-        </div>
-      )}
 
       {/* Sub-Tab 4: Check-in Logs History */}
       {activeSubTab === 'history' && (
@@ -1115,6 +1058,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           config={config}
           rentRecords={rentRecords}
           onClose={() => setSelectedBarberForReceipts(null)}
+        />
+      )}
+
+      {/* Shop & Kiosk Settings Popup Modal */}
+      {isSettingsModalOpen && (
+        <ShopSettingsModal
+          config={config}
+          onSaveConfig={onSaveConfig}
+          onClose={() => setIsSettingsModalOpen(false)}
         />
       )}
 
