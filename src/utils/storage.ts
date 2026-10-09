@@ -911,7 +911,7 @@ export const storage = {
           if (s.barbers) {
             s.barbers.forEach(b => {
               if (b.id === 'demo-1' || b.name.includes('Darius')) {
-                if (b.weeksOwed === undefined || b.weeksOwed === 1) b.weeksOwed = 2;
+                if (b.weeksOwed === undefined || b.weeksOwed > 2) b.weeksOwed = 2;
               }
               if (b.id === 'demo-2' || b.name.includes('FadeKing')) {
                 if (b.weeksOwed === undefined) b.weeksOwed = 0;

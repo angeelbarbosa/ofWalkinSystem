@@ -117,12 +117,6 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
     return true;
   });
 
-  const handleAdjustWeeksOwed = (barber: Barber, newWeeks: number) => {
-    const safeWeeks = Math.max(0, newWeeks);
-    const updated = barbers.map(b => b.id === barber.id ? { ...b, weeksOwed: safeWeeks } : b);
-    onSaveBarbers(updated);
-  };
-
   const handleOpenRecordOffline = (barber: Barber) => {
     const status = barberPaymentStatus.find(s => s.barber.id === barber.id);
     const owed = status?.weeksOwed ?? 1;
@@ -586,33 +580,6 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
                   Rent due for current weekly cycle (${weeklyRate}.00)
                 </div>
               )}
-
-              {/* Overdue Cycles Stepper Control */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', background: 'var(--surface-card)', borderRadius: 10, fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
-                <span>Billing Cycles Owed:</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <button
-                    type="button"
-                    title="Reduce overdue weeks by 1"
-                    disabled={weeksOwed <= 0}
-                    onClick={() => handleAdjustWeeksOwed(barber, weeksOwed - 1)}
-                    style={{ width: 22, height: 22, borderRadius: 6, border: '1px solid var(--border-subtle)', background: 'var(--surface-pill)', color: 'var(--text-primary)', cursor: weeksOwed > 0 ? 'pointer' : 'default', opacity: weeksOwed > 0 ? 1 : 0.4 }}
-                  >
-                    -
-                  </button>
-                  <strong style={{ minWidth: 42, textAlign: 'center', color: weeksOwed > 1 ? 'var(--pastel-red)' : 'var(--text-primary)' }}>
-                    {weeksOwed} wk{weeksOwed === 1 ? '' : 's'}
-                  </strong>
-                  <button
-                    type="button"
-                    title="Add 1 overdue week"
-                    onClick={() => handleAdjustWeeksOwed(barber, weeksOwed + 1)}
-                    style={{ width: 22, height: 22, borderRadius: 6, border: '1px solid var(--border-subtle)', background: 'var(--surface-pill)', color: 'var(--text-primary)', cursor: 'pointer' }}
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
 
               {/* Owner Action Buttons for this Barber */}
               <div style={{ display: 'flex', gap: 6, marginTop: 'auto' }}>
