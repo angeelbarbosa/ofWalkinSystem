@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   DollarSign, 
   CheckCircle2, 
@@ -6,7 +6,10 @@ import {
   Download, 
   Send, 
   Check, 
-  X
+  X,
+  Calendar,
+  Search,
+  Filter
 } from 'lucide-react';
 import type { Barber, RentPaymentRecord, ShopConfig } from '../../types';
 import { ModalOverlay } from '../Shared/ModalOverlay';
@@ -34,6 +37,11 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
   const [showRentConfirm, setShowRentConfirm] = useState(false);
   const [reminderSentFor, setReminderSentFor] = useState<string | null>(null);
   const [rentFilter, setRentFilter] = useState<'all' | 'paid' | 'due'>('all');
+
+  // Receipt History Filtering State
+  const [selectedMonth, setSelectedMonth] = useState<string>('all');
+  const [selectedBarberFilter, setSelectedBarberFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Lock body scroll when popup/modal is open
   useEffect(() => {
@@ -119,17 +127,90 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
   };
 
   const handleExportCSV = () => {
+    const recordsToExport = filteredRentRecords.length > 0 ? filteredRentRecords : rentRecords;
     const headers = ['Receipt #,Barber Name,Station,Amount,Fee,Total,Status,Method,Date,Notes\n'];
-    const rows = rentRecords.map(r => 
-      `"${r.receiptNumber}","${r.barberName}",${r.stationNumber},$${r.amount},$${r.processingFee},$${r.totalPaid},"${r.status}","${r.paymentMethod || 'Card'}","${r.paidAt || r.dueDate}","${r.notes || ''}"`
+    const rows = recordsToExport.map(r => 
+      `"${r.receiptNumber}","${r.barberName}",${r.stationNumber || ''},$${r.amount},$${r.processingFee || 0},$${r.totalPaid},"${r.status}","${r.paymentMethod || 'Card'}","${r.paidAt || r.dueDate}","${r.notes || ''}"`
     );
     const blob = new Blob([...headers, ...rows.join('\n')], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `booth-rent-ledger-${new Date().toISOString().split('T')[0]}.csv`;
+    const suffix = selectedMonth !== 'all' ? selectedMonth : 'all-time';
+    a.download = `booth-rent-ledger-${suffix}.csv`;
     a.click();
   };
+
+  // Extract unique months from rentRecords (format: "YYYY-MM")
+  const availableMonths = useMemo(() => {
+    const monthSet = new Set<string>();
+    const now = new Date();
+    const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    monthSet.add(currentMonthKey);
+
+    rentRecords.forEach((r) => {
+      const dateStr = r.paidAt || r.dueDate;
+      if (dateStr) {
+        try {
+          const d = new Date(dateStr);
+          if (!isNaN(d.getTime())) {
+            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            monthSet.add(key);
+          }
+        } catch {
+          // ignore invalid
+        }
+      }
+    });
+
+    return Array.from(monthSet).sort().reverse();
+  }, [rentRecords]);
+
+  const formatMonthLabel = (monthKey: string) => {
+    try {
+      const [year, month] = monthKey.split('-').map(Number);
+      const date = new Date(year, month - 1, 1);
+      return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    } catch {
+      return monthKey;
+    }
+  };
+
+  // Filtered payment receipts
+  const filteredRentRecords = useMemo(() => {
+    return rentRecords.filter((record) => {
+      // Month match
+      if (selectedMonth !== 'all') {
+        const dateStr = record.paidAt || record.dueDate;
+        if (!dateStr) return false;
+        const d = new Date(dateStr);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        if (key !== selectedMonth) return false;
+      }
+
+      // Barber match
+      if (selectedBarberFilter !== 'all' && record.barberId !== selectedBarberFilter) {
+        return false;
+      }
+
+      // Search query (receipt #, barber name, or notes)
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const matchesName = record.barberName.toLowerCase().includes(q);
+        const matchesReceipt = record.receiptNumber.toLowerCase().includes(q);
+        const matchesNotes = (record.notes || '').toLowerCase().includes(q);
+        if (!matchesName && !matchesReceipt && !matchesNotes) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [rentRecords, selectedMonth, selectedBarberFilter, searchQuery]);
+
+  const filteredTotalCollected = useMemo(() => {
+    return filteredRentRecords.reduce((sum, r) => sum + r.totalPaid, 0);
+  }, [filteredRentRecords]);
 
   return (
     <div className="pop-in" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -679,44 +760,226 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
           </button>
         </div>
 
-        <div className="table-responsive">
-          <table className="bubbly-table">
-            <thead>
-              <tr>
-                <th>Receipt #</th>
-                <th>Barber</th>
-                <th>Amount</th>
-                <th>Method</th>
-                <th>Date Paid</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rentRecords.map((r) => (
-                <tr key={r.id}>
-                  <td style={{ fontWeight: 750, color: 'var(--text-primary)' }}>{r.receiptNumber}</td>
-                  <td>
-                    <strong>{r.barberName}</strong> (Station #{r.stationNumber})
-                  </td>
-                  <td style={{ fontWeight: 800, color: 'var(--text-primary)' }}>
-                    ${r.totalPaid.toFixed(2)}
-                  </td>
-                  <td style={{ textTransform: 'capitalize' }}>
-                    {r.paymentMethod === 'apple_pay' ? 'Apple Pay' : r.paymentMethod || 'Card'}
-                  </td>
-                  <td>
-                    {new Date(r.paidAt || r.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </td>
-                  <td>
-                    <span style={{ padding: '3px 8px', borderRadius: 9999, fontSize: '0.75rem', fontWeight: 800, background: 'var(--pastel-green-bg)', color: 'var(--pastel-green)', border: '1px solid var(--pastel-green-border)' }}>
-                      Paid
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {/* Receipts Filter Toolbar */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 10,
+            marginBottom: 16,
+            flexWrap: 'wrap'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', flex: 1, minWidth: 260 }}>
+            {/* Month Filter Selector */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                background: 'var(--surface-pill)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: 12,
+                padding: '6px 12px'
+              }}
+            >
+              <Calendar size={14} style={{ color: 'var(--accent-primary)' }} />
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text-primary)',
+                  fontSize: '0.82rem',
+                  fontWeight: 750,
+                  cursor: 'pointer',
+                  outline: 'none'
+                }}
+              >
+                <option value="all" style={{ background: '#18181B', color: '#FFFFFF' }}>All Months</option>
+                {availableMonths.map((m) => (
+                  <option key={m} value={m} style={{ background: '#18181B', color: '#FFFFFF' }}>
+                    {formatMonthLabel(m)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Barber Selector */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                background: 'var(--surface-pill)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: 12,
+                padding: '6px 12px'
+              }}
+            >
+              <Filter size={13} style={{ color: 'var(--text-muted)' }} />
+              <select
+                value={selectedBarberFilter}
+                onChange={(e) => setSelectedBarberFilter(e.target.value)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text-primary)',
+                  fontSize: '0.82rem',
+                  fontWeight: 750,
+                  cursor: 'pointer',
+                  outline: 'none'
+                }}
+              >
+                <option value="all" style={{ background: '#18181B', color: '#FFFFFF' }}>All Barbers</option>
+                {barbers.map((b) => (
+                  <option key={b.id} value={b.id} style={{ background: '#18181B', color: '#FFFFFF' }}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Search Input */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                background: 'var(--surface-pill)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: 12,
+                padding: '6px 12px',
+                flex: 1,
+                minWidth: 160,
+                maxWidth: 240
+              }}
+            >
+              <Search size={13} style={{ color: 'var(--text-muted)' }} />
+              <input
+                type="text"
+                placeholder="Search receipt #..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text-primary)',
+                  fontSize: '0.82rem',
+                  outline: 'none',
+                  width: '100%'
+                }}
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 0 }}
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+
+            {/* Reset Filters Button if any active */}
+            {(selectedMonth !== 'all' || selectedBarberFilter !== 'all' || searchQuery) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedMonth('all');
+                  setSelectedBarberFilter('all');
+                  setSearchQuery('');
+                }}
+                className="back-pill-btn"
+                style={{ padding: '6px 10px', fontSize: '0.76rem', color: 'var(--pastel-red)' }}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
+          {/* Filter Summary Metric */}
+          <div
+            style={{
+              fontSize: '0.78rem',
+              color: 'var(--text-secondary)',
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6
+            }}
+          >
+            <span>
+              {filteredRentRecords.length} {filteredRentRecords.length === 1 ? 'receipt' : 'receipts'}
+            </span>
+            <span>•</span>
+            <span style={{ color: 'var(--pastel-green)', fontWeight: 800 }}>
+              ${filteredTotalCollected.toFixed(2)} total
+            </span>
+          </div>
         </div>
+
+        {filteredRentRecords.length === 0 ? (
+          <div
+            style={{
+              padding: '36px 16px',
+              textAlign: 'center',
+              background: 'var(--surface-pill)',
+              borderRadius: 18,
+              border: '1px dashed var(--border-subtle)',
+              color: 'var(--text-muted)'
+            }}
+          >
+            <div style={{ fontSize: '1.4rem', marginBottom: 6 }}>🧾</div>
+            <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: 2 }}>
+              No Receipts Found
+            </div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+              No payments match your current month or search criteria.
+            </div>
+          </div>
+        ) : (
+          <div className="table-responsive">
+            <table className="bubbly-table">
+              <thead>
+                <tr>
+                  <th>Receipt #</th>
+                  <th>Barber</th>
+                  <th>Amount</th>
+                  <th>Method</th>
+                  <th>Date Paid</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredRentRecords.map((r) => (
+                  <tr key={r.id}>
+                    <td style={{ fontWeight: 750, color: 'var(--text-primary)' }}>{r.receiptNumber}</td>
+                    <td>
+                      <strong>{r.barberName}</strong> (Station #{r.stationNumber})
+                    </td>
+                    <td style={{ fontWeight: 800, color: 'var(--text-primary)' }}>
+                      ${r.totalPaid.toFixed(2)}
+                    </td>
+                    <td style={{ textTransform: 'capitalize' }}>
+                      {r.paymentMethod === 'apple_pay' ? 'Apple Pay' : r.paymentMethod || 'Card'}
+                    </td>
+                    <td>
+                      {new Date(r.paidAt || r.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </td>
+                    <td>
+                      <span style={{ padding: '3px 8px', borderRadius: 9999, fontSize: '0.75rem', fontWeight: 800, background: 'var(--pastel-green-bg)', color: 'var(--pastel-green)', border: '1px solid var(--pastel-green-border)' }}>
+                        Paid
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
