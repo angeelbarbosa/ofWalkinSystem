@@ -320,7 +320,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </button>
         </div>
 
-        {/* Support Chat Bar - Positioned under the tabs on the initial bar: zero scrolling required */}
+        {/* Support Chat Bar - Clean single row under tabs with text on left and blue bubble icon on right */}
         <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border-subtle, rgba(255,255,255,0.06))' }}>
           <button
             type="button"
@@ -331,7 +331,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              padding: '9px 14px',
+              padding: '10px 14px',
               borderRadius: 14,
               background: 'rgba(59, 130, 246, 0.08)',
               border: '1px solid rgba(59, 130, 246, 0.25)',
@@ -341,30 +341,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               boxSizing: 'border-box'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{
-                width: 26,
-                height: 26,
-                borderRadius: 8,
-                background: 'rgba(59, 130, 246, 0.2)',
-                color: '#60A5FA',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0
-              }}>
-                <MessageSquare size={14} />
-              </div>
-              <span style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                Support Chat with Platform HQ
-              </span>
-              <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
-                • Direct Line
-              </span>
-            </div>
+            <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
+              Support Chat
+            </span>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              {unreadSupportCount > 0 ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {unreadSupportCount > 0 && (
                 <span style={{
                   background: 'var(--pastel-red, #EF4444)',
                   color: '#FFFFFF',
@@ -373,13 +355,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   padding: '2px 8px',
                   borderRadius: 9999
                 }}>
-                  {unreadSupportCount} New Message{unreadSupportCount === 1 ? '' : 's'}
-                </span>
-              ) : (
-                <span style={{ fontSize: '0.76rem', fontWeight: 800, color: '#60A5FA' }}>
-                  Open Chat →
+                  {unreadSupportCount} New
                 </span>
               )}
+              <div style={{
+                width: 30,
+                height: 30,
+                borderRadius: 9,
+                background: 'rgba(59, 130, 246, 0.22)',
+                border: '1px solid rgba(59, 130, 246, 0.35)',
+                color: '#60A5FA',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <MessageSquare size={15} />
+              </div>
             </div>
           </button>
         </div>
