@@ -208,10 +208,6 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
     });
   }, [rentRecords, selectedMonth, selectedBarberFilter, searchQuery]);
 
-  const filteredTotalCollected = useMemo(() => {
-    return filteredRentRecords.reduce((sum, r) => sum + r.totalPaid, 0);
-  }, [filteredRentRecords]);
-
   return (
     <div className="pop-in" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* 1. Header Overview & Metrics */}
@@ -739,25 +735,13 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
 
       {/* 5. Historical Payment Ledger Table */}
       <div style={{ background: 'var(--surface-card)', borderRadius: 24, padding: '20px', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
-          <div>
-            <h3 style={{ fontSize: '1.15rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0 }}>
-              Payment History & Receipts
-            </h3>
-            <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '2px 0 0' }}>
-              Complete audit trail of all rent receipts and transactions
-            </p>
-          </div>
-
-          <button
-            onClick={handleExportCSV}
-            className="back-pill-btn"
-            style={{ padding: '7px 14px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 6 }}
-            title="Export payment records to CSV"
-          >
-            <Download size={13} />
-            <span>Export CSV</span>
-          </button>
+        <div style={{ marginBottom: 14 }}>
+          <h3 style={{ fontSize: '1.15rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0 }}>
+            Payment History & Receipts
+          </h3>
+          <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '2px 0 0' }}>
+            Complete audit trail of all rent receipts and transactions
+          </p>
         </div>
 
         {/* Receipts Filter Toolbar */}
@@ -899,26 +883,6 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
               </button>
             )}
           </div>
-
-          {/* Filter Summary Metric */}
-          <div
-            style={{
-              fontSize: '0.78rem',
-              color: 'var(--text-secondary)',
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6
-            }}
-          >
-            <span>
-              {filteredRentRecords.length} {filteredRentRecords.length === 1 ? 'receipt' : 'receipts'}
-            </span>
-            <span>•</span>
-            <span style={{ color: 'var(--pastel-green)', fontWeight: 800 }}>
-              ${filteredTotalCollected.toFixed(2)} total
-            </span>
-          </div>
         </div>
 
         {filteredRentRecords.length === 0 ? (
@@ -980,6 +944,19 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
             </table>
           </div>
         )}
+
+        {/* Bottom Actions: Export CSV */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+          <button
+            onClick={handleExportCSV}
+            className="back-pill-btn"
+            style={{ padding: '8px 16px', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 6 }}
+            title="Export payment records to CSV"
+          >
+            <Download size={14} />
+            <span>Export CSV</span>
+          </button>
+        </div>
       </div>
     </div>
   );
