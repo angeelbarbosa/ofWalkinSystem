@@ -493,23 +493,19 @@ export const BarberReceiptsHistoryModal: React.FC<BarberReceiptsHistoryModalProp
           background: 'var(--surface-card, #121216)',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
+          justifyContent: 'flex-end',
           flexShrink: 0
         }}>
-          <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
-            Digital Receipts • Verified & Stored Forever
-          </div>
-
           <button
             type="button"
             onClick={onClose}
             style={{
-              padding: '9px 18px',
+              padding: '9px 22px',
               background: 'var(--surface-pill, #27272A)',
               border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
               borderRadius: 12,
               color: 'var(--text-primary)',
-              fontSize: '0.8rem',
+              fontSize: '0.82rem',
               fontWeight: 800,
               cursor: 'pointer'
             }}
