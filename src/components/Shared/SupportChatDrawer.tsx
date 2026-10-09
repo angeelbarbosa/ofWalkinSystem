@@ -139,42 +139,42 @@ export const SupportChatDrawer: React.FC<SupportChatDrawerProps> = ({
         bottom: 0,
         width: '100vw',
         height: '100dvh',
-        maxHeight: '100dvh',
-        background: 'rgba(0, 0, 0, 0.75)',
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
+        background: 'rgba(0, 0, 0, 0.82)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
         zIndex: 999999,
         display: 'flex',
-        justifyContent: 'flex-end',
-        alignItems: 'stretch',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 'max(16px, env(safe-area-inset-top, 16px)) 16px max(16px, env(safe-area-inset-bottom, 16px)) 16px',
         overflow: 'hidden',
         touchAction: 'none',
-        overscrollBehavior: 'contain'
+        overscrollBehavior: 'contain',
+        boxSizing: 'border-box'
       }}
       onClick={onClose}
     >
       <div 
-        className="slide-up"
+        className="pop-in"
         style={{
           width: '100%',
-          maxWidth: '430px',
-          height: '100%',
-          maxHeight: '100dvh',
+          maxWidth: '450px',
+          height: 'min(640px, calc(100dvh - 36px))',
           background: 'var(--surface-card, #141417)',
-          borderLeft: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
+          border: '1px solid var(--border-subtle, rgba(255,255,255,0.14))',
+          borderRadius: '24px',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: 'var(--shadow-lg)',
+          boxShadow: '0 25px 60px -10px rgba(0, 0, 0, 0.95)',
           boxSizing: 'border-box',
           overflow: 'hidden',
-          touchAction: 'auto',
-          overscrollBehavior: 'contain'
+          position: 'relative'
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Drawer Header */}
+        {/* Popup Header */}
         <div style={{
-          padding: 'max(16px, calc(env(safe-area-inset-top, 0px) + 12px)) 16px 14px',
+          padding: '14px 16px',
           background: 'var(--surface-pill, #1C1C21)',
           borderBottom: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
           display: 'flex',
@@ -397,7 +397,7 @@ export const SupportChatDrawer: React.FC<SupportChatDrawerProps> = ({
         <form 
           onSubmit={handleSend}
           style={{
-            padding: '10px 14px max(14px, env(safe-area-inset-bottom, 14px)) 14px',
+            padding: '12px 14px',
             background: 'var(--surface-pill)',
             borderTop: '1px solid var(--border-subtle)',
             display: 'flex',
