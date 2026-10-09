@@ -488,6 +488,27 @@ export function useLiveSystem() {
     syncToConvexCloud(currentFleet);
   };
 
+  // Actions: Delete Check-In Record (Strictly scoped to active shop)
+  const deleteCheckIn = async (checkInId: string) => {
+    storage.deleteCheckIn(checkInId);
+    setCheckIns(prev => prev.filter(c => c.id !== checkInId));
+    const currentFleet = storage.getShops();
+    setShops(currentFleet);
+    syncToConvexCloud(currentFleet);
+  };
+
+  // Actions: Restore Check-In Record (Undo deletion)
+  const restoreCheckIn = async (record: CheckInRecord) => {
+    storage.restoreCheckIn(record);
+    setCheckIns(prev => {
+      if (prev.some(c => c.id === record.id)) return prev;
+      return [record, ...prev];
+    });
+    const currentFleet = storage.getShops();
+    setShops(currentFleet);
+    syncToConvexCloud(currentFleet);
+  };
+
   // Actions: Save Barbers (Strictly scoped to active shop)
   const saveBarbers = async (updated: Barber[]) => {
     storage.saveBarbers(updated);
@@ -663,6 +684,8 @@ export function useLiveSystem() {
     updateStatus,
     claimCheckIn,
     releaseCheckIn,
+    deleteCheckIn,
+    restoreCheckIn,
     clearCompletedCheckIns,
     saveBarbers,
     saveConfig,

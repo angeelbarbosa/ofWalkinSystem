@@ -37,6 +37,8 @@ interface BarberDashboardProps {
   onUpdateStatus: (id: string, status: CheckInRecord['status']) => void;
   onClaimWalkIn?: (checkInId: string, barber: Barber, newStatus?: CheckInRecord['status']) => Promise<void> | void;
   onReleaseWalkIn?: (checkInId: string) => Promise<void> | void;
+  onDeleteCheckIn?: (checkInId: string) => Promise<void> | void;
+  onRestoreCheckIn?: (record: CheckInRecord) => Promise<void> | void;
   onClearCompleted?: () => Promise<void> | void;
   onPayRent?: (barber: Barber, method: RentPaymentRecord['paymentMethod'], feeCovered: boolean) => Promise<RentPaymentRecord>;
   onSaveBarbers?: (barbers: Barber[]) => void;
@@ -52,6 +54,8 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
   onUpdateStatus,
   onClaimWalkIn,
   onReleaseWalkIn,
+  onDeleteCheckIn,
+  onRestoreCheckIn,
   onClearCompleted,
   onPayRent,
   onSaveBarbers,
@@ -68,10 +72,11 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
   const [isPasscodeModalOpen, setIsPasscodeModalOpen] = useState(false);
   const [walkInToClaim, setWalkInToClaim] = useState<CheckInRecord | null>(null);
   const [chairOccupiedWarning, setChairOccupiedWarning] = useState<{ attemptedClientName: string; actionType: 'in_chair' | 'take_walkin' } | null>(null);
-  // Last reversible action (Mark Finished / Back to List) — shown in a 5-second Undo toast
+  // Last reversible action (Mark Finished / Back to List / Remove Cut) — shown in a 5-second Undo toast
   const [undoAction, setUndoAction] = useState<{
-    kind: 'status' | 'release';
+    kind: 'status' | 'release' | 'delete';
     recordId: string;
+    record?: CheckInRecord;
     previousStatus: CheckInRecord['status'];
     message: string;
     key: number;
@@ -345,8 +350,17 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
 
   const handleUndo = async () => {
     if (!undoAction) return;
-    const { kind, recordId, previousStatus } = undoAction;
+    const { kind, recordId, record, previousStatus } = undoAction;
     setUndoAction(null);
+
+    if (kind === 'delete' && record) {
+      if (onRestoreCheckIn) {
+        await onRestoreCheckIn(record);
+      } else {
+        storage.restoreCheckIn(record);
+      }
+      return;
+    }
 
     // If another client was seated in the meantime, don't put two people in one chair
     const chairTakenByOther = inChairList.some(r => r.id !== recordId);
@@ -410,26 +424,20 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
     }
   };
 
-  const handleRestoreFinishedCut = async (record: CheckInRecord) => {
-    const isWalkIn = isWalkInRecord(record);
-    if (isWalkIn) {
-      if (!isChairOccupied) {
-        if (onClaimWalkIn) {
-          await onClaimWalkIn(record.id, assignedBarber, 'in_chair');
-        } else {
-          storage.claimCheckIn(record.id, assignedBarber.id, assignedBarber.name, 'in_chair');
-          onUpdateStatus(record.id, 'in_chair');
-        }
-      } else {
-        if (onReleaseWalkIn) {
-          await onReleaseWalkIn(record.id);
-        } else {
-          storage.releaseCheckIn(record.id);
-        }
-      }
+  const handleDeleteFinishedCut = async (record: CheckInRecord) => {
+    if (onDeleteCheckIn) {
+      await onDeleteCheckIn(record.id);
     } else {
-      onUpdateStatus(record.id, !isChairOccupied ? 'in_chair' : 'waiting');
+      storage.deleteCheckIn(record.id);
     }
+    setUndoAction({
+      kind: 'delete',
+      recordId: record.id,
+      record,
+      previousStatus: 'completed',
+      message: `${record.clientName} removed from cuts today`,
+      key: Date.now()
+    });
   };
 
   return (
@@ -1329,24 +1337,12 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                   </div>
 
                   <button
-                    onClick={() => handleRestoreFinishedCut(record)}
-                    style={{
-                      background: 'transparent',
-                      border: 'none',
-                      color: 'var(--text-muted)',
-                      padding: 6,
-                      borderRadius: 8,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                      transition: 'color 0.15s ease'
-                    }}
-                    title={`Restore ${record.clientName} back to queue`}
-                    aria-label={`Restore ${record.clientName}`}
+                    onClick={() => handleDeleteFinishedCut(record)}
+                    className="finished-cut-remove-btn"
+                    title={`Remove ${record.clientName} from cuts today`}
+                    aria-label={`Remove ${record.clientName}`}
                   >
-                    <CornerUpLeft size={13} />
+                    <X size={14} />
                   </button>
                 </div>
               );

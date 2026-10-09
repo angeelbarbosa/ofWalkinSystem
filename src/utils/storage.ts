@@ -849,6 +849,19 @@ export const storage = {
     this.saveCheckIns(updated);
   },
 
+  deleteCheckIn(id: string) {
+    const records = this.getCheckIns();
+    const updated = records.filter(r => r.id !== id);
+    this.saveCheckIns(updated);
+  },
+
+  restoreCheckIn(record: CheckInRecord) {
+    const records = this.getCheckIns();
+    if (!records.some(r => r.id === record.id)) {
+      this.saveCheckIns([record, ...records]);
+    }
+  },
+
   clearCompletedCheckIns() {
     const records = this.getCheckIns();
     const updated = records.filter(r => r.status === 'waiting' || r.status === 'in_chair' || r.status === 'called');
