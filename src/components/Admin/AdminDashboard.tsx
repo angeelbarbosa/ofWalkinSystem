@@ -358,10 +358,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   {unreadSupportCount} New
                 </span>
               )}
+              <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#60A5FA', whiteSpace: 'nowrap' }}>
+                Open Chat
+              </span>
               <div style={{
-                width: 30,
-                height: 30,
-                borderRadius: 9,
+                width: 28,
+                height: 28,
+                borderRadius: 8,
                 background: 'rgba(59, 130, 246, 0.22)',
                 border: '1px solid rgba(59, 130, 246, 0.35)',
                 color: '#60A5FA',
@@ -370,7 +373,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 justifyContent: 'center',
                 flexShrink: 0
               }}>
-                <MessageSquare size={15} />
+                <MessageSquare size={14} />
               </div>
             </div>
           </button>
