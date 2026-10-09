@@ -598,7 +598,6 @@ export function App() {
                   <ClientCheckInModal
                     selectedBarber={selectedBarber}
                     checkInType={checkInMode}
-                    isBarberBusy={checkIns.some(c => (c.barberId === selectedBarber.id || c.barberName === selectedBarber.name) && c.status === 'in_chair')}
                     onSubmit={handleCheckInSubmit}
                     onCancel={() => setIsCheckInModalOpen(false)}
                   />

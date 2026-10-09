@@ -13,7 +13,6 @@ interface BarberSelectProps {
 
 export const BarberSelect: React.FC<BarberSelectProps> = ({
   barbers,
-  checkIns = [],
   mode = 'appointment',
   onSelectBarber,
   onSelectFirstAvailable,
@@ -21,53 +20,9 @@ export const BarberSelect: React.FC<BarberSelectProps> = ({
 }) => {
   const activeBarbers = barbers.filter(b => b.isWorking);
 
-  // Helper to determine barber's live activity status
-  const getBarberLiveStatus = (barberId: string) => {
-    const inChair = checkIns.find(c => (c.barberId === barberId || c.barberName === barberId) && c.status === 'in_chair');
-    if (inChair) {
-      return {
-        status: 'in_chair' as const,
-        label: 'In Chair (Cutting Client)',
-        detail: `Currently with ${inChair.clientName}`,
-        badgeColor: '#F59E0B',
-        badgeBg: 'rgba(245, 158, 11, 0.15)',
-        dotColor: '#F59E0B'
-      };
-    }
-
-    const waiting = checkIns.filter(c => (c.barberId === barberId || c.barberName === barberId) && (c.status === 'waiting' || c.status === 'called'));
-    if (waiting.length > 0) {
-      return {
-        status: 'waiting' as const,
-        label: `${waiting.length} in Lobby Queue`,
-        detail: `Next up: ${waiting[0].clientName}`,
-        badgeColor: '#3B82F6',
-        badgeBg: 'rgba(59, 130, 246, 0.15)',
-        dotColor: '#3B82F6'
-      };
-    }
-
-    return {
-      status: 'available' as const,
-      label: 'Chair Open • Ready Now',
-      detail: 'Available immediately',
-      badgeColor: '#10B981',
-      badgeBg: 'rgba(16, 185, 129, 0.15)',
-      dotColor: '#10B981'
-    };
-  };
-
-  // Special "First Available" virtual barber
+  // Customers never see which barber is busy or free — walk-ins simply join the shared line.
   const handleFirstAvailableClick = () => {
-    if (onSelectFirstAvailable) {
-      onSelectFirstAvailable();
-    } else {
-      // Find first available or least busy barber
-      const freeBarber = activeBarbers.find(b => getBarberLiveStatus(b.id).status === 'available') || activeBarbers[0];
-      if (freeBarber) {
-        onSelectBarber(freeBarber);
-      }
-    }
+    onSelectFirstAvailable?.();
   };
 
   return (
@@ -173,8 +128,6 @@ export const BarberSelect: React.FC<BarberSelectProps> = ({
         }}
       >
         {activeBarbers.map((barber) => {
-          const liveStatus = getBarberLiveStatus(barber.id);
-
           return (
             <div
               key={barber.id}
@@ -226,38 +179,9 @@ export const BarberSelect: React.FC<BarberSelectProps> = ({
               </div>
 
               {/* Barber Name */}
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 12px' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 14px' }}>
                 {barber.name}
               </h3>
-
-              {/* Live Status Badge */}
-              <div
-                style={{
-                  width: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                  padding: '6px 12px',
-                  borderRadius: '9999px',
-                  background: liveStatus.badgeBg,
-                  color: liveStatus.badgeColor,
-                  fontSize: '11px',
-                  fontWeight: 800,
-                  marginBottom: '14px'
-                }}
-              >
-                <div
-                  style={{
-                    width: '8px',
-                    height: '8px',
-                    borderRadius: '50%',
-                    backgroundColor: liveStatus.dotColor,
-                    boxShadow: `0 0 6px ${liveStatus.dotColor}`
-                  }}
-                />
-                <span>{liveStatus.label}</span>
-              </div>
 
               {/* Action Button */}
               <button

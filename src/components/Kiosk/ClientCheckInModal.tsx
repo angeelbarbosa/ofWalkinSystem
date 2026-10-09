@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Check, User, Clock, Keyboard as KeyboardIcon, AlertCircle, Phone } from 'lucide-react';
+import { X, Check, User, Clock, Keyboard as KeyboardIcon, Phone } from 'lucide-react';
 import { WalkingLegsIcon } from '../Shared/WalkingLegsIcon';
 import type { Barber } from '../../types';
 import { OnScreenKeyboard } from '../Shared/OnScreenKeyboard';
@@ -9,7 +9,6 @@ import { ModalOverlay } from '../Shared/ModalOverlay';
 interface ClientCheckInModalProps {
   selectedBarber: Barber;
   checkInType?: 'appointment' | 'walkin';
-  isBarberBusy?: boolean;
   onSubmit: (clientName: string, appointmentTime: string, checkInType: 'appointment' | 'walkin', clientPhone?: string) => void;
   onCancel: () => void;
 }
@@ -17,7 +16,6 @@ interface ClientCheckInModalProps {
 export const ClientCheckInModal: React.FC<ClientCheckInModalProps> = ({
   selectedBarber,
   checkInType = 'appointment',
-  isBarberBusy = false,
   onSubmit,
   onCancel
 }) => {
@@ -101,28 +99,6 @@ export const ClientCheckInModal: React.FC<ClientCheckInModalProps> = ({
             </h3>
           </div>
         </div>
-
-        {/* Barber Busy Notice Banner */}
-        {isBarberBusy && (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '10px 14px',
-            background: 'rgba(245, 158, 11, 0.12)',
-            border: '1px solid rgba(245, 158, 11, 0.3)',
-            borderRadius: '14px',
-            color: '#F59E0B',
-            fontSize: '0.82rem',
-            marginBottom: '16px',
-            lineHeight: 1.35
-          }}>
-            <AlertCircle size={18} style={{ flexShrink: 0 }} />
-            <span>
-              <strong>Note:</strong> {selectedBarber.name} is currently with a client. We'll buzz their phone so they know you are here!
-            </span>
-          </div>
-        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit}>

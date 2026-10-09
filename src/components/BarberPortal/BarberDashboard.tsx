@@ -17,7 +17,9 @@ import {
   Users,
   AlertTriangle,
   MessageSquare,
-  Phone
+  Phone,
+  UserX,
+  Undo2
 } from 'lucide-react';
 import type { Barber, CheckInRecord, ShopConfig, RentPaymentRecord } from '../../types';
 import { storage } from '../../utils/storage';
@@ -64,6 +66,13 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
   const [isPasscodeModalOpen, setIsPasscodeModalOpen] = useState(false);
   const [walkInToClaim, setWalkInToClaim] = useState<CheckInRecord | null>(null);
   const [chairOccupiedWarning, setChairOccupiedWarning] = useState<{ attemptedClientName: string; actionType: 'in_chair' | 'take_walkin' } | null>(null);
+  // Last reversible action (Mark Finished / No-Show) — shown in a 5-second Undo toast
+  const [undoAction, setUndoAction] = useState<{
+    recordId: string;
+    previousStatus: CheckInRecord['status'];
+    message: string;
+    key: number;
+  } | null>(null);
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [alertsActive, setAlertsActive] = useState<boolean>(() => notificationManager.isAlertsEnabled());
   const [tested, setTested] = useState(false);
@@ -117,6 +126,13 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
     window.addEventListener('barber_arrival_toast', handleArrivalToast);
     return () => window.removeEventListener('barber_arrival_toast', handleArrivalToast);
   }, [assignedBarber]);
+
+  // Auto-dismiss Undo toast after 5 seconds (action becomes final)
+  useEffect(() => {
+    if (!undoAction) return;
+    const timer = setTimeout(() => setUndoAction(null), 5000);
+    return () => clearTimeout(timer);
+  }, [undoAction]);
 
   // Auto-dismiss toast after 10 seconds
   useEffect(() => {
@@ -314,8 +330,31 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
     onUpdateStatus(record.id, 'in_chair');
   };
 
+  // Apply a status change and offer a 5-second Undo
+  const applyWithUndo = (record: CheckInRecord, newStatus: CheckInRecord['status'], message: string) => {
+    const previousStatus = (record.status || 'waiting') as CheckInRecord['status'];
+    onUpdateStatus(record.id, newStatus);
+    setUndoAction({ recordId: record.id, previousStatus, message, key: Date.now() });
+  };
+
+  const handleUndo = () => {
+    if (!undoAction) return;
+    // If another client was seated in the meantime, don't put two people in one chair
+    const chairTakenByOther = inChairList.some(r => r.id !== undoAction.recordId);
+    const restoreStatus = undoAction.previousStatus === 'in_chair' && chairTakenByOther
+      ? 'waiting'
+      : undoAction.previousStatus;
+    onUpdateStatus(undoAction.recordId, restoreStatus);
+    setUndoAction(null);
+  };
+
   const handleSetCompleted = (record: CheckInRecord) => {
-    onUpdateStatus(record.id, 'completed');
+    applyWithUndo(record, 'completed', `${record.clientName} marked finished`);
+  };
+
+  // No-Show: client left or never came up — remove them from the line
+  const handleNoShow = (record: CheckInRecord) => {
+    applyWithUndo(record, 'cancelled', `${record.clientName} removed as no-show`);
   };
 
   const handleClearHistory = () => {
@@ -732,6 +771,16 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                   <Check size={18} />
                   <span>Mark Cut Finished</span>
                 </button>
+
+                <button
+                  id={`no-show-inchair-${record.id}`}
+                  onClick={() => handleNoShow(record)}
+                  className="no-show-btn"
+                  style={{ width: '100%', padding: '11px' }}
+                >
+                  <UserX size={16} />
+                  <span>No-Show — Remove</span>
+                </button>
               </div>
             ))}
           </div>
@@ -830,6 +879,17 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                       {record.notes && <span>• {record.notes}</span>}
                     </div>
                   </div>
+
+                  <button
+                    id={`no-show-waiting-${record.id}`}
+                    onClick={() => handleNoShow(record)}
+                    className="no-show-btn"
+                    style={{ padding: '7px 11px', fontSize: '0.76rem', flexShrink: 0 }}
+                    title="Client left — remove from line"
+                  >
+                    <UserX size={14} />
+                    <span>No-Show</span>
+                  </button>
                 </div>
 
                 {/* 1-Tap SMS Text Notification Bar (Pre-filled instant message) */}
@@ -1055,6 +1115,17 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <button
+                    id={`no-show-walkin-${walkin.id}`}
+                    onClick={() => handleNoShow(walkin)}
+                    className="no-show-btn"
+                    style={{ padding: '10px 12px' }}
+                    title="No-show — remove from line"
+                    aria-label={`Remove ${walkin.clientName} as no-show`}
+                  >
+                    <UserX size={14} />
+                  </button>
+
                   {walkin.clientPhone && (
                     <a
                       href={getSmsUrl(walkin.clientPhone, walkin.clientName)}
@@ -1351,6 +1422,18 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
           onSaveNewPasscode={handleSaveNewPasscode}
           onClose={() => setIsPasscodeModalOpen(false)}
         />
+      )}
+
+      {/* 5-Second Undo Toast (Mark Finished / No-Show) */}
+      {undoAction && (
+        <div key={undoAction.key} className="undo-toast" role="status" aria-live="polite">
+          <span className="undo-toast-message">{undoAction.message}</span>
+          <button id="undo-last-action-btn" className="undo-toast-btn" onClick={handleUndo}>
+            <Undo2 size={15} />
+            <span>Undo</span>
+          </button>
+          <div className="undo-toast-progress" />
+        </div>
       )}
     </div>
   );
