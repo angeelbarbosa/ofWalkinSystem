@@ -8,11 +8,11 @@ import {
   Download, 
   Check,
   DollarSign,
-  HelpCircle,
   CreditCard,
   Building2,
   Lock,
-  Receipt
+  Receipt,
+  MessageSquare
 } from 'lucide-react';
 import type { Barber, CheckInRecord, ShopConfig, RentPaymentRecord, Shop, SupportMessage, SubscriptionPaymentMethod } from '../../types';
 import { RentLedgerDashboard } from './RentLedgerDashboard';
@@ -55,6 +55,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isPaySubscriptionOpen, setIsPaySubscriptionOpen] = useState(false);
   const [selectedBarberForReceipts, setSelectedBarberForReceipts] = useState<Barber | null>(null);
+
+  const unreadSupportCount = supportMessages.filter(
+    m => m.shopSlug === currentShop?.slug && !m.readByShop && m.sender === 'platform_hq'
+  ).length;
   
   // Barbers Management State
   const [isAddingBarber, setIsAddingBarber] = useState(false);
@@ -313,40 +317,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           >
             <Download size={15} />
             <span>Logs ({checkIns.length})</span>
-          </button>
-
-          <button
-            onClick={() => setIsSupportOpen(true)}
-            className="barber-tab-chip"
-            style={{ 
-              padding: '8px 14px', 
-              borderRadius: 9999, 
-              fontSize: '0.82rem', 
-              fontWeight: 750, 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 6, 
-              background: 'var(--pastel-blue-bg)', 
-              color: 'var(--pastel-blue)', 
-              border: '1px solid var(--pastel-blue-border)', 
-              cursor: 'pointer',
-              marginLeft: 'auto'
-            }}
-          >
-            <HelpCircle size={15} />
-            <span>Support Chat</span>
-            {supportMessages.filter(m => m.shopSlug === currentShop?.slug && !m.readByShop && m.sender === 'platform_hq').length > 0 && (
-              <span style={{
-                background: 'var(--pastel-red)',
-                color: '#FFFFFF',
-                fontSize: '10px',
-                fontWeight: 900,
-                padding: '1px 6px',
-                borderRadius: 9999
-              }}>
-                {supportMessages.filter(m => m.shopSlug === currentShop?.slug && !m.readByShop && m.sender === 'platform_hq').length}
-              </span>
-            )}
           </button>
         </div>
       </div>
@@ -1087,6 +1057,60 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           rentRecords={rentRecords}
           onClose={() => setSelectedBarberForReceipts(null)}
         />
+      )}
+
+      {/* Floating Bottom-Right Support Chat Bubble */}
+      {!isSupportOpen && (
+        <button
+          type="button"
+          onClick={() => setIsSupportOpen(true)}
+          style={{
+            position: 'fixed',
+            bottom: 'max(24px, calc(env(safe-area-inset-bottom, 16px) + 14px))',
+            right: 'max(20px, calc(env(safe-area-inset-right, 16px) + 14px))',
+            width: 56,
+            height: 56,
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, var(--accent-primary, #F59E0B) 0%, #D97706 100%)',
+            color: 'var(--bg-main, #000000)',
+            border: '2px solid rgba(255, 255, 255, 0.25)',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.5), 0 2px 10px rgba(245, 158, 11, 0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            zIndex: 9990
+          }}
+          className="support-floating-bubble"
+          title="Direct Support Chat with Platform HQ"
+          aria-label="Direct Support Chat with Platform HQ"
+        >
+          <MessageSquare size={24} style={{ strokeWidth: 2.2 }} />
+          {unreadSupportCount > 0 && (
+            <span
+              style={{
+                position: 'absolute',
+                top: -2,
+                right: -2,
+                background: '#EF4444',
+                color: '#FFFFFF',
+                fontSize: '11px',
+                fontWeight: 900,
+                minWidth: 20,
+                height: 20,
+                borderRadius: 9999,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '2px solid var(--bg-main, #09090B)',
+                boxShadow: '0 2px 6px rgba(239, 68, 68, 0.6)',
+                padding: '0 4px'
+              }}
+            >
+              {unreadSupportCount}
+            </span>
+          )}
+        </button>
       )}
     </div>
   );
