@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Send, 
   X, 
@@ -50,13 +51,29 @@ export const SupportChatDrawer: React.FC<SupportChatDrawerProps> = ({
   const isHqUser = userRole === 'platform_hq';
   const hasUnread = shopMessages.some(m => isHqUser ? !m.readByHq : !m.readByShop);
 
-  // Lock background window scroll when drawer is open
+  // Lock background window scroll when drawer is open (bulletproof iOS Safari scroll lock)
   useEffect(() => {
     if (isOpen) {
-      const originalStyle = document.body.style.overflow;
+      const originalOverflow = document.body.style.overflow;
+      const originalPosition = document.body.style.position;
+      const originalTop = document.body.style.top;
+      const originalWidth = document.body.style.width;
+      const originalTouch = document.body.style.touchAction;
+      const scrollY = window.scrollY;
+
       document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.touchAction = 'none';
+
       return () => {
-        document.body.style.overflow = originalStyle;
+        document.body.style.overflow = originalOverflow;
+        document.body.style.position = originalPosition;
+        document.body.style.top = originalTop;
+        document.body.style.width = originalWidth;
+        document.body.style.touchAction = originalTouch;
+        window.scrollTo(0, scrollY);
       };
     }
   }, [isOpen]);
@@ -77,6 +94,7 @@ export const SupportChatDrawer: React.FC<SupportChatDrawerProps> = ({
   }, [isOpen, shopMessages.length]);
 
   if (!isOpen || !currentShop) return null;
+  if (typeof document === 'undefined') return null;
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,19 +128,28 @@ export const SupportChatDrawer: React.FC<SupportChatDrawerProps> = ({
     }
   };
 
-  return (
+  return createPortal(
     <div 
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(0, 0, 0, 0.7)',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        height: '100dvh',
+        maxHeight: '100dvh',
+        background: 'rgba(0, 0, 0, 0.75)',
         backdropFilter: 'blur(8px)',
         WebkitBackdropFilter: 'blur(8px)',
-        zIndex: 99999,
+        zIndex: 999999,
         display: 'flex',
         justifyContent: 'flex-end',
         alignItems: 'stretch',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        touchAction: 'none',
+        overscrollBehavior: 'contain'
       }}
       onClick={onClose}
     >
@@ -139,7 +166,9 @@ export const SupportChatDrawer: React.FC<SupportChatDrawerProps> = ({
           flexDirection: 'column',
           boxShadow: 'var(--shadow-lg)',
           boxSizing: 'border-box',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          touchAction: 'auto',
+          overscrollBehavior: 'contain'
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -214,13 +243,15 @@ export const SupportChatDrawer: React.FC<SupportChatDrawerProps> = ({
           ref={messagesContainerRef}
           style={{
             flex: 1,
+            minHeight: 0,
             overflowY: 'auto',
             padding: '14px',
             display: 'flex',
             flexDirection: 'column',
             gap: '10px',
             boxSizing: 'border-box',
-            WebkitOverflowScrolling: 'touch'
+            WebkitOverflowScrolling: 'touch',
+            overscrollBehavior: 'contain'
           }}
         >
           {/* Welcome Banner */}
@@ -416,6 +447,7 @@ export const SupportChatDrawer: React.FC<SupportChatDrawerProps> = ({
           </button>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

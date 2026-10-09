@@ -202,7 +202,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       <div className="portal-header-banner" style={{ background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderRadius: '24px', padding: '18px 20px', marginBottom: 20 }}>
         <div style={{ marginBottom: 14 }}>
           <h2 style={{ fontSize: '1.4rem', fontWeight: 850, color: 'var(--text-primary)', marginBottom: 2 }}>
-            Shop Manager & Settings
+            Shop Manager
           </h2>
           <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
             Manage barbers, adjust timers & view check-in logs
