@@ -319,6 +319,70 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <span>Logs ({checkIns.length})</span>
           </button>
         </div>
+
+        {/* Support Chat Bar - Positioned under the tabs on the initial bar: zero scrolling required */}
+        <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border-subtle, rgba(255,255,255,0.06))' }}>
+          <button
+            type="button"
+            className="support-bar-btn"
+            onClick={() => setIsSupportOpen(true)}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '9px 14px',
+              borderRadius: 14,
+              background: 'rgba(59, 130, 246, 0.08)',
+              border: '1px solid rgba(59, 130, 246, 0.25)',
+              color: 'var(--text-primary)',
+              cursor: 'pointer',
+              transition: 'all 0.18s ease',
+              boxSizing: 'border-box'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{
+                width: 26,
+                height: 26,
+                borderRadius: 8,
+                background: 'rgba(59, 130, 246, 0.2)',
+                color: '#60A5FA',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <MessageSquare size={14} />
+              </div>
+              <span style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                Support Chat with Platform HQ
+              </span>
+              <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                • Direct Line
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {unreadSupportCount > 0 ? (
+                <span style={{
+                  background: 'var(--pastel-red, #EF4444)',
+                  color: '#FFFFFF',
+                  fontSize: '11px',
+                  fontWeight: 900,
+                  padding: '2px 8px',
+                  borderRadius: 9999
+                }}>
+                  {unreadSupportCount} New Message{unreadSupportCount === 1 ? '' : 's'}
+                </span>
+              ) : (
+                <span style={{ fontSize: '0.76rem', fontWeight: 800, color: '#60A5FA' }}>
+                  Open Chat →
+                </span>
+              )}
+            </div>
+          </button>
+        </div>
       </div>
 
       {/* Sub-Tab 0: Booth Rent Ledger */}
@@ -1059,59 +1123,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         />
       )}
 
-      {/* Floating Bottom-Right Support Chat Bubble */}
-      {!isSupportOpen && (
-        <button
-          type="button"
-          onClick={() => setIsSupportOpen(true)}
-          style={{
-            position: 'fixed',
-            bottom: 'max(24px, calc(env(safe-area-inset-bottom, 16px) + 14px))',
-            right: 'max(20px, calc(env(safe-area-inset-right, 16px) + 14px))',
-            width: 56,
-            height: 56,
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, var(--accent-primary, #F59E0B) 0%, #D97706 100%)',
-            color: 'var(--bg-main, #000000)',
-            border: '2px solid rgba(255, 255, 255, 0.25)',
-            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.5), 0 2px 10px rgba(245, 158, 11, 0.4)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            zIndex: 9990
-          }}
-          className="support-floating-bubble"
-          title="Direct Support Chat with Platform HQ"
-          aria-label="Direct Support Chat with Platform HQ"
-        >
-          <MessageSquare size={24} style={{ strokeWidth: 2.2 }} />
-          {unreadSupportCount > 0 && (
-            <span
-              style={{
-                position: 'absolute',
-                top: -2,
-                right: -2,
-                background: '#EF4444',
-                color: '#FFFFFF',
-                fontSize: '11px',
-                fontWeight: 900,
-                minWidth: 20,
-                height: 20,
-                borderRadius: 9999,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: '2px solid var(--bg-main, #09090B)',
-                boxShadow: '0 2px 6px rgba(239, 68, 68, 0.6)',
-                padding: '0 4px'
-              }}
-            >
-              {unreadSupportCount}
-            </span>
-          )}
-        </button>
-      )}
+
     </div>
   );
 };

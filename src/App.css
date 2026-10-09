@@ -1646,16 +1646,13 @@
   background: rgba(239, 68, 68, 0.12);
 }
 
-/* Floating Bottom-Right Support Chat Bubble */
-.support-floating-bubble {
-  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease !important;
+/* Header Banner Support Chat Quick Bar */
+.support-bar-btn:hover {
+  background: rgba(59, 130, 246, 0.14) !important;
+  border-color: rgba(59, 130, 246, 0.45) !important;
+  transform: translateY(-1px);
 }
 
-.support-floating-bubble:hover {
-  transform: scale(1.08) translateY(-2px);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55), 0 4px 16px rgba(245, 158, 11, 0.55) !important;
-}
-
-.support-floating-bubble:active {
-  transform: scale(0.93) translateY(1px);
+.support-bar-btn:active {
+  transform: translateY(0);
 }
