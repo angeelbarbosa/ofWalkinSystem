@@ -9,13 +9,13 @@ interface WalkingLegsIconProps {
 }
 
 /**
- * Outlined Full Walking Body Person Icon
- * Matches Lucide / Feather icon design language (crisp vector lines, round caps, 24x24 grid)
+ * Modern Minimalist Walk-In Stride Icon
+ * Matches the shop brand's bold geometric stride identity (crisp vector lines, round caps, 24x24 grid)
  */
 export const WalkingLegsIcon: React.FC<WalkingLegsIconProps> = ({
   size = 24,
   color = 'currentColor',
-  strokeWidth = 2,
+  strokeWidth = 2.4,
   className = '',
   style = {}
 }) => {
@@ -33,15 +33,10 @@ export const WalkingLegsIcon: React.FC<WalkingLegsIconProps> = ({
       className={className}
       style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0, ...style }}
     >
-      {/* Head */}
-      <circle cx="13.5" cy="4" r="1.8" />
-      {/* Torso & Leading Forward Leg */}
-      <path d="M13 6L12 11.5L8.5 16.5L6 21" />
-      {/* Trailing Back Leg */}
-      <path d="M12 11.5L14.8 16.2L18.5 21" />
-      {/* Swinging Arms */}
-      <path d="M12.5 8.2L9.5 10.8L7 9.8" />
-      <path d="M12.5 8.2L15.5 10.5L18 9.5" />
+      {/* Front Striding Leg & Foot */}
+      <path d="M7.8 3.8L14.6 19.5L21.5 19.5" />
+      {/* Back Trailing Leg & Foot */}
+      <path d="M7 11.5L3.5 19.5L10 19.5" />
     </svg>
   );
 };
