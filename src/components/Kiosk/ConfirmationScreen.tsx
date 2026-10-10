@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle, Armchair, Check, Scissors } from 'lucide-react';
-import { WalkingLegsIcon } from '../Shared/WalkingLegsIcon';
+import { CheckCircle, Check } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import type { CheckInRecord, ShopConfig } from '../../types';
 
@@ -13,7 +12,6 @@ interface ConfirmationScreenProps {
 export const ConfirmationScreen: React.FC<ConfirmationScreenProps> = ({ record, config, onDone }) => {
   const [secondsLeft, setSecondsLeft] = useState(config.autoResetAppointmentSec || 6);
   const totalSeconds = config.autoResetAppointmentSec || 6;
-  const isWalkIn = record.type === 'walkin' || record.appointmentTime === 'Walk-In';
 
   useEffect(() => {
     // Confetti blast with gold & theme colors
@@ -75,52 +73,20 @@ export const ConfirmationScreen: React.FC<ConfirmationScreenProps> = ({ record, 
         <CheckCircle size={48} strokeWidth={2.4} />
       </div>
 
-      <h2 style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--text-primary)', marginBottom: '8px' }}>
+      <h2 style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--text-primary)', marginBottom: '14px', letterSpacing: '-0.02em' }}>
         You're All Set, {record.clientName}!
       </h2>
 
-      <p style={{ fontSize: '1.15rem', color: 'var(--text-secondary)', fontWeight: 700, marginBottom: '16px' }}>
-        {isWalkIn ? (
-          <span>We added you to the walk-in queue for <strong>{record.barberName}</strong>.</span>
-        ) : (
-          <span>We notified <strong>{record.barberName}</strong> that you've arrived.</span>
-        )}
-      </p>
-
-      {/* Queue or Slot badge */}
-      <div style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '6px',
-        background: 'var(--surface-pill, #27272A)',
-        color: 'var(--text-primary)',
-        padding: '8px 18px',
-        borderRadius: 9999,
-        fontWeight: 750,
-        fontSize: '0.92rem',
-        marginBottom: '24px',
-        border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))'
+      <p style={{
+        fontSize: '1.08rem',
+        color: 'var(--text-secondary)',
+        fontWeight: 600,
+        lineHeight: 1.5,
+        margin: '0 auto 28px',
+        maxWidth: '400px'
       }}>
-        {isWalkIn ? <WalkingLegsIcon size={16} color="#F59E0B" /> : <Scissors size={16} style={{ color: 'var(--accent-primary)' }} />}
-        <span>{isWalkIn ? 'Walk-In Spot Reserved' : `Appointment Slot: ${record.appointmentTime || 'Scheduled'}`}</span>
-      </div>
-
-      {/* Lounge instructions */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 10,
-          color: 'var(--text-secondary)',
-          fontSize: '1.05rem',
-          fontWeight: 600,
-          marginBottom: 30
-        }}
-      >
-        <Armchair size={22} style={{ color: 'var(--accent-primary)' }} />
-        <span>Please have a seat in the waiting area. Your barber will call you up!</span>
-      </div>
+        Please have a seat in the waiting area. You will be notified when ready!
+      </p>
 
       {/* Progress Bar */}
       <div className="countdown-container" style={{ marginBottom: 24 }}>
