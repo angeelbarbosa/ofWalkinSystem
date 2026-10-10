@@ -57,7 +57,7 @@ function generateShopAppIconDataUrl(shopName: string, themeColor: string, bgColo
   return canvas.toDataURL('image/png');
 }
 
-function generateSuperAdminAppIconDataUrl(): string {
+export function generateSuperAdminAppIconDataUrl(): string {
   if (typeof document === 'undefined') return '';
 
   const canvas = document.createElement('canvas');
@@ -143,7 +143,7 @@ export function updatePwaBranding(shop: Shop, currentTab?: string) {
     title = 'WalkinApp HQ — Fleet Command';
     appName = 'WalkinApp HQ';
     startUrl = '/?portal=super_admin';
-    iconUrl = generateSuperAdminAppIconDataUrl();
+    iconUrl = '/hq-icon.png';
   } else if (isBarberPortal) {
     title = `${shop.name} — Barber Hub`;
     appName = `${shop.name} Barber`;

@@ -161,10 +161,11 @@ export function App() {
 
   // Keep PWA bookmark title, Apple Touch icon, and start_url dynamically synced with current tab
   useEffect(() => {
-    if (activeShop) {
-      updatePwaBranding(activeShop, currentTab);
+    const shopToBrand = activeShop || shops[0];
+    if (shopToBrand) {
+      updatePwaBranding(shopToBrand, currentTab);
     }
-  }, [activeShop, currentTab]);
+  }, [activeShop, shops, currentTab]);
 
   // Handle new Client Check-in from Kiosk
   const handleCheckInSubmit = async (
