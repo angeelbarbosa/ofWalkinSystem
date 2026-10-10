@@ -112,15 +112,6 @@ export const KioskHome: React.FC<KioskHomeProps> = ({
             </h1>
           </div>
         )}
-        
-        <p className="kiosk-welcome-subtitle" style={{
-          marginTop: '12px',
-          fontSize: '1.05rem',
-          color: 'var(--text-secondary, #D4D4D8)',
-          fontWeight: 600
-        }}>
-          {config.welcomeShoppingTitle || `Welcome to ${config.shopName}!`} Please tap an option below:
-        </p>
       </div>
 
       {/* ================= EXACTLY TWO BIG HERO CHOICE CARDS ================= */}
