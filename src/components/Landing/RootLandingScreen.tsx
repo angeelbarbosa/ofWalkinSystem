@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { 
   Scissors, 
   Store, 
-  Shield, 
   Search, 
   ArrowRight, 
   Sparkles, 
@@ -12,6 +11,7 @@ import {
 } from 'lucide-react';
 import type { Shop, MainNavTab } from '../../types';
 import { applyTheme, type ThemeId } from '../../utils/themes';
+import { WalkingLegsIcon } from '../Shared/WalkingLegsIcon';
 
 interface RootLandingScreenProps {
   shops: Shop[];
@@ -86,7 +86,7 @@ export const RootLandingScreen: React.FC<RootLandingScreenProps> = ({
             alignItems: 'center',
             justifyContent: 'center'
           }}>
-            <Scissors size={20} />
+            <WalkingLegsIcon size={22} strokeWidth={2.4} />
           </div>
           <div>
             <h1 style={{ fontSize: '18px', fontWeight: 900, letterSpacing: '-0.02em', margin: 0, color: 'var(--text-primary)' }}>
@@ -404,7 +404,7 @@ export const RootLandingScreen: React.FC<RootLandingScreenProps> = ({
             gap: '6px'
           }}
         >
-          <Shield size={13} style={{ color: 'var(--pastel-amber)' }} />
+          <WalkingLegsIcon size={14} strokeWidth={2.4} style={{ color: 'var(--pastel-amber)' }} />
           <span>Platform Owner HQ (Master PIN: 9999)</span>
         </button>
       </div>

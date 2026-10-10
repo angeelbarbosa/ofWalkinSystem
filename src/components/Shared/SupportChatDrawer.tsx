@@ -4,12 +4,12 @@ import {
   Send, 
   X, 
   MessageSquare, 
-  Shield, 
   CheckCheck, 
   Sparkles,
   Clock
 } from 'lucide-react';
 import type { SupportMessage, Shop } from '../../types';
+import { WalkingLegsIcon } from './WalkingLegsIcon';
 
 interface SupportChatDrawerProps {
   isOpen: boolean;
@@ -195,7 +195,7 @@ export const SupportChatDrawer: React.FC<SupportChatDrawerProps> = ({
               justifyContent: 'center',
               flexShrink: 0
             }}>
-              <Shield size={20} />
+              <WalkingLegsIcon size={20} strokeWidth={2.4} />
             </div>
             <div style={{ minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>

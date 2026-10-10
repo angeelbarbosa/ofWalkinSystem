@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { 
-  Shield, 
   Store, 
   Users, 
   DollarSign, 
@@ -33,6 +32,7 @@ import type {
 import { applyTheme, type ThemeId } from '../../utils/themes';
 import { storage } from '../../utils/storage';
 import { SupportChatDrawer } from '../Shared/SupportChatDrawer';
+import { WalkingLegsIcon } from '../Shared/WalkingLegsIcon';
 import { ModalOverlay } from '../Shared/ModalOverlay';
 
 interface SuperAdminDashboardProps {
@@ -372,7 +372,7 @@ export function SuperAdminDashboard({
             justifyContent: 'center',
             margin: '0 auto 20px'
           }}>
-            <Shield size={30} />
+            <WalkingLegsIcon size={34} strokeWidth={2.4} />
           </div>
 
           <h2 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '6px' }}>
@@ -528,7 +528,7 @@ export function SuperAdminDashboard({
                 justifyContent: 'center',
                 flexShrink: 0
               }}>
-                <Shield size={20} />
+                <WalkingLegsIcon size={20} strokeWidth={2.4} />
               </div>
               <div style={{ minWidth: 0, flex: 1 }}>
                 <h1 style={{ fontSize: '18px', fontWeight: 900, letterSpacing: '-0.02em', margin: 0, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>

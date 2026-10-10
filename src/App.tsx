@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Lock, ArrowLeft, Scissors, Shield, X } from 'lucide-react';
+import { Lock, ArrowLeft, Scissors, X } from 'lucide-react';
 import type { Barber, CheckInRecord, MainNavTab, SubscriptionPaymentMethod } from './types';
 import { useLiveSystem } from './utils/liveSync';
 import { notificationManager } from './utils/notifications';
@@ -19,6 +19,7 @@ import { SuperAdminDashboard } from './components/SuperAdmin/SuperAdminDashboard
 import { ShopSwitcherBar } from './components/Shared/ShopSwitcherBar';
 import { RootLandingScreen } from './components/Landing/RootLandingScreen';
 import { SupportChatDrawer } from './components/Shared/SupportChatDrawer';
+import { WalkingLegsIcon } from './components/Shared/WalkingLegsIcon';
 
 import './App.css';
 
@@ -301,7 +302,7 @@ export function App() {
               justifyContent: 'center',
               flexShrink: 0
             }}>
-              <Shield size={18} />
+              <WalkingLegsIcon size={18} strokeWidth={2.4} />
             </div>
             <div style={{ minWidth: 0, flex: 1 }}>
               <div style={{ fontSize: '11px', fontWeight: 850, color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '5px' }}>
@@ -435,7 +436,7 @@ export function App() {
                           }}
                           title="Return to Master HQ Fleet"
                         >
-                          <Shield size={13} />
+                          <WalkingLegsIcon size={14} strokeWidth={2.4} />
                           <span>HQ</span>
                         </button>
                       )}

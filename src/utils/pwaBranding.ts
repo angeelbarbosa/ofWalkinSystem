@@ -82,21 +82,36 @@ function generateSuperAdminAppIconDataUrl(): string {
   ctx.roundRect(24, 24, 464, 464, 90);
   ctx.stroke();
 
-  // 3. HQ Emblem
-  ctx.fillStyle = '#F59E0B';
+  // 3. Stride Logo Emblem
+  ctx.strokeStyle = '#F59E0B';
+  ctx.lineWidth = 34;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  // Front Striding Leg & Foot
+  ctx.beginPath();
+  ctx.moveTo(195, 102);
+  ctx.lineTo(283, 298);
+  ctx.lineTo(370, 298);
+  ctx.stroke();
+
+  // Back Trailing Leg & Foot
+  ctx.beginPath();
+  ctx.moveTo(185, 200);
+  ctx.lineTo(142, 298);
+  ctx.lineTo(223, 298);
+  ctx.stroke();
+
+  // 4. Text Sub-Label
+  ctx.fillStyle = '#FAFAFA';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
+  ctx.font = '800 32px "Plus Jakarta Sans", sans-serif';
+  ctx.fillText('PLATFORM HQ', 256, 382);
 
-  ctx.font = '900 130px "Outfit", sans-serif';
-  ctx.fillText('HQ', 256, 215);
-
-  ctx.font = '800 34px "Plus Jakarta Sans", sans-serif';
-  ctx.fillStyle = '#FAFAFA';
-  ctx.fillText('SUPER ADMIN', 256, 335);
-
-  ctx.font = '700 24px "Plus Jakarta Sans", sans-serif';
+  ctx.font = '700 20px "Plus Jakarta Sans", sans-serif';
   ctx.fillStyle = '#F59E0B';
-  ctx.fillText('WALKIN PLATFORM', 256, 395);
+  ctx.fillText('FLEET COMMAND', 256, 424);
 
   return canvas.toDataURL('image/png');
 }
