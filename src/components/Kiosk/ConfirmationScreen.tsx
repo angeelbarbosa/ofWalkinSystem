@@ -10,8 +10,8 @@ interface ConfirmationScreenProps {
 }
 
 export const ConfirmationScreen: React.FC<ConfirmationScreenProps> = ({ record, config, onDone }) => {
-  const [secondsLeft, setSecondsLeft] = useState(config.autoResetAppointmentSec || 6);
-  const totalSeconds = config.autoResetAppointmentSec || 6;
+  const totalSeconds = (config.autoResetAppointmentSec && config.autoResetAppointmentSec !== 6) ? config.autoResetAppointmentSec : 10;
+  const [secondsLeft, setSecondsLeft] = useState(totalSeconds);
 
   useEffect(() => {
     // Confetti blast with gold & theme colors
@@ -83,9 +83,9 @@ export const ConfirmationScreen: React.FC<ConfirmationScreenProps> = ({ record, 
         fontWeight: 600,
         lineHeight: 1.5,
         margin: '0 auto 28px',
-        maxWidth: '400px'
+        maxWidth: '420px'
       }}>
-        Please have a seat in the waiting area. You will be notified when ready!
+        Please have a seat in the waiting area. Your barber will text the phone number you provided!
       </p>
 
       {/* Progress Bar */}

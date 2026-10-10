@@ -26,7 +26,9 @@ export const ShopSettingsModal: React.FC<ShopSettingsModalProps> = ({
     config.welcomeShoppingBody || 'Check in for your appointment or sign in for walk-in rotation.'
   );
   const [autoResetShoppingSec, setAutoResetShoppingSec] = useState<number>(config.autoResetShoppingSec || 6);
-  const [autoResetAppointmentSec, setAutoResetAppointmentSec] = useState<number>(config.autoResetAppointmentSec || 6);
+  const [autoResetAppointmentSec, setAutoResetAppointmentSec] = useState<number>(
+    (config.autoResetAppointmentSec && config.autoResetAppointmentSec !== 6) ? config.autoResetAppointmentSec : 10
+  );
   const [pinCode, setPinCode] = useState(config.pinCode || '1234');
   const [savedSuccess, setSavedSuccess] = useState(false);
 
