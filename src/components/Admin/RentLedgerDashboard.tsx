@@ -10,15 +10,17 @@ import {
   Calendar,
   Search,
   Filter,
-  AlertTriangle
+  AlertTriangle,
+  Users
 } from 'lucide-react';
-import type { Barber, RentPaymentRecord, ShopConfig } from '../../types';
+import type { Barber, RentPaymentRecord, ShopConfig, CheckInRecord } from '../../types';
 import { ModalOverlay } from '../Shared/ModalOverlay';
 
 interface RentLedgerDashboardProps {
   barbers: Barber[];
   rentRecords: RentPaymentRecord[];
   config: ShopConfig;
+  checkIns?: CheckInRecord[];
   onMarkPaidOffline: (barber: Barber, method?: RentPaymentRecord['paymentMethod'], notes?: string, paidAmount?: number, weeksCovered?: number) => void;
   onSaveBarbers: (barbers: Barber[]) => void;
 }
@@ -27,6 +29,7 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
   barbers,
   rentRecords,
   config,
+  checkIns = [],
   onMarkPaidOffline,
   onSaveBarbers
 }) => {
@@ -42,6 +45,74 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
   const [showRentConfirm, setShowRentConfirm] = useState(false);
   const [reminderSentFor, setReminderSentFor] = useState<string | null>(null);
   const [rentFilter, setRentFilter] = useState<'all' | 'paid' | 'due'>('all');
+  const [isLiveQueueModalOpen, setIsLiveQueueModalOpen] = useState(false);
+
+  // Live queue calculations from checkIns
+  const waitingCheckIns = (checkIns || []).filter(c => {
+    const status = (c.status || 'waiting').toLowerCase();
+    return status === 'waiting' || status === 'called';
+  });
+  const inChairCheckIns = (checkIns || []).filter(c => (c.status || '').toLowerCase() === 'in_chair');
+  const completedTodayCheckIns = (checkIns || []).filter(c => (c.status || '').toLowerCase() === 'completed');
+
+  const activeQueueCount = waitingCheckIns.length;
+  const inChairCount = inChairCheckIns.length;
+  const completedTodayCount = completedTodayCheckIns.length;
+
+  // Helper to format dates of backed up or current rent cycles (clean, uncrowded)
+  const getCycleDates = (barberItem: Barber, weeksCount: number): string => {
+    const isMonthly = barberItem.rentCycle === 'monthly';
+    const now = new Date();
+
+    if (isMonthly) {
+      if (weeksCount === 1) {
+        return now.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      }
+      const months: string[] = [];
+      for (let i = weeksCount - 1; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        months.push(d.toLocaleDateString('en-US', { month: 'short' }));
+      }
+      return months.join(' • ');
+    }
+
+    // Weekly cycle (Monday to Sunday)
+    const day = now.getDay();
+    const diffToMonday = (day + 6) % 7;
+    const currentWeekStart = new Date(now);
+    currentWeekStart.setDate(now.getDate() - diffToMonday);
+    currentWeekStart.setHours(0, 0, 0, 0);
+
+    const formatMD = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+    if (weeksCount === 1) {
+      const end = new Date(currentWeekStart);
+      end.setDate(currentWeekStart.getDate() + 6);
+      return `${formatMD(currentWeekStart)} – ${formatMD(end)}`;
+    }
+
+    if (weeksCount <= 3) {
+      const parts: string[] = [];
+      for (let i = weeksCount - 1; i >= 0; i--) {
+        const s = new Date(currentWeekStart);
+        s.setDate(currentWeekStart.getDate() - (i * 7));
+        const e = new Date(s);
+        e.setDate(s.getDate() + 6);
+        if (s.getMonth() === e.getMonth()) {
+          parts.push(`${formatMD(s)}–${e.getDate()}`);
+        } else {
+          parts.push(`${formatMD(s)}–${formatMD(e)}`);
+        }
+      }
+      return parts.join(' • ');
+    }
+
+    const earliest = new Date(currentWeekStart);
+    earliest.setDate(currentWeekStart.getDate() - ((weeksCount - 1) * 7));
+    const latestEnd = new Date(currentWeekStart);
+    latestEnd.setDate(currentWeekStart.getDate() + 6);
+    return `${formatMD(earliest)} – ${formatMD(latestEnd)} (${weeksCount} wks)`;
+  };
 
   // Receipt History Filtering State
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
@@ -305,19 +376,51 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
           </div>
         </div>
 
-        {/* Metric 3: Active Stations */}
-        <div style={{ background: 'var(--surface-card)', padding: '18px 20px', borderRadius: 20, border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
+        {/* Metric 3: Active Walk-Ins */}
+        <div 
+          onClick={() => setIsLiveQueueModalOpen(true)}
+          style={{ 
+            background: 'var(--surface-card)', 
+            padding: '18px 20px', 
+            borderRadius: 20, 
+            border: activeQueueCount > 0 ? '1px solid rgba(245, 158, 11, 0.35)' : '1px solid var(--border-subtle)', 
+            boxShadow: activeQueueCount > 0 ? '0 4px 20px rgba(245, 158, 11, 0.12)' : 'var(--shadow-sm)',
+            cursor: 'pointer',
+            transition: 'all 0.18s ease'
+          }}
+          title="Click to view live walk-in line & lobby queue"
+        >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-            <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Auto Payouts</span>
-            <div style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--surface-pill)', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <DollarSign size={16} />
+            <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Active Walk-Ins</span>
+            <div style={{ 
+              width: 32, 
+              height: 32, 
+              borderRadius: 10, 
+              background: activeQueueCount > 0 ? 'rgba(245, 158, 11, 0.15)' : 'var(--surface-pill)', 
+              color: activeQueueCount > 0 ? 'var(--accent-primary, #F59E0B)' : 'var(--text-muted)', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center' 
+            }}>
+              <Users size={16} />
             </div>
           </div>
-          <div style={{ fontSize: '1.65rem', fontWeight: 900, color: 'var(--text-primary)' }}>
-            Active
+          <div style={{ fontSize: '1.65rem', fontWeight: 900, color: activeQueueCount > 0 ? 'var(--accent-primary, #F59E0B)' : 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span>{activeQueueCount}</span>
+            {activeQueueCount > 0 && (
+              <span style={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                background: '#10B981',
+                boxShadow: '0 0 8px #10B981',
+                display: 'inline-block'
+              }} />
+            )}
           </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600, marginTop: 3 }}>
-            Direct bank deposits on payment
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600, marginTop: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span>{activeQueueCount === 1 ? '1 client in lobby' : `${activeQueueCount} in lobby`}</span>
+            <span style={{ color: 'var(--accent-primary)', fontWeight: 750 }}>View Line →</span>
           </div>
         </div>
       </div>
@@ -566,18 +669,44 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
                   Paid via <strong>{latestPayment?.paymentMethod === 'apple_pay' ? 'Apple Pay' : latestPayment?.paymentMethod?.toUpperCase() || 'STRIPE'}</strong> • {new Date(latestPayment?.paidAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </div>
               ) : weeksOwed > 1 ? (
-                <div style={{ fontSize: '0.8rem', color: 'var(--pastel-red)', background: 'rgba(239, 68, 68, 0.12)', padding: '9px 12px', borderRadius: 12, border: '1px solid var(--pastel-red-border)', display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--pastel-red)', background: 'rgba(239, 68, 68, 0.12)', padding: '9px 12px', borderRadius: 12, border: '1px solid var(--pastel-red-border)', display: 'flex', flexDirection: 'column', gap: 4 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <strong style={{ fontSize: '0.98rem', color: 'var(--text-primary)' }}>${totalOwed.toLocaleString()}.00 Total Due</strong>
                     <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--pastel-red)' }}>{weeksOwed} Weeks Overdue</span>
                   </div>
-                  <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
-                    Backed up {weeksOwed} weekly cycles (@ ${weeklyRate}/wk)
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 4, fontSize: '0.74rem' }}>
+                    <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>
+                      Cycles: {getCycleDates(barber, weeksOwed)}
+                    </span>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.72rem' }}>
+                      ${weeklyRate}/wk
+                    </span>
+                  </div>
+                  {latestPayment && (
+                    <div style={{ fontSize: '0.71rem', color: 'var(--text-muted)', borderTop: '1px dashed rgba(239, 68, 68, 0.25)', paddingTop: 3, marginTop: 1 }}>
+                      Last paid: {new Date(latestPayment.paidAt || latestPayment.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} (${latestPayment.amount})
+                    </div>
+                  )}
                 </div>
               ) : (
-                <div style={{ fontSize: '0.78rem', color: 'var(--pastel-amber)', background: 'var(--pastel-amber-bg)', padding: '7px 10px', borderRadius: 10, border: '1px solid var(--pastel-amber-border)' }}>
-                  Rent due for current weekly cycle (${weeklyRate}.00)
+                <div style={{ fontSize: '0.78rem', color: 'var(--pastel-amber)', background: 'var(--pastel-amber-bg)', padding: '8px 11px', borderRadius: 11, border: '1px solid var(--pastel-amber-border)', display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <strong style={{ fontSize: '0.94rem', color: 'var(--text-primary)' }}>${weeklyRate}.00 Due</strong>
+                    <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--pastel-amber)' }}>Current Cycle</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 4, fontSize: '0.74rem' }}>
+                    <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>
+                      Cycle: {getCycleDates(barber, 1)}
+                    </span>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.72rem' }}>
+                      ${weeklyRate}/wk
+                    </span>
+                  </div>
+                  {latestPayment && (
+                    <div style={{ fontSize: '0.71rem', color: 'var(--text-muted)', borderTop: '1px dashed rgba(245, 158, 11, 0.25)', paddingTop: 3, marginTop: 1 }}>
+                      Last paid: {new Date(latestPayment.paidAt || latestPayment.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} (${latestPayment.amount})
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -667,7 +796,7 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
                   }}>
                     <AlertTriangle size={18} color="var(--pastel-red)" style={{ flexShrink: 0 }} />
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                      <strong style={{ color: 'var(--pastel-red)' }}>{barberStatus?.barber.name} is {owedWeeks} weeks behind</strong> (${fullArrears.toLocaleString()} total back rent).
+                      <strong style={{ color: 'var(--pastel-red)' }}>{barberStatus?.barber.name} is {owedWeeks} weeks behind</strong> (${fullArrears.toLocaleString()} total back rent • {barberStatus ? getCycleDates(barberStatus.barber, owedWeeks) : ''}).
                     </div>
                   </div>
                 )}
@@ -1147,6 +1276,166 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Live Walk-In Line & Lobby Queue Modal */}
+      {isLiveQueueModalOpen && (
+        <ModalOverlay onClose={() => setIsLiveQueueModalOpen(false)}>
+          <div style={{ maxWidth: 520, width: '100%', display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span>Active Walk-In Line</span>
+                  <span style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    background: '#10B981',
+                    boxShadow: '0 0 8px #10B981',
+                    display: 'inline-block'
+                  }} />
+                </h3>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '3px 0 0' }}>
+                  Live view of customers waiting in the lobby & stations
+                </p>
+              </div>
+              <button
+                onClick={() => setIsLiveQueueModalOpen(false)}
+                style={{
+                  background: 'var(--surface-pill, #27272A)',
+                  border: '1px solid var(--border-subtle)',
+                  color: 'var(--text-secondary)',
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer'
+                }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Quick Stats Pill Row */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+              <div style={{ background: 'var(--surface-pill, #27272A)', padding: '10px 8px', borderRadius: 14, textAlign: 'center', border: '1px solid var(--border-subtle)' }}>
+                <div style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--accent-primary, #F59E0B)' }}>{activeQueueCount}</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 700 }}>In Lobby</div>
+              </div>
+              <div style={{ background: 'var(--surface-pill, #27272A)', padding: '10px 8px', borderRadius: 14, textAlign: 'center', border: '1px solid var(--border-subtle)' }}>
+                <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#10B981' }}>{inChairCount}</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 700 }}>In Service</div>
+              </div>
+              <div style={{ background: 'var(--surface-pill, #27272A)', padding: '10px 8px', borderRadius: 14, textAlign: 'center', border: '1px solid var(--border-subtle)' }}>
+                <div style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-primary)' }}>{completedTodayCount}</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 700 }}>Done Today</div>
+              </div>
+            </div>
+
+            {/* In Service (Chairs) Section */}
+            {inChairCount > 0 && (
+              <div>
+                <h4 style={{ fontSize: '0.82rem', fontWeight: 800, color: '#10B981', textTransform: 'uppercase', margin: '0 0 8px' }}>
+                  Currently Cutting ({inChairCount})
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 150, overflowY: 'auto' }}>
+                  {inChairCheckIns.map(client => (
+                    <div
+                      key={client.id}
+                      style={{
+                        background: 'rgba(16, 185, 129, 0.08)',
+                        border: '1px solid rgba(16, 185, 129, 0.25)',
+                        borderRadius: 14,
+                        padding: '10px 14px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between'
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 800, fontSize: '0.92rem', color: 'var(--text-primary)' }}>
+                          {client.clientName}
+                        </div>
+                        <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: 2 }}>
+                          {client.barberName ? `With ${client.barberName}` : 'In Service'} • {client.type === 'walkin' ? 'Walk-In' : 'Appointment'}
+                        </div>
+                      </div>
+                      <span style={{ fontSize: '0.72rem', background: '#10B981', color: '#000000', padding: '3px 8px', borderRadius: 9999, fontWeight: 900 }}>
+                        In Chair
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Lobby Waiting Queue */}
+            <div>
+              <h4 style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--accent-primary)', textTransform: 'uppercase', margin: '0 0 8px' }}>
+                Lobby Waiting ({activeQueueCount})
+              </h4>
+              {activeQueueCount === 0 ? (
+                <div style={{ background: 'var(--surface-pill, #27272A)', borderRadius: 14, padding: '20px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
+                  No walk-in clients waiting in the lobby right now.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 220, overflowY: 'auto' }}>
+                  {waitingCheckIns.map((client, idx) => (
+                    <div
+                      key={client.id}
+                      style={{
+                        background: 'var(--surface-card, #18181B)',
+                        border: '1px solid var(--border-subtle)',
+                        borderRadius: 14,
+                        padding: '10px 14px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between'
+                      }}
+                    >
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '1px 6px', borderRadius: 6, background: idx === 0 ? 'var(--accent-primary)' : 'var(--surface-pill)', color: idx === 0 ? '#000000' : 'var(--text-primary)' }}>
+                            #{idx + 1}
+                          </span>
+                          <span style={{ fontWeight: 850, fontSize: '0.92rem', color: 'var(--text-primary)' }}>
+                            {client.clientName}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: 2 }}>
+                          {client.barberName ? `For ${client.barberName}` : 'Any Available Barber'} • Arrived {new Date(client.checkInTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                          {client.clientPhone && ` • ${client.clientPhone}`}
+                        </div>
+                      </div>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--accent-primary)', fontWeight: 800, whiteSpace: 'nowrap' }}>
+                        Waiting
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={() => setIsLiveQueueModalOpen(false)}
+              style={{
+                width: '100%',
+                padding: '12px',
+                borderRadius: 14,
+                border: 'none',
+                background: 'var(--accent-primary, #F59E0B)',
+                color: '#000000',
+                fontWeight: 850,
+                fontSize: '0.88rem',
+                cursor: 'pointer'
+              }}
+            >
+              Done
+            </button>
+          </div>
+        </ModalOverlay>
+      )}
     </div>
   );
 };

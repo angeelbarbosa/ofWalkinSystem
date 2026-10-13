@@ -222,30 +222,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           }}
         >
           <button
+            onClick={() => setActiveSubTab('roster')}
+            className={`barber-tab-chip ${activeSubTab === 'roster' ? 'active' : ''}`}
+            style={{ padding: '8px 14px', borderRadius: 9999, fontSize: '0.82rem', fontWeight: 750, display: 'flex', alignItems: 'center', gap: 6, background: activeSubTab === 'roster' ? 'var(--accent-primary)' : 'var(--surface-pill)', color: activeSubTab === 'roster' ? 'var(--bg-main)' : 'var(--text-primary)', border: '1px solid var(--border-subtle)', cursor: 'pointer', whiteSpace: 'nowrap' }}
+          >
+            <Users size={15} />
+            <span>Barbers ({barbers.length})</span>
+          </button>
+
+          <button
             onClick={() => setActiveSubTab('rent')}
             className={`barber-tab-chip ${activeSubTab === 'rent' ? 'active' : ''}`}
-            style={{ padding: '8px 14px', borderRadius: 9999, fontSize: '0.82rem', fontWeight: 750, display: 'flex', alignItems: 'center', gap: 6, background: activeSubTab === 'rent' ? 'var(--accent-primary)' : 'var(--surface-pill)', color: activeSubTab === 'rent' ? 'var(--bg-main)' : 'var(--text-primary)', border: '1px solid var(--border-subtle)', cursor: 'pointer' }}
+            style={{ padding: '8px 14px', borderRadius: 9999, fontSize: '0.82rem', fontWeight: 750, display: 'flex', alignItems: 'center', gap: 6, background: activeSubTab === 'rent' ? 'var(--accent-primary)' : 'var(--surface-pill)', color: activeSubTab === 'rent' ? 'var(--bg-main)' : 'var(--text-primary)', border: '1px solid var(--border-subtle)', cursor: 'pointer', whiteSpace: 'nowrap' }}
           >
             <DollarSign size={15} />
-            <span>Booth Rent Ledger</span>
+            <span>Rent Ledger</span>
           </button>
 
           <button
             onClick={() => setActiveSubTab('payouts')}
             className={`barber-tab-chip ${activeSubTab === 'payouts' ? 'active' : ''}`}
-            style={{ padding: '8px 14px', borderRadius: 9999, fontSize: '0.82rem', fontWeight: 750, display: 'flex', alignItems: 'center', gap: 6, background: activeSubTab === 'payouts' ? 'var(--accent-primary)' : 'var(--surface-pill)', color: activeSubTab === 'payouts' ? 'var(--bg-main)' : 'var(--text-primary)', border: '1px solid var(--border-subtle)', cursor: 'pointer' }}
+            style={{ padding: '8px 14px', borderRadius: 9999, fontSize: '0.82rem', fontWeight: 750, display: 'flex', alignItems: 'center', gap: 6, background: activeSubTab === 'payouts' ? 'var(--accent-primary)' : 'var(--surface-pill)', color: activeSubTab === 'payouts' ? 'var(--bg-main)' : 'var(--text-primary)', border: '1px solid var(--border-subtle)', cursor: 'pointer', whiteSpace: 'nowrap' }}
           >
             <Building2 size={15} />
             <span>Payout Banking</span>
-          </button>
-
-          <button
-            onClick={() => setActiveSubTab('roster')}
-            className={`barber-tab-chip ${activeSubTab === 'roster' ? 'active' : ''}`}
-            style={{ padding: '8px 14px', borderRadius: 9999, fontSize: '0.82rem', fontWeight: 750, display: 'flex', alignItems: 'center', gap: 6, background: activeSubTab === 'roster' ? 'var(--accent-primary)' : 'var(--surface-pill)', color: activeSubTab === 'roster' ? 'var(--bg-main)' : 'var(--text-primary)', border: '1px solid var(--border-subtle)', cursor: 'pointer' }}
-          >
-            <Users size={15} />
-            <span>Barbers ({barbers.length})</span>
           </button>
 
           <button
@@ -262,7 +262,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               background: activeSubTab === 'subscription' ? 'var(--accent-primary)' : 'var(--surface-pill)', 
               color: activeSubTab === 'subscription' ? 'var(--bg-main)' : 'var(--text-primary)', 
               border: '1px solid var(--border-subtle)', 
-              cursor: 'pointer' 
+              cursor: 'pointer',
+              whiteSpace: 'nowrap'
             }}
           >
             <CreditCard size={15} />
@@ -285,7 +286,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <button
             onClick={() => setActiveSubTab('history')}
             className={`barber-tab-chip ${activeSubTab === 'history' ? 'active' : ''}`}
-            style={{ padding: '8px 14px', borderRadius: 9999, fontSize: '0.82rem', fontWeight: 750, display: 'flex', alignItems: 'center', gap: 6, background: activeSubTab === 'history' ? 'var(--accent-primary)' : 'var(--surface-pill)', color: activeSubTab === 'history' ? 'var(--bg-main)' : 'var(--text-primary)', border: '1px solid var(--border-subtle)', cursor: 'pointer' }}
+            style={{ padding: '8px 14px', borderRadius: 9999, fontSize: '0.82rem', fontWeight: 750, display: 'flex', alignItems: 'center', gap: 6, background: activeSubTab === 'history' ? 'var(--accent-primary)' : 'var(--surface-pill)', color: activeSubTab === 'history' ? 'var(--bg-main)' : 'var(--text-primary)', border: '1px solid var(--border-subtle)', cursor: 'pointer', whiteSpace: 'nowrap' }}
           >
             <Download size={15} />
             <span>Logs ({checkIns.length})</span>
@@ -327,7 +328,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             }}
           >
             <Settings size={15} />
-            <span>Settings</span>
+            <span>Kiosk Settings</span>
           </button>
 
           {/* Blue Live Chat Bar - Spans ALL Remaining Width to the Right Edge (flex: 1) */}
@@ -398,6 +399,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           barbers={barbers}
           rentRecords={rentRecords}
           config={config}
+          checkIns={checkIns}
           onMarkPaidOffline={onMarkPaidOffline}
           onSaveBarbers={onSaveBarbers}
         />

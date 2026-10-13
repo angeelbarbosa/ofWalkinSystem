@@ -75,7 +75,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
   const [isReceiptsHistoryOpen, setIsReceiptsHistoryOpen] = useState(false);
   const [walkInToClaim, setWalkInToClaim] = useState<CheckInRecord | null>(null);
   const [chairOccupiedWarning, setChairOccupiedWarning] = useState<{ attemptedClientName: string; actionType: 'in_chair' | 'take_walkin' } | null>(null);
-  // Last reversible action (Mark Finished / Back to List / Remove Cut) — shown in a 5-second Undo toast
+  // Last reversible action (Mark Finished / Back to List / Remove Cut) — shown in a 6-second waiting tab or toast
   const [undoAction, setUndoAction] = useState<{
     kind: 'status' | 'release' | 'delete';
     recordId: string;
@@ -146,10 +146,10 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
     return () => window.removeEventListener('barber_arrival_toast', handleArrivalToast);
   }, [assignedBarber]);
 
-  // Auto-dismiss Undo toast after 5 seconds (action becomes final)
+  // Auto-dismiss Undo toast/tab after 6 seconds (action becomes final)
   useEffect(() => {
     if (!undoAction) return;
-    const timer = setTimeout(() => setUndoAction(null), 5000);
+    const timer = setTimeout(() => setUndoAction(null), 6000);
     return () => clearTimeout(timer);
   }, [undoAction]);
 
@@ -268,6 +268,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
 
   const isChairOccupied = inChairList.length > 0;
   const activeInChairClient = inChairList[0] as CheckInRecord | undefined;
+  const isChairUndoActive = Boolean(undoAction && undoAction.previousStatus === 'in_chair');
 
   const getElapsedTime = (isoString?: string) => {
     if (!isoString) return '0s ago';
@@ -355,6 +356,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
       });
       return;
     }
+    setUndoAction(null);
     onUpdateStatus(record.id, 'in_chair');
   };
 
@@ -394,7 +396,14 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
   const handleSetCompleted = (record: CheckInRecord) => {
     const previousStatus = (record.status || 'waiting') as CheckInRecord['status'];
     onUpdateStatus(record.id, 'completed');
-    setUndoAction({ kind: 'status', recordId: record.id, previousStatus, message: `${record.clientName} marked finished`, key: Date.now() });
+    setUndoAction({
+      kind: 'status',
+      recordId: record.id,
+      record,
+      previousStatus,
+      message: `${record.clientName} marked finished`,
+      key: Date.now()
+    });
   };
 
   // Send a client back: walk-ins return to the shared walk-in line (original spot),
@@ -407,10 +416,24 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
       } else {
         storage.releaseCheckIn(record.id);
       }
-      setUndoAction({ kind: 'release', recordId: record.id, previousStatus, message: `${record.clientName} moved back to the walk-in list`, key: Date.now() });
+      setUndoAction({
+        kind: 'release',
+        recordId: record.id,
+        record,
+        previousStatus,
+        message: `${record.clientName} moved back to the walk-in list`,
+        key: Date.now()
+      });
     } else {
       onUpdateStatus(record.id, 'waiting');
-      setUndoAction({ kind: 'status', recordId: record.id, previousStatus, message: `${record.clientName} moved back to your waiting list`, key: Date.now() });
+      setUndoAction({
+        kind: 'status',
+        recordId: record.id,
+        record,
+        previousStatus,
+        message: `${record.clientName} moved back to your waiting list`,
+        key: Date.now()
+      });
     }
   };
 
@@ -831,22 +854,123 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
         </div>
       </div>
 
-      {/* SECTION 1: Currently In Your Chair */}
-      {inChairList.length > 0 && (
+      {/* SECTION 1: Currently In Your Chair / 6-Second Waiting Tab */}
+      {(inChairList.length > 0 || isChairUndoActive) && (
         <div style={{ marginBottom: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
             <h3 style={{ fontSize: '1.1rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
               <span>Currently in Your Chair</span>
-              <span style={{ fontSize: '0.75rem', background: '#10B981', color: '#000000', padding: '2px 8px', borderRadius: 9999, fontWeight: 900 }}>
-                {inChairList.length}
+              <span style={{
+                fontSize: '0.75rem',
+                background: inChairList.length > 0 ? '#10B981' : 'var(--accent-primary, #F59E0B)',
+                color: '#000000',
+                padding: '2px 8px',
+                borderRadius: 9999,
+                fontWeight: 900
+              }}>
+                {inChairList.length > 0 ? inChairList.length : 'Undo (6s)'}
               </span>
             </h3>
-            <span style={{ fontSize: '0.74rem', color: '#10B981', fontWeight: 750 }}>
-              In Service
+            <span style={{
+              fontSize: '0.74rem',
+              color: inChairList.length > 0 ? '#10B981' : 'var(--accent-primary, #F59E0B)',
+              fontWeight: 750
+            }}>
+              {inChairList.length > 0 ? 'In Service' : 'Cut Finished'}
             </span>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {/* 6-Second Waiting Tab — Replaces the client name card right here so the barber doesn't have to scroll */}
+            {isChairUndoActive && undoAction && (
+              <div
+                key={undoAction.key}
+                className="slide-up in-chair-undo-tab"
+                style={{
+                  position: 'relative',
+                  background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.14) 0%, var(--surface-card, #18181B) 100%)',
+                  border: '2px solid var(--accent-primary, #F59E0B)',
+                  borderRadius: 22,
+                  padding: '16px 18px',
+                  boxShadow: '0 8px 24px rgba(245, 158, 11, 0.22)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 14,
+                  overflow: 'hidden'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
+                  <div style={{
+                    width: 42,
+                    height: 42,
+                    borderRadius: 14,
+                    background: 'rgba(16, 185, 129, 0.16)',
+                    color: '#10B981',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    <Check size={22} strokeWidth={2.8} />
+                  </div>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap', marginBottom: 2 }}>
+                      <h4 style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-primary)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {undoAction.record?.clientName || undoAction.message.replace(/ marked finished.*/, '')}
+                      </h4>
+                      <span style={{
+                        fontSize: '0.68rem',
+                        background: 'var(--accent-primary, #F59E0B)',
+                        color: '#000000',
+                        padding: '1px 7px',
+                        borderRadius: 6,
+                        fontWeight: 900,
+                        textTransform: 'uppercase'
+                      }}>
+                        Finished
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Clock size={11} style={{ color: 'var(--accent-primary)' }} />
+                      <span>Undo available for 6s</span>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  id="undo-last-action-btn"
+                  onClick={handleUndo}
+                  className="undo-toast-btn"
+                  style={{
+                    height: 42,
+                    padding: '0 18px',
+                    fontSize: '0.88rem',
+                    gap: 6
+                  }}
+                  title="Undo and return client to chair"
+                >
+                  <Undo2 size={16} />
+                  <span>Undo</span>
+                </button>
+
+                {/* 6-Second countdown progress bar */}
+                <div
+                  className="undo-toast-progress"
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    bottom: 0,
+                    height: 4,
+                    width: '100%',
+                    background: 'var(--accent-primary, #F59E0B)',
+                    transformOrigin: 'left center',
+                    animation: 'undoCountdown 6s linear forwards'
+                  }}
+                />
+              </div>
+            )}
+
             {inChairList.map((record) => (
               <div
                 key={record.id}
@@ -1656,8 +1780,8 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
         />
       )}
 
-      {/* 5-Second Undo Toast (Mark Finished / No-Show) */}
-      {undoAction && (
+      {/* 6-Second Undo Toast for non-chair actions (e.g. deleted from Finished Cuts history) */}
+      {undoAction && !isChairUndoActive && (
         <div key={undoAction.key} className="undo-toast" role="status" aria-live="polite">
           <span className="undo-toast-message">{undoAction.message}</span>
           <button id="undo-last-action-btn" className="undo-toast-btn" onClick={handleUndo}>

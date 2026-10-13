@@ -1591,7 +1591,7 @@
   width: 100%;
   background: var(--accent-primary, #F59E0B);
   transform-origin: left center;
-  animation: undoCountdown 5s linear forwards;
+  animation: undoCountdown 6s linear forwards;
 }
 
 @keyframes undoToastIn {
