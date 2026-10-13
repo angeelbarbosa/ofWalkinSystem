@@ -195,6 +195,8 @@ export const DEFAULT_OF_CONFIG: ShopConfig = {
   defaultRentDueDay: 'Monday',
   passFeesToBarber: true,
   stripeConnectActive: true,
+  stripePublishableKey: 'pk_live_51R4EKZRskgktLvXUKC785q0PYk5cLR02nErqASQKdj6pyEdrh0nyaNcR9lXHL56RxmaMF64opr9ZhiKktpKZTLTB00gzPDve23',
+  stripeLiveMode: true,
   twilioConfig: {
     enabled: false,
     accountSid: '',
@@ -820,6 +822,12 @@ export const storage = {
       parsed.forEach(s => {
         if (!s.config) {
           s.config = { ...DEFAULT_OF_CONFIG, shopName: s.name };
+        }
+        if (!s.config.stripePublishableKey) {
+          s.config.stripePublishableKey = 'pk_live_51R4EKZRskgktLvXUKC785q0PYk5cLR02nErqASQKdj6pyEdrh0nyaNcR9lXHL56RxmaMF64opr9ZhiKktpKZTLTB00gzPDve23';
+        }
+        if (s.config.stripeLiveMode === undefined) {
+          s.config.stripeLiveMode = true;
         }
         if (s.config.enableShoppingMode === undefined) {
           s.config.enableShoppingMode = s.slug === 'of';

@@ -52,9 +52,9 @@ export const ShopSubscriptionModal: React.FC<ShopSubscriptionModalProps> = ({
     setIsProcessing(true);
     setErrorMessage('');
 
-    // If Stripe Secret Key is present, launch real Stripe Checkout Session
+    // If Stripe is configured in Convex or config, launch real Stripe Checkout Session
     const secretKey = shop.config?.stripeSecretKey;
-    if (convexClient && secretKey && secretKey.startsWith('sk_')) {
+    if (convexClient && (shop.config?.stripePublishableKey || secretKey)) {
       try {
         const origin = window.location.origin;
         const res = await convexClient.action(api.stripe.createShopSubscriptionSession, {

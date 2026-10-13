@@ -62,9 +62,9 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
     setIsProcessing(true);
     setErrorMessage('');
 
-    // If Stripe Secret Key is configured, launch official Stripe Checkout
+    // If Stripe is configured in Convex or config, launch official Stripe Checkout
     const secretKey = config?.stripeSecretKey;
-    const hasLiveStripe = !!(convexClient && secretKey && secretKey.startsWith('sk_'));
+    const hasLiveStripe = !!(convexClient && (config?.stripePublishableKey || secretKey));
 
     if (hasLiveStripe && convexClient) {
       try {
@@ -355,9 +355,9 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
                 <Lock size={12} color="#10B981" />
                 <span>Direct shop account deposit • 256-bit encrypted via Stripe</span>
               </div>
-              {config?.stripeSecretKey ? (
+              {(config?.stripePublishableKey || config?.stripeSecretKey) ? (
                 <span style={{ fontSize: '0.72rem', color: '#10B981', fontWeight: 800 }}>
-                  ⚡ Live Stripe Checkout Active ({config.stripeLiveMode ? 'Live Mode' : 'Test Sandbox'})
+                  ⚡ Live Stripe Checkout Active ({config?.stripeLiveMode ? 'Live Mode' : 'Test Sandbox'})
                 </span>
               ) : null}
             </div>
