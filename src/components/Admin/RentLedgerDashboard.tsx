@@ -114,6 +114,25 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
     return `${formatMD(earliest)} – ${formatMD(latestEnd)} (${weeksCount} wks)`;
   };
 
+  // Current calendar week label (e.g. "Oct 12–18")
+  const currentWeekLabel = useMemo(() => {
+    const now = new Date();
+    const day = now.getDay();
+    const diffToMonday = (day + 6) % 7;
+    const currentWeekStart = new Date(now);
+    currentWeekStart.setDate(now.getDate() - diffToMonday);
+    currentWeekStart.setHours(0, 0, 0, 0);
+
+    const end = new Date(currentWeekStart);
+    end.setDate(currentWeekStart.getDate() + 6);
+
+    const formatMD = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    if (currentWeekStart.getMonth() === end.getMonth()) {
+      return `${formatMD(currentWeekStart)}–${end.getDate()}`;
+    }
+    return `${formatMD(currentWeekStart)} – ${formatMD(end)}`;
+  }, []);
+
   // Receipt History Filtering State
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
   const [selectedBarberFilter, setSelectedBarberFilter] = useState<string>('all');
@@ -355,8 +374,13 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
             ${totalCollected.toLocaleString()}
             <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}> / ${totalExpectedRent.toLocaleString()}</span>
           </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--pastel-green)', fontWeight: 700, marginTop: 3 }}>
-            {collectionRate}% collected this week
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.78rem', color: 'var(--pastel-green)', fontWeight: 700 }}>
+              {collectionRate}% collected
+            </span>
+            <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', fontWeight: 650, whiteSpace: 'nowrap' }}>
+              Week: {currentWeekLabel}
+            </span>
           </div>
         </div>
 
