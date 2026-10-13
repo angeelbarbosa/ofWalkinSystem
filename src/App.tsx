@@ -1,9 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Lock, ArrowLeft, Scissors, X } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import type { Barber, CheckInRecord, MainNavTab, SubscriptionPaymentMethod } from './types';
 import { useLiveSystem } from './utils/liveSync';
 import { notificationManager } from './utils/notifications';
 import { updatePwaBranding } from './utils/pwaBranding';
+import { convexClient } from './utils/convexClient';
+import { api } from '../convex/_generated/api';
 
 import { KioskHome } from './components/Kiosk/KioskHome';
 import { ShoppingScreen } from './components/Kiosk/ShoppingScreen';
@@ -151,8 +154,57 @@ export function App() {
       currentUrl.searchParams.delete('portal');
       if (activeShopSlug) currentUrl.searchParams.set('shop', activeShopSlug);
     }
-    window.history.replaceState({}, '', currentUrl.toString());
+    // Only update history state if not in an active payment callback
+    if (!currentUrl.searchParams.has('payment')) {
+      window.history.replaceState({}, '', currentUrl.toString());
+    }
   }, [currentTab, activeShopSlug]);
+
+  // Handle Stripe Checkout return callback (both booth rent and shop platform subscription)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    const paymentStatus = url.searchParams.get('payment');
+    const sessionId = url.searchParams.get('session_id');
+    const barberId = url.searchParams.get('barber_id');
+
+    if (paymentStatus === 'success' && sessionId && convexClient) {
+      convexClient.action(api.stripe.verifyCheckoutSession, {
+        sessionId,
+        customSecretKey: config.stripeSecretKey
+      }).then(res => {
+        if (res.success && res.paid) {
+          if (barberId) {
+            const b = barbers.find(item => item.id === barberId);
+            if (b) {
+              const weeks = Number(res.metadata?.weeksCovered || 1);
+              payBoothRent(b, 'stripe', true, weeks).then(() => {
+                confetti({
+                  particleCount: 80,
+                  spread: 70,
+                  origin: { y: 0.6 }
+                });
+              });
+            }
+          } else if (res.metadata?.type === 'platform_subscription' && activeShopSlug) {
+            markShopSubscriptionPaid(activeShopSlug, 'stripe');
+            confetti({
+              particleCount: 80,
+              spread: 70,
+              origin: { y: 0.6 }
+            });
+          }
+        }
+      }).catch(err => {
+        console.warn('Stripe verify session error:', err);
+      }).finally(() => {
+        url.searchParams.delete('payment');
+        url.searchParams.delete('session_id');
+        url.searchParams.delete('barber_id');
+        window.history.replaceState({}, '', url.toString());
+      });
+    }
+  }, [barbers, config, activeShopSlug, payBoothRent, markShopSubscriptionPaid]);
 
   // Reset auth when switching shops
   useEffect(() => {

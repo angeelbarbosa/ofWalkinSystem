@@ -6,7 +6,11 @@ import {
   ExternalLink, 
   DollarSign, 
   Save, 
-  Check
+  Check,
+  KeyRound,
+  Eye,
+  EyeOff,
+  Sparkles
 } from 'lucide-react';
 import type { ShopConfig } from '../../types';
 
@@ -20,6 +24,10 @@ export const ShopPayoutSettings: React.FC<ShopPayoutSettingsProps> = ({
   onSaveConfig
 }) => {
   const [stripeAccountId, setStripeAccountId] = useState(config.stripeAccountId || 'acct_1OF82937492193');
+  const [stripeSecretKey, setStripeSecretKey] = useState(config.stripeSecretKey || '');
+  const [stripePublishableKey, setStripePublishableKey] = useState(config.stripePublishableKey || '');
+  const [stripeLiveMode, setStripeLiveMode] = useState(config.stripeLiveMode || false);
+  const [showSecretKey, setShowSecretKey] = useState(false);
   const [payoutBankName, setPayoutBankName] = useState(config.payoutBankName || 'Chase Business Checking (•••• 4821)');
   const [payoutSchedule, setPayoutSchedule] = useState<'instant' | 'daily' | 'weekly'>(config.payoutSchedule || 'daily');
   const [payoutStatus, setPayoutStatus] = useState<'connected' | 'pending' | 'unlinked'>(config.payoutStatus || 'connected');
@@ -34,6 +42,9 @@ export const ShopPayoutSettings: React.FC<ShopPayoutSettingsProps> = ({
     onSaveConfig({
       ...config,
       stripeAccountId,
+      stripeSecretKey: stripeSecretKey.trim(),
+      stripePublishableKey: stripePublishableKey.trim(),
+      stripeLiveMode,
       payoutBankName,
       payoutSchedule,
       payoutStatus,
@@ -161,6 +172,120 @@ export const ShopPayoutSettings: React.FC<ShopPayoutSettingsProps> = ({
       </div>
 
       <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+        {/* Section 0: Live Stripe API Gateway Keys & Mode */}
+        <div 
+          style={{
+            background: 'var(--surface-card, #18181B)',
+            border: stripeSecretKey ? '1px solid rgba(16, 185, 129, 0.35)' : '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
+            borderRadius: 20,
+            padding: '20px'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <KeyRound size={18} color={stripeSecretKey ? '#10B981' : '#F59E0B'} />
+              <h4 style={{ fontSize: '1rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0 }}>
+                Live Stripe Payment Gateway & API Keys
+              </h4>
+            </div>
+
+            {/* Mode Switcher: Test Mode vs Live Mode */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.06)', padding: '3px 6px', borderRadius: 12 }}>
+              <button
+                type="button"
+                onClick={() => setStripeLiveMode(false)}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: 8,
+                  fontSize: '0.74rem',
+                  fontWeight: 800,
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: !stripeLiveMode ? 'var(--accent-primary, #F59E0B)' : 'transparent',
+                  color: !stripeLiveMode ? '#000000' : 'var(--text-muted)'
+                }}
+              >
+                Test Sandbox
+              </button>
+              <button
+                type="button"
+                onClick={() => setStripeLiveMode(true)}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: 8,
+                  fontSize: '0.74rem',
+                  fontWeight: 800,
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: stripeLiveMode ? 'var(--pastel-green, #10B981)' : 'transparent',
+                  color: stripeLiveMode ? '#000000' : 'var(--text-muted)'
+                }}
+              >
+                Live Production
+              </button>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.80rem', color: 'var(--text-secondary)', margin: '0 0 14px', lineHeight: 1.4 }}>
+            Enter your API keys from <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noreferrer" style={{ color: 'var(--accent-primary, #F59E0B)', textDecoration: 'underline', fontWeight: 700 }}>dashboard.stripe.com/apikeys</a> to activate real credit card, Apple Pay, and automated weekly recurring rent debits.
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14 }}>
+            {/* Secret Key Input */}
+            <div className="form-group">
+              <label className="form-label" style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
+                <span>Stripe Secret Key ({stripeLiveMode ? 'sk_live_...' : 'sk_test_...'})</span>
+                <button
+                  type="button"
+                  onClick={() => setShowSecretKey(!showSecretKey)}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.74rem' }}
+                >
+                  {showSecretKey ? <EyeOff size={13} /> : <Eye size={13} />}
+                  <span>{showSecretKey ? 'Hide' : 'Show'}</span>
+                </button>
+              </label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showSecretKey ? 'text' : 'password'}
+                  value={stripeSecretKey}
+                  onChange={e => setStripeSecretKey(e.target.value)}
+                  className="bubbly-input"
+                  placeholder={stripeLiveMode ? 'sk_live_...' : 'sk_test_...'}
+                  style={{ fontFamily: 'monospace', fontSize: '0.82rem', width: '100%', boxSizing: 'border-box' }}
+                />
+              </div>
+            </div>
+
+            {/* Publishable Key Input */}
+            <div className="form-group">
+              <label className="form-label" style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
+                Stripe Publishable Key ({stripeLiveMode ? 'pk_live_...' : 'pk_test_...'})
+              </label>
+              <input
+                type="text"
+                value={stripePublishableKey}
+                onChange={e => setStripePublishableKey(e.target.value)}
+                className="bubbly-input"
+                placeholder={stripeLiveMode ? 'pk_live_...' : 'pk_test_...'}
+                style={{ fontFamily: 'monospace', fontSize: '0.82rem', width: '100%', boxSizing: 'border-box' }}
+              />
+            </div>
+          </div>
+
+          {/* Status feedback */}
+          <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.76rem' }}>
+            {stripeSecretKey ? (
+              <span style={{ color: '#10B981', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Check size={14} /> Ready: {stripeLiveMode ? 'Live Production Mode' : 'Test Sandbox Mode'} active for Apple Pay & cards.
+              </span>
+            ) : (
+              <span style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Sparkles size={13} color="#F59E0B" /> In-app simulation ledger active. Paste keys above to process real transactions.
+              </span>
+            )}
+          </div>
+        </div>
+
         {/* Section 1: Connected Bank Details */}
         <div 
           style={{

@@ -87,6 +87,9 @@ export interface ShopConfig {
   passFeesToBarber?: boolean; // true = Barber pays 2.9% + $0.30 fee
   stripeConnectActive?: boolean;
   stripeAccountId?: string; // e.g. 'acct_1Nx48291...'
+  stripeSecretKey?: string; // sk_live_... or sk_test_...
+  stripePublishableKey?: string; // pk_live_... or pk_test_...
+  stripeLiveMode?: boolean; // true = Live mode, false = Test mode
   payoutBankName?: string; // e.g. 'Chase Business •••• 4821'
   payoutStatus?: 'connected' | 'pending' | 'unlinked';
   payoutSchedule?: 'instant' | 'daily' | 'weekly';

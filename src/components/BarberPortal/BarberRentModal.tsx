@@ -16,6 +16,8 @@ import {
 import confetti from 'canvas-confetti';
 import type { Barber, RentPaymentRecord, ShopConfig } from '../../types';
 import { ModalOverlay } from '../Shared/ModalOverlay';
+import { convexClient } from '../../utils/convexClient';
+import { api } from '../../../convex/_generated/api';
 
 interface BarberRentModalProps {
   barber: Barber;
@@ -27,7 +29,7 @@ interface BarberRentModalProps {
 
 export const BarberRentModal: React.FC<BarberRentModalProps> = ({
   barber,
-  config: _config,
+  config,
   existingRecord,
   onPayRent,
   onClose
@@ -48,6 +50,7 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
   const totalAmount = Number((activeBaseRent + processingFee).toFixed(2));
 
   const [isProcessing, setIsProcessing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [autoPayEnabled, setAutoPayEnabled] = useState(barber.autoPayEnabled ?? true);
   const [paidRecord, setPaidRecord] = useState<RentPaymentRecord | null>(existingRecord || null);
   const [isPayingNewCycle, setIsPayingNewCycle] = useState(false);
@@ -57,8 +60,44 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
 
   const handleProcessPayment = async () => {
     setIsProcessing(true);
+    setErrorMessage('');
 
-    // Simulate crisp 1.2s Stripe & Apple Pay payment processing
+    // If Stripe Secret Key is configured, launch official Stripe Checkout
+    const secretKey = config?.stripeSecretKey;
+    const hasLiveStripe = !!(convexClient && secretKey && secretKey.startsWith('sk_'));
+
+    if (hasLiveStripe && convexClient) {
+      try {
+        const origin = window.location.origin;
+        const currentShopSlug = new URLSearchParams(window.location.search).get('shop') || 'of';
+        const sessionRes = await convexClient.action(api.stripe.createRentCheckoutSession, {
+          shopSlug: currentShopSlug,
+          shopName: config?.shopName || 'Barbershop',
+          barberId: barber.id,
+          barberName: barber.name,
+          baseRentAmount: activeBaseRent,
+          feeAmount: processingFee,
+          weeksCovered: activePayWeeks,
+          isAutoPay: autoPayEnabled,
+          successUrl: `${origin}/?shop=${currentShopSlug}&portal=barber&payment=success&session_id={CHECKOUT_SESSION_ID}&barber_id=${barber.id}`,
+          cancelUrl: `${origin}/?shop=${currentShopSlug}&portal=barber&payment=cancel`,
+          customSecretKey: secretKey
+        });
+
+        if (sessionRes.success && sessionRes.url) {
+          window.location.href = sessionRes.url;
+          return;
+        } else if (sessionRes.error) {
+          setErrorMessage(sessionRes.error);
+          setIsProcessing(false);
+          return;
+        }
+      } catch (err: any) {
+        console.warn('Stripe checkout call error, falling back:', err);
+      }
+    }
+
+    // Fallback: Instant In-App Ledger Simulator (Demo Mode)
     setTimeout(async () => {
       const record = await onPayRent(barber, 'apple_pay', true, activePayWeeks, activeBaseRent);
       setIsProcessing(false);
@@ -310,11 +349,33 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
               />
             </div>
 
-            {/* Security Assurance */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.76rem', color: 'var(--text-muted)', marginBottom: 18, justifyContent: 'center' }}>
-              <Lock size={12} color="#10B981" />
-              <span>Direct shop account deposit • 256-bit encrypted via Stripe</span>
+            {/* Live Gateway Status & Security Assurance */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, marginBottom: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.76rem', color: 'var(--text-muted)' }}>
+                <Lock size={12} color="#10B981" />
+                <span>Direct shop account deposit • 256-bit encrypted via Stripe</span>
+              </div>
+              {config?.stripeSecretKey ? (
+                <span style={{ fontSize: '0.72rem', color: '#10B981', fontWeight: 800 }}>
+                  ⚡ Live Stripe Checkout Active ({config.stripeLiveMode ? 'Live Mode' : 'Test Sandbox'})
+                </span>
+              ) : null}
             </div>
+
+            {errorMessage && (
+              <div style={{
+                background: 'rgba(239, 68, 68, 0.15)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                color: 'var(--status-error, #EF4444)',
+                borderRadius: 12,
+                padding: '10px 14px',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                marginBottom: 10
+              }}>
+                {errorMessage}
+              </div>
+            )}
 
             {/* One Big Primary Payment Button */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
