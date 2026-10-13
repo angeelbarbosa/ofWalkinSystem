@@ -43,7 +43,11 @@ export const BarberReceiptsHistoryModal: React.FC<BarberReceiptsHistoryModalProp
 
   // 2. Cumulative weeks owed and weekly rate
   const weeklyRate = barber.weeklyRent || config.defaultWeeklyRent || 200;
-  const weeksOwed = typeof barber.weeksOwed === 'number'
+  const todayStr = new Date().toISOString().split('T')[0];
+  const isUpcoming = barber.rentStartDate ? barber.rentStartDate > todayStr : false;
+  const weeksOwed = isUpcoming
+    ? 0
+    : typeof barber.weeksOwed === 'number'
     ? barber.weeksOwed
     : (myPaidRecords.length > 0 ? 0 : 1);
   const isPaidCurrentCycle = weeksOwed === 0;

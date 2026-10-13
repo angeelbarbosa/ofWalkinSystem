@@ -92,6 +92,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const executeSaveBarber = () => {
     const rentNum = parseFloat(newBarberRentAmount) || 0;
+    const todayStr = new Date().toISOString().split('T')[0];
+    const isFutureStart = newBarberRentStartDate > todayStr;
     if (editingBarber) {
       const updated = barbers.map(b => b.id === editingBarber.id ? {
         ...b,
@@ -103,7 +105,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         rentAmount: rentNum,
         rentCycle: newBarberRentCycle,
         rentDueDay: newBarberRentDueDay,
-        rentStartDate: newBarberRentStartDate
+        rentStartDate: newBarberRentStartDate,
+        weeksOwed: isFutureStart ? 0 : (typeof b.weeksOwed === 'number' ? b.weeksOwed : 1)
       } : b);
       onSaveBarbers(updated);
       setEditingBarber(null);
@@ -124,7 +127,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         rentAmount: rentNum,
         rentCycle: newBarberRentCycle,
         rentDueDay: newBarberRentDueDay,
-        rentStartDate: newBarberRentStartDate
+        rentStartDate: newBarberRentStartDate,
+        weeksOwed: isFutureStart ? 0 : 1
       };
       onSaveBarbers([...barbers, newBarber]);
       setIsAddingBarber(false);
@@ -481,8 +485,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             ${rentAmt}{cycleLabel}
                           </span>
                           {barber.rentStartDate && (
-                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                              Started {new Date(barber.rentStartDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            <span style={{
+                              fontSize: '0.7rem',
+                              color: barber.rentStartDate > new Date().toISOString().split('T')[0] ? '#60A5FA' : 'var(--text-muted)',
+                              fontWeight: barber.rentStartDate > new Date().toISOString().split('T')[0] ? 750 : 500
+                            }}>
+                              {barber.rentStartDate > new Date().toISOString().split('T')[0] ? 'Starts ' : 'Started '}
+                              {new Date(barber.rentStartDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                             </span>
                           )}
                         </div>

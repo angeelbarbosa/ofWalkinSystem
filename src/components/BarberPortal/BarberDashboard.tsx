@@ -20,7 +20,8 @@ import {
   Phone,
   CornerUpLeft,
   Undo2,
-  Receipt
+  Receipt,
+  Calendar
 } from 'lucide-react';
 import type { Barber, CheckInRecord, ShopConfig, RentPaymentRecord } from '../../types';
 import { storage } from '../../utils/storage';
@@ -94,7 +95,12 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
   // Barber Booth Rent status
   const myRentRecord = rentRecords.find(r => r.barberId === assignedBarber.id && r.status === 'paid');
   const myPaidRecordsCount = rentRecords.filter(r => r.barberId === assignedBarber.id && r.status === 'paid').length;
-  const myWeeksOwed = typeof assignedBarber.weeksOwed === 'number'
+  const todayStr = new Date().toISOString().split('T')[0];
+  const isUpcomingStart = assignedBarber.rentStartDate ? assignedBarber.rentStartDate > todayStr : false;
+
+  const myWeeksOwed = isUpcomingStart
+    ? 0
+    : typeof assignedBarber.weeksOwed === 'number'
     ? assignedBarber.weeksOwed
     : (myRentRecord ? 0 : 1);
   const isRentPaidThisCycle = myWeeksOwed === 0;
@@ -657,9 +663,11 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                   whiteSpace: 'nowrap',
                   transition: 'all 0.2s ease'
                 }}
-                title={isRentPaidThisCycle ? 'Rent Paid - View Receipt' : isBackedUp ? `${myWeeksOwed} Weeks Overdue - Pay Online` : 'Rent Due - Pay Online'}
+                title={isUpcomingStart ? `Scheduled to start on ${assignedBarber.rentStartDate}` : isRentPaidThisCycle ? 'Rent Paid - View Receipt' : isBackedUp ? `${myWeeksOwed} Weeks Overdue - Pay Online` : 'Rent Due - Pay Online'}
               >
-                {isRentPaidThisCycle ? (
+                {isUpcomingStart ? (
+                  <Calendar size={13} />
+                ) : isRentPaidThisCycle ? (
                   <DollarSign size={13} />
                 ) : isBackedUp ? (
                   <AlertTriangle size={13} />
@@ -667,7 +675,9 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                   <CreditCard size={13} />
                 )}
                 <span>
-                  {isRentPaidThisCycle
+                  {isUpcomingStart
+                    ? `Starts ${new Date(assignedBarber.rentStartDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+                    : isRentPaidThisCycle
                     ? `Rent Paid ($${myWeeklyRate})`
                     : isBackedUp
                     ? `${myWeeksOwed} Wks Due: $${myTotalOwed}`

@@ -44,7 +44,7 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
   const [newRentAmount, setNewRentAmount] = useState<string>('200');
   const [showRentConfirm, setShowRentConfirm] = useState(false);
   const [reminderSentFor, setReminderSentFor] = useState<string | null>(null);
-  const [rentFilter, setRentFilter] = useState<'all' | 'paid' | 'due'>('all');
+  const [rentFilter, setRentFilter] = useState<'all' | 'paid' | 'due' | 'upcoming'>('all');
   const [isLiveQueueModalOpen, setIsLiveQueueModalOpen] = useState(false);
 
   // Live queue calculations from checkIns
@@ -61,6 +61,17 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
 
   // Helper to format dates of backed up or current rent cycles (clean, uncrowded)
   const getCycleDates = (barberItem: Barber, weeksCount: number): string => {
+    if (weeksCount <= 0) {
+      if (barberItem.rentStartDate) {
+        const parts = barberItem.rentStartDate.split('-');
+        if (parts.length === 3) {
+          const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+          return `Starts ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+        }
+      }
+      return 'None due';
+    }
+
     const isMonthly = barberItem.rentCycle === 'monthly';
     const now = new Date();
 
@@ -154,15 +165,31 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
 
   // Rent Calculations for Current Period & Multi-Week Arrears
   const activeBarbers = barbers.filter(b => b.isWorking);
-  const totalExpectedRent = activeBarbers.reduce((sum, b) => sum + (b.weeklyRent || config.defaultWeeklyRent || 200), 0);
 
   // Group rent payment status and cumulative weeks owed per barber
   const barberPaymentStatus = activeBarbers.map((barber) => {
     const weeklyRate = barber.weeklyRent || config.defaultWeeklyRent || 200;
     const latestPayment = rentRecords.find(r => r.barberId === barber.id && r.status === 'paid');
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let isUpcoming = false;
+    let startDateObj: Date | null = null;
+    if (barber.rentStartDate) {
+      const parts = barber.rentStartDate.split('-');
+      if (parts.length === 3) {
+        startDateObj = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 0, 0, 0, 0);
+        if (startDateObj > today) {
+          isUpcoming = true;
+        }
+      }
+    }
+
     let weeksOwed: number;
-    if (typeof barber.weeksOwed === 'number') {
+    if (isUpcoming) {
+      weeksOwed = 0;
+    } else if (typeof barber.weeksOwed === 'number') {
       weeksOwed = barber.weeksOwed;
     } else {
       if (latestPayment) {
@@ -174,12 +201,32 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
       }
     }
 
-    const isPaid = weeksOwed === 0;
-    const totalOwed = weeksOwed * weeklyRate;
+    // Safety check: for started barbers, weeks owed cannot exceed elapsed weekly cycles since start date
+    if (startDateObj && !isUpcoming && barber.rentCycle !== 'monthly') {
+      const day = today.getDay();
+      const diffToMonday = (day + 6) % 7;
+      const currentMonday = new Date(today);
+      currentMonday.setDate(today.getDate() - diffToMonday);
+
+      const startDay = startDateObj.getDay();
+      const diffStartToMonday = (startDay + 6) % 7;
+      const startMonday = new Date(startDateObj);
+      startMonday.setDate(startDateObj.getDate() - diffStartToMonday);
+
+      const maxElapsed = Math.max(1, Math.round((currentMonday.getTime() - startMonday.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1);
+      if (weeksOwed > maxElapsed) {
+        weeksOwed = maxElapsed;
+      }
+    }
+
+    const isPaid = !isUpcoming && weeksOwed === 0;
+    const totalOwed = isUpcoming ? 0 : weeksOwed * weeklyRate;
 
     return {
       barber,
       isPaid,
+      isUpcoming,
+      startDateObj,
       weeksOwed,
       totalOwed,
       latestPayment,
@@ -187,6 +234,10 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
       amount: weeklyRate
     };
   });
+
+  const totalExpectedRent = barberPaymentStatus
+    .filter(b => !b.isUpcoming)
+    .reduce((sum, b) => sum + b.weeklyRate, 0);
 
   const totalCollected = rentRecords
     .filter(r => r.status === 'paid')
@@ -196,14 +247,16 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
   const totalOverdueWeeks = barberPaymentStatus.reduce((sum, b) => sum + b.weeksOwed, 0);
   const collectionRate = totalExpectedRent > 0 ? Math.round((totalCollected / totalExpectedRent) * 100) : 0;
 
+  const upcomingCount = barberPaymentStatus.filter(b => b.isUpcoming).length;
   const paidCount = barberPaymentStatus.filter(b => b.isPaid).length;
-  const dueCount = barberPaymentStatus.filter(b => !b.isPaid).length;
-  const backedUpCount = barberPaymentStatus.filter(b => b.weeksOwed > 1).length;
+  const dueCount = barberPaymentStatus.filter(b => !b.isPaid && !b.isUpcoming).length;
+  const backedUpCount = barberPaymentStatus.filter(b => !b.isUpcoming && b.weeksOwed > 1).length;
   const allCount = barberPaymentStatus.length;
 
   const filteredBarberPaymentStatus = barberPaymentStatus.filter(item => {
     if (rentFilter === 'paid') return item.isPaid;
-    if (rentFilter === 'due') return !item.isPaid;
+    if (rentFilter === 'due') return !item.isPaid && !item.isUpcoming;
+    if (rentFilter === 'upcoming') return item.isUpcoming;
     return true;
   });
 
@@ -570,6 +623,41 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
                 {dueCount}{backedUpCount > 0 ? ` (${backedUpCount} late)` : ''}
               </span>
             </button>
+
+            {upcomingCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setRentFilter('upcoming')}
+                style={{
+                  background: rentFilter === 'upcoming' ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
+                  border: rentFilter === 'upcoming' ? '1px solid rgba(59, 130, 246, 0.3)' : 'none',
+                  color: rentFilter === 'upcoming' ? '#60A5FA' : 'var(--text-muted, #71717A)',
+                  padding: '5px 12px',
+                  borderRadius: '9999px',
+                  fontSize: '0.78rem',
+                  fontWeight: rentFilter === 'upcoming' ? 850 : 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <span>Upcoming</span>
+                <span
+                  style={{
+                    fontSize: '0.68rem',
+                    padding: '1px 5px',
+                    borderRadius: '9999px',
+                    background: rentFilter === 'upcoming' ? 'rgba(59, 130, 246, 0.25)' : 'var(--surface-card-subtle)',
+                    color: rentFilter === 'upcoming' ? '#60A5FA' : 'var(--text-muted)',
+                    fontWeight: 800
+                  }}
+                >
+                  {upcomingCount}
+                </span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -593,27 +681,37 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
             }}
           >
             <div style={{ fontSize: '1.5rem', marginBottom: 6 }}>
-              {rentFilter === 'due' ? '🎉' : '📋'}
+              {rentFilter === 'due' ? '🎉' : rentFilter === 'upcoming' ? '🗓️' : '📋'}
             </div>
             <div style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: 2 }}>
-              {rentFilter === 'due' ? 'No Rent Outstanding' : rentFilter === 'paid' ? 'No Payments Recorded Yet' : 'No Barbers Found'}
+              {rentFilter === 'due' 
+                ? 'No Rent Outstanding' 
+                : rentFilter === 'paid' 
+                ? 'No Payments Recorded Yet' 
+                : rentFilter === 'upcoming'
+                ? 'No Upcoming Barbers'
+                : 'No Barbers Found'}
             </div>
             <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
               {rentFilter === 'due' 
                 ? 'All working barbers have paid their booth rent for this cycle!' 
                 : rentFilter === 'paid'
                 ? 'No barbers have marked their rent as paid for this cycle yet.'
+                : rentFilter === 'upcoming'
+                ? 'All active barbers have already started their rent cycles.'
                 : 'No active barbers currently in shop.'}
             </div>
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: 12 }}>
-            {filteredBarberPaymentStatus.map(({ barber, isPaid, weeksOwed, totalOwed, latestPayment, weeklyRate }) => (
+            {filteredBarberPaymentStatus.map(({ barber, isPaid, isUpcoming, startDateObj, weeksOwed, totalOwed, latestPayment, weeklyRate }) => (
             <div
               key={barber.id}
               style={{
                 background: 'var(--surface-pill)',
-                border: isPaid 
+                border: isUpcoming
+                  ? '1px solid var(--border-subtle)'
+                  : isPaid 
                   ? '1px solid var(--border-subtle)' 
                   : weeksOwed > 1 
                   ? '1.5px solid var(--pastel-red)' 
@@ -661,17 +759,23 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
                     borderRadius: 9999,
                     fontSize: '0.75rem',
                     fontWeight: 850,
-                    background: isPaid 
+                    background: isUpcoming
+                      ? 'rgba(59, 130, 246, 0.12)'
+                      : isPaid 
                       ? 'var(--pastel-green-bg)' 
                       : weeksOwed > 1 
                       ? 'var(--pastel-red-bg)' 
                       : 'var(--pastel-amber-bg)',
-                    color: isPaid 
+                    color: isUpcoming
+                      ? '#60A5FA'
+                      : isPaid 
                       ? 'var(--pastel-green)' 
                       : weeksOwed > 1 
                       ? 'var(--pastel-red)' 
                       : 'var(--pastel-amber)',
-                    border: isPaid 
+                    border: isUpcoming
+                      ? '1px solid rgba(59, 130, 246, 0.3)'
+                      : isPaid 
                       ? '1px solid var(--pastel-green-border)' 
                       : weeksOwed > 1 
                       ? '1.5px solid var(--pastel-red-border)' 
@@ -681,14 +785,35 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
                     gap: 4
                   }}
                 >
-                  {weeksOwed > 1 && <AlertTriangle size={12} />}
-                  <span>
-                    {isPaid ? 'Paid' : weeksOwed > 1 ? `${weeksOwed} Wks Past Due` : '1 Wk Due'}
-                  </span>
+                  {isUpcoming ? (
+                    <>
+                      <Calendar size={12} />
+                      <span>Starts {startDateObj ? startDateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : barber.rentStartDate}</span>
+                    </>
+                  ) : isPaid ? (
+                    <span>Paid</span>
+                  ) : weeksOwed > 1 ? (
+                    <>
+                      <AlertTriangle size={12} />
+                      <span>{weeksOwed} Wks Past Due</span>
+                    </>
+                  ) : (
+                    <span>1 Wk Due</span>
+                  )}
                 </span>
               </div>
 
-              {isPaid ? (
+              {isUpcoming ? (
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', background: 'var(--surface-card)', padding: '9px 12px', borderRadius: 12, border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <strong style={{ fontSize: '0.88rem', color: 'var(--text-primary)' }}>Scheduled to Start</strong>
+                    <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#60A5FA' }}>No Rent Due Yet</span>
+                  </div>
+                  <div style={{ fontSize: '0.73rem', color: 'var(--text-muted)' }}>
+                    First billing cycle begins {startDateObj ? startDateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : barber.rentStartDate} (${weeklyRate}/{barber.rentCycle === 'monthly' ? 'mo' : 'wk'})
+                  </div>
+                </div>
+              ) : isPaid ? (
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', background: 'var(--surface-card)', padding: '7px 10px', borderRadius: 10, border: '1px solid var(--border-subtle)' }}>
                   Paid via <strong>{latestPayment?.paymentMethod === 'apple_pay' ? 'Apple Pay' : latestPayment?.paymentMethod?.toUpperCase() || 'STRIPE'}</strong> • {new Date(latestPayment?.paidAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </div>
@@ -736,7 +861,7 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
 
               {/* Owner Action Buttons for this Barber */}
               <div style={{ display: 'flex', gap: 6, marginTop: 'auto' }}>
-                {!isPaid && (
+                {!isPaid && !isUpcoming && (
                   <button
                     onClick={() => handleOpenRecordOffline(barber)}
                     className="choice-card-action-btn"
@@ -755,12 +880,12 @@ export const RentLedgerDashboard: React.FC<RentLedgerDashboardProps> = ({
                     setShowRentConfirm(false);
                   }}
                   className="back-pill-btn"
-                  style={{ padding: '7px 12px', fontSize: '0.78rem' }}
+                  style={{ padding: '7px 12px', fontSize: '0.78rem', flex: isUpcoming ? 1 : undefined, justifyContent: isUpcoming ? 'center' : undefined }}
                 >
-                  <span>Rate</span>
+                  <span>Edit Rate</span>
                 </button>
 
-                {!isPaid && (
+                {!isPaid && !isUpcoming && (
                   <button
                     onClick={() => handleSendReminder(barber)}
                     className="back-pill-btn"

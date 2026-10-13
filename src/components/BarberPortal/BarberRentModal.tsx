@@ -35,7 +35,9 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
   const baseRent = barber.weeklyRent || barber.rentAmount || 200;
   const rentCycleText = barber.rentCycle === 'monthly' ? 'Monthly' : barber.rentCycle === 'biweekly' ? 'Bi-Weekly' : 'Weekly';
   
-  const weeksOwed = typeof barber.weeksOwed === 'number' ? barber.weeksOwed : (existingRecord ? 0 : 1);
+  const todayStr = new Date().toISOString().split('T')[0];
+  const isUpcoming = barber.rentStartDate ? barber.rentStartDate > todayStr : false;
+  const weeksOwed = isUpcoming ? 0 : typeof barber.weeksOwed === 'number' ? barber.weeksOwed : (existingRecord ? 0 : 1);
   const isBackedUp = weeksOwed > 1;
   const [selectedWeeksToPay, setSelectedWeeksToPay] = useState<number>(isBackedUp ? weeksOwed : 1);
 
