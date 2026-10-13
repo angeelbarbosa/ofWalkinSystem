@@ -999,33 +999,45 @@
 }
 
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 14px;
   text-align: left;
 }
 
 .form-label {
   display: block;
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--text-primary, #FAFAFA);
-  margin-bottom: 8px;
+  font-size: 0.74rem;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary, #A1A1AA);
+  margin-bottom: 6px;
 }
 
 .bubbly-input {
   width: 100%;
-  padding: 16px 20px;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.15));
-  background: var(--surface-pill, #27272A);
-  font-size: 1.15rem;
-  font-weight: 600;
-  color: var(--text-primary, #FAFAFA);
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
+  background: var(--surface-pill, #1A1A1E);
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text-primary, #F4F4F5);
   transition: all 0.2s ease;
+  box-sizing: border-box;
+  color-scheme: dark;
+}
+
+.bubbly-input::placeholder {
+  color: var(--text-muted, #71717A);
+  font-size: 0.82rem;
+  font-weight: 600;
+  opacity: 0.85;
 }
 
 .bubbly-input:focus {
   border-color: var(--accent-primary, #F59E0B);
-  box-shadow: 0 0 16px rgba(245, 158, 11, 0.2);
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+  outline: none;
 }
 
 /* On-Screen Touch Keyboard for Kiosk */

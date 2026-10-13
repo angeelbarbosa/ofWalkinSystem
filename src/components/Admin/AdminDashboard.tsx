@@ -585,7 +585,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               }}
               maxWidth={460}
             >
-              <h3 style={{ fontSize: '1.3rem', fontWeight: 850, color: 'var(--text-primary)', marginBottom: 16 }}>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: 16 }}>
                 {showBarberRentConfirm && editingBarber
                   ? 'Confirm Rent Change'
                   : editingBarber
@@ -643,7 +643,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 ) : (
                   <form onSubmit={handleSaveBarber}>
                     <div className="form-group" style={{ marginBottom: 12 }}>
-                      <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Full Name *</label>
+                      <label className="form-label">Full Name *</label>
                       <input
                         type="text"
                         required
@@ -654,9 +654,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       />
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-                      <div className="form-group">
-                        <label className="form-label" style={{ color: 'var(--text-secondary)' }}>PIN Code (4-digit)</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+                      <div className="form-group" style={{ marginBottom: 0 }}>
+                        <label className="form-label">PIN Code (4-digit)</label>
                         <input
                           type="text"
                           maxLength={4}
@@ -667,8 +667,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         />
                       </div>
 
-                      <div className="form-group">
-                        <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Phone Number</label>
+                      <div className="form-group" style={{ marginBottom: 0 }}>
+                        <label className="form-label">Phone Number</label>
                         <input
                           type="text"
                           placeholder="(555) 000-0000"
@@ -679,17 +679,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       </div>
                     </div>
 
-
                     {/* Booth Rent Schedule Configuration Box */}
                     <div style={{
                       background: 'var(--surface-pill)',
                       border: '1px solid var(--border-subtle)',
-                      borderRadius: 16,
-                      padding: '14px',
+                      borderRadius: 14,
+                      padding: '12px 14px',
                       marginBottom: 14
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                        <label style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        <label style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                           Booth Rent Billing Schedule
                         </label>
                         
@@ -742,7 +741,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
                         <div>
-                          <label className="form-label" style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>
+                          <label className="form-label" style={{ fontSize: '0.70rem' }}>
                             Rent Rate (${newBarberRentCycle === 'monthly' ? '/month' : '/week'})
                           </label>
                           <input
@@ -753,12 +752,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             value={newBarberRentAmount}
                             onChange={e => setNewBarberRentAmount(e.target.value)}
                             className="bubbly-input"
-                            style={{ fontSize: '13px', padding: '10px' }}
                           />
                         </div>
 
                         <div>
-                          <label className="form-label" style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>
+                          <label className="form-label" style={{ fontSize: '0.70rem' }}>
                             Due Schedule
                           </label>
                           {newBarberRentCycle === 'monthly' ? (
@@ -766,7 +764,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               value={newBarberRentDueDay}
                               onChange={e => setNewBarberRentDueDay(e.target.value)}
                               className="bubbly-input"
-                              style={{ fontSize: '12px', padding: '10px' }}
                             >
                               <option value="1st of month">1st of each month</option>
                               <option value="15th of month">15th of each month</option>
@@ -778,7 +775,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               value={newBarberRentDueDay}
                               onChange={e => setNewBarberRentDueDay(e.target.value)}
                               className="bubbly-input"
-                              style={{ fontSize: '12px', padding: '10px' }}
                             >
                               <option value="Monday">Every Monday</option>
                               <option value="Tuesday">Every Tuesday</option>
@@ -793,7 +789,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       </div>
 
                       <div>
-                        <label className="form-label" style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>
+                        <label className="form-label" style={{ fontSize: '0.70rem' }}>
                           Rent Cycle Start Date (Anchor Date)
                         </label>
                         <input
@@ -801,12 +797,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           value={newBarberRentStartDate}
                           onChange={e => setNewBarberRentStartDate(e.target.value)}
                           className="bubbly-input"
-                          style={{ fontSize: '13px', padding: '10px' }}
                         />
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+                    <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
                       <button
                         type="button"
                         onClick={() => {
@@ -814,14 +809,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           setShowBarberRentConfirm(false);
                         }}
                         className="back-pill-btn"
-                        style={{ flex: 1, justifyContent: 'center' }}
+                        style={{ flex: 1, justifyContent: 'center', fontSize: '0.84rem', fontWeight: 700 }}
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
                         className="choice-card-action-btn"
-                        style={{ flex: 2 }}
+                        style={{ flex: 2, fontSize: '0.86rem', fontWeight: 750 }}
                       >
                         <Check size={16} />
                         <span>{editingBarber ? 'Save Changes' : 'Add Barber'}</span>
