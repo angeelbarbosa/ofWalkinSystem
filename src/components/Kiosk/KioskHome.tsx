@@ -35,7 +35,10 @@ export const KioskHome: React.FC<KioskHomeProps> = ({
   onJoinWalkInDirect
 }) => {
   const isShoppingShop = config.enableShoppingMode === true;
-  const brandLogo = config.logoUrl || (shopSlug === 'of' ? '/logo.png' : undefined);
+  const brandLogo = (config.logoUrl && config.logoUrl.trim() !== '') 
+    ? config.logoUrl.trim() 
+    : (shopSlug === 'of' ? '/logo.png' : undefined);
+  const [logoError, setLogoError] = useState(false);
 
   // Walk-In Fast Modal State
   const [showWalkInModal, setShowWalkInModal] = useState(false);
@@ -63,12 +66,13 @@ export const KioskHome: React.FC<KioskHomeProps> = ({
     <div className="kiosk-home-container pop-in" style={{ width: '100%', maxWidth: '980px', margin: '0 auto', padding: '0 12px' }}>
       {/* Brand Header / Logo Area */}
       <div className="kiosk-logo-wrapper" style={{ textAlign: 'center', marginBottom: '28px' }}>
-        {brandLogo ? (
+        {brandLogo && !logoError ? (
           <img
             src={brandLogo}
             alt={config.shopName}
+            onError={() => setLogoError(true)}
             className="kiosk-brand-logo"
-            style={{ maxHeight: '56px', maxWidth: '280px', width: 'auto', objectFit: 'contain', margin: '0 auto' }}
+            style={{ maxHeight: '64px', maxWidth: '300px', width: 'auto', objectFit: 'contain', margin: '0 auto' }}
           />
         ) : (
           <div style={{

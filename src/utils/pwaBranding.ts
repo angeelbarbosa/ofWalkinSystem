@@ -137,7 +137,10 @@ export function updatePwaBranding(shop: Shop, currentTab?: string) {
   let appName = shop.name;
   let startUrl = `/?shop=${shop.slug}`;
   const theme = THEME_PRESETS[shop.themeId] || THEME_PRESETS.midnight_gold;
-  let iconUrl = shop.logoUrl;
+  const customLogo = (shop.logoUrl && shop.logoUrl.trim() !== '')
+    ? shop.logoUrl.trim()
+    : ((shop.config?.logoUrl && shop.config.logoUrl.trim() !== '') ? shop.config.logoUrl.trim() : undefined);
+  let iconUrl = customLogo;
 
   if (isSuperAdmin) {
     title = 'WalkinApp HQ — Fleet Command';
@@ -209,37 +212,107 @@ export function updatePwaBranding(shop: Shop, currentTab?: string) {
   }
   favicon.setAttribute('href', iconUrl);
 
-  // 7. Generate Dynamic PWA Manifest with exact start_url
-  try {
-    const manifestObj = {
-      name: isSuperAdmin ? 'WalkinApp HQ — Master Platform Hub' : shop.name,
-      short_name: appName.length > 14 ? appName.substring(0, 14) : appName,
-      description: isSuperAdmin ? 'Master Super Admin Fleet Dashboard' : (shop.tagline || 'Intelligent Customer Kiosk & Barber Hub'),
-      start_url: startUrl,
-      display: 'standalone',
-      background_color: isSuperAdmin ? '#09090B' : theme.bgMain,
-      theme_color: isSuperAdmin ? '#F59E0B' : theme.bgMain,
-      icons: [
-        {
-          src: iconUrl,
-          sizes: '512x512',
-          type: 'image/png',
-          purpose: 'any maskable'
-        }
-      ]
-    };
+  // 7. Generate Dynamic PWA Manifest with exact start_url & icons
+  const applyManifest = (activeIcon: string) => {
+    try {
+      const manifestObj = {
+        name: isSuperAdmin ? 'WalkinApp HQ — Master Platform Hub' : shop.name,
+        short_name: appName.length > 14 ? appName.substring(0, 14) : appName,
+        description: isSuperAdmin ? 'Master Super Admin Fleet Dashboard' : (shop.tagline || 'Intelligent Customer Kiosk & Barber Hub'),
+        start_url: startUrl,
+        display: 'standalone',
+        background_color: isSuperAdmin ? '#09090B' : theme.bgMain,
+        theme_color: isSuperAdmin ? '#F59E0B' : theme.bgMain,
+        icons: [
+          {
+            src: activeIcon,
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any maskable'
+          }
+        ]
+      };
 
-    const manifestBlob = new Blob([JSON.stringify(manifestObj)], { type: 'application/json' });
-    const manifestUrl = URL.createObjectURL(manifestBlob);
+      const manifestBlob = new Blob([JSON.stringify(manifestObj)], { type: 'application/json' });
+      const manifestUrl = URL.createObjectURL(manifestBlob);
 
-    let manifestLink = document.querySelector('link[rel="manifest"]');
-    if (!manifestLink) {
-      manifestLink = document.createElement('link');
-      manifestLink.setAttribute('rel', 'manifest');
-      document.head.appendChild(manifestLink);
+      let manifestLink = document.querySelector('link[rel="manifest"]');
+      if (!manifestLink) {
+        manifestLink = document.createElement('link');
+        manifestLink.setAttribute('rel', 'manifest');
+        document.head.appendChild(manifestLink);
+      }
+      manifestLink.setAttribute('href', manifestUrl);
+    } catch (err) {
+      console.warn('Could not update dynamic manifest:', err);
     }
-    manifestLink.setAttribute('href', manifestUrl);
-  } catch (err) {
-    console.warn('Could not update dynamic manifest:', err);
+  };
+
+  // If a custom logo image is uploaded, asynchronously frame it on a 512x512 square canvas
+  // with theme background so iOS never adds black transparency borders to Home Screen icons
+  if (!isSuperAdmin && customLogo) {
+    composeSquareAppIcon(customLogo, theme.bgMain, (framedIconUrl) => {
+      if (appleTouchIcon) appleTouchIcon.setAttribute('href', framedIconUrl);
+      if (favicon) favicon.setAttribute('href', framedIconUrl);
+      applyManifest(framedIconUrl);
+    });
+  } else {
+    applyManifest(iconUrl);
   }
+}
+
+/**
+ * Asynchronously composes an image onto a 512x512 square canvas with theme background,
+ * ensuring no black letterbox or transparent distortion on iOS / Android Home Screen.
+ */
+function composeSquareAppIcon(
+  logoSrc: string,
+  bgColor: string,
+  callback: (squareIconUrl: string) => void
+) {
+  if (typeof document === 'undefined') {
+    callback(logoSrc);
+    return;
+  }
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => {
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        callback(logoSrc);
+        return;
+      }
+
+      // Draw background
+      const grad = ctx.createRadialGradient(256, 180, 40, 256, 256, 320);
+      grad.addColorStop(0, '#27272A');
+      grad.addColorStop(1, bgColor || '#09090B');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 512, 512);
+
+      // Fit logo inside safe zone (padding 48px)
+      const maxDim = 416;
+      let drawW = img.width || 416;
+      let drawH = img.height || 416;
+      const ratio = Math.min(maxDim / drawW, maxDim / drawH);
+      drawW = Math.round(drawW * ratio);
+      drawH = Math.round(drawH * ratio);
+      const drawX = Math.round((512 - drawW) / 2);
+      const drawY = Math.round((512 - drawH) / 2);
+
+      ctx.drawImage(img, drawX, drawY, drawW, drawH);
+      const squareDataUrl = canvas.toDataURL('image/png');
+      callback(squareDataUrl);
+    } catch {
+      callback(logoSrc);
+    }
+  };
+  img.onerror = () => {
+    callback(logoSrc);
+  };
+  img.src = logoSrc;
 }

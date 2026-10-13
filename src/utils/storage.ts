@@ -1067,16 +1067,22 @@ export const storage = {
 
     const newShops = shops.map(s => {
       if (s.slug === slug || s.id === slug) {
+        const nextLogoUrl = updates.logoUrl !== undefined 
+          ? updates.logoUrl 
+          : (updates.config?.logoUrl !== undefined ? updates.config.logoUrl : s.logoUrl);
+
         const merged: Shop = {
           ...s,
           ...updates,
+          logoUrl: nextLogoUrl,
           config: {
             ...s.config,
             ...(updates.config || {}),
             ...(updates.name ? { shopName: updates.name } : {}),
             ...(updates.tagline ? { tagline: updates.tagline } : {}),
             ...(updates.address ? { address: updates.address } : {}),
-            ...(updates.pinCode ? { pinCode: updates.pinCode } : {})
+            ...(updates.pinCode ? { pinCode: updates.pinCode } : {}),
+            logoUrl: nextLogoUrl
           }
         };
         updatedShop = merged;
@@ -1179,6 +1185,7 @@ export const storage = {
       tagline: config.tagline,
       address: config.address,
       pinCode: config.pinCode,
+      logoUrl: config.logoUrl,
       config
     });
     broadcastSystemEvent('config_updated');
