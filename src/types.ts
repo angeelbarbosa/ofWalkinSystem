@@ -4,7 +4,7 @@ export interface Barber {
   id: string;
   name: string;
   nickname?: string;
-  specialty: string;
+  specialty?: string;
   avatar: string;
   avatarColor: string;
   phone: string;

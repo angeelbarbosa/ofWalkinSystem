@@ -5,7 +5,7 @@ export default defineSchema({
   barbers: defineTable({
     name: v.string(),
     nickname: v.optional(v.string()),
-    specialty: v.string(),
+    specialty: v.optional(v.string()),
     phone: v.string(),
     stationNumber: v.number(),
     isWorking: v.boolean(),

@@ -33,7 +33,7 @@ export const seed = mutation({
 export const add = mutation({
   args: {
     name: v.string(),
-    specialty: v.string(),
+    specialty: v.optional(v.string()),
     phone: v.string(),
     stationNumber: v.number(),
     isWorking: v.boolean()

@@ -67,7 +67,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [editingBarber, setEditingBarber] = useState<Barber | null>(null);
   const [showBarberRentConfirm, setShowBarberRentConfirm] = useState(false);
   const [newBarberName, setNewBarberName] = useState('');
-  const [newBarberSpec, setNewBarberSpec] = useState('');
   const [newBarberPhone, setNewBarberPhone] = useState('');
   const [newBarberStation, setNewBarberStation] = useState<number>(barbers.length + 1);
   const [newBarberPasscode, setNewBarberPasscode] = useState('1111');
@@ -97,7 +96,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       const updated = barbers.map(b => b.id === editingBarber.id ? {
         ...b,
         name: newBarberName.trim(),
-        specialty: newBarberSpec.trim(),
         phone: newBarberPhone.trim(),
         stationNumber: Number(newBarberStation),
         passcode: newBarberPasscode.trim() || b.passcode || '1111',
@@ -115,7 +113,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       const newBarber: Barber = {
         id: 'barber-' + Date.now(),
         name: newBarberName.trim(),
-        specialty: newBarberSpec.trim() || 'Master Cuts & Grooming',
         phone: newBarberPhone.trim() || '(555) 000-0000',
         stationNumber: Number(newBarberStation) || barbers.length + 1,
         avatar: '',
@@ -136,7 +133,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
     // Reset Form
     setNewBarberName('');
-    setNewBarberSpec('');
     setNewBarberPhone('');
     setNewBarberPasscode('1111');
     setNewBarberRentAmount(String(config.defaultWeeklyRent || 200));
@@ -418,7 +414,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               onClick={() => {
                 setEditingBarber(null);
                 setNewBarberName('');
-                setNewBarberSpec('');
                 setNewBarberPhone('');
                 setNewBarberStation(barbers.length + 1);
                 setNewBarberPasscode('1111');
@@ -547,7 +542,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             onClick={() => {
                               setEditingBarber(barber);
                               setNewBarberName(barber.name);
-                              setNewBarberSpec(barber.specialty);
                               setNewBarberPhone(barber.phone);
                               setNewBarberStation(barber.stationNumber);
                               setNewBarberPasscode(barber.passcode || '1111');
@@ -685,16 +679,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       </div>
                     </div>
 
-                    <div className="form-group" style={{ marginBottom: 14 }}>
-                      <label className="form-label" style={{ color: 'var(--text-secondary)' }}>Specialty</label>
-                      <input
-                        type="text"
-                        placeholder="Fades & Beard Care"
-                        value={newBarberSpec}
-                        onChange={e => setNewBarberSpec(e.target.value)}
-                        className="bubbly-input"
-                      />
-                    </div>
 
                     {/* Booth Rent Schedule Configuration Box */}
                     <div style={{
