@@ -19,6 +19,7 @@ function getStripeClient(customKey?: string): Stripe | null {
  * Creates a dynamic Stripe Checkout Session for Barber Booth Rent.
  * Supports:
  * - Exact per-barber rent amounts ($150, $200, $250, etc.)
+ * - Direct destination payouts to the Shop Owner's connected bank account via Stripe Connect
  * - Weekly recurring auto-pay subscriptions OR one-time multi-cycle payments
  * - Apple Pay, Google Pay, Credit & Debit Cards
  */
@@ -34,6 +35,7 @@ export const createRentCheckoutSession = action({
     isAutoPay: v.boolean(),
     successUrl: v.string(),
     cancelUrl: v.string(),
+    stripeAccountId: v.optional(v.string()),
     customSecretKey: v.optional(v.string())
   },
   handler: async (_ctx, args) => {
@@ -49,6 +51,13 @@ export const createRentCheckoutSession = action({
 
     try {
       const totalCents = Math.round((args.baseRentAmount + args.feeAmount) * 100);
+
+      // If shop has a connected bank account (Stripe Connect), route directly to their bank
+      const hasValidConnectDestination = Boolean(
+        args.stripeAccountId && 
+        args.stripeAccountId.startsWith("acct_") && 
+        !args.customSecretKey
+      );
 
       if (args.isAutoPay) {
         // Recurring Weekly Subscription
@@ -71,12 +80,18 @@ export const createRentCheckoutSession = action({
               quantity: 1
             }
           ],
+          subscription_data: hasValidConnectDestination ? {
+            transfer_data: {
+              destination: args.stripeAccountId!
+            }
+          } : undefined,
           metadata: {
             shopSlug: args.shopSlug,
             barberId: args.barberId,
             barberName: args.barberName,
             weeksCovered: String(args.weeksCovered),
-            isAutoPay: "true"
+            isAutoPay: "true",
+            stripeAccountId: args.stripeAccountId || ""
           },
           success_url: args.successUrl,
           cancel_url: args.cancelUrl
@@ -106,12 +121,18 @@ export const createRentCheckoutSession = action({
               quantity: 1
             }
           ],
+          payment_intent_data: hasValidConnectDestination ? {
+            transfer_data: {
+              destination: args.stripeAccountId!
+            }
+          } : undefined,
           metadata: {
             shopSlug: args.shopSlug,
             barberId: args.barberId,
             barberName: args.barberName,
             weeksCovered: String(args.weeksCovered),
-            isAutoPay: "false"
+            isAutoPay: "false",
+            stripeAccountId: args.stripeAccountId || ""
           },
           success_url: args.successUrl,
           cancel_url: args.cancelUrl
@@ -125,9 +146,10 @@ export const createRentCheckoutSession = action({
         };
       }
     } catch (err: any) {
+      console.error("Stripe createRentCheckoutSession error:", err);
       return {
         success: false,
-        error: err.message || "Failed to create Stripe Checkout Session",
+        error: err.message || "Failed to create Stripe Checkout session",
         url: null,
         sessionId: null
       };
@@ -136,7 +158,121 @@ export const createRentCheckoutSession = action({
 });
 
 /**
- * Verifies a Stripe Checkout Session upon return from Stripe.
+ * Creates an official Stripe Connect Account & Onboarding Link.
+ * This redirects the shop owner to Stripe's secure page to enter their bank routing/account number or debit card.
+ */
+export const createConnectAccountLink = action({
+  args: {
+    shopSlug: v.string(),
+    shopName: v.string(),
+    existingAccountId: v.optional(v.string()),
+    returnUrl: v.string(),
+    refreshUrl: v.string(),
+    customSecretKey: v.optional(v.string())
+  },
+  handler: async (_ctx, args) => {
+    const stripe = getStripeClient(args.customSecretKey);
+    if (!stripe) {
+      return { 
+        success: false, 
+        error: "Stripe Secret Key not configured", 
+        url: null, 
+        accountId: null, 
+        needsConnectSignup: false 
+      };
+    }
+
+    try {
+      let accountId = args.existingAccountId;
+
+      // Create new Stripe Express account if shop doesn't have an ID yet
+      if (!accountId || !accountId.startsWith("acct_")) {
+        const account = await stripe.accounts.create({
+          type: "express",
+          country: "US",
+          capabilities: {
+            transfers: { requested: true },
+            card_payments: { requested: true }
+          },
+          business_profile: {
+            name: args.shopName,
+            product_description: `Barbershop booth rent payouts for ${args.shopName}`
+          }
+        });
+        accountId = account.id;
+      }
+
+      // Generate a secure Stripe-hosted onboarding link
+      const accountLink = await stripe.accountLinks.create({
+        account: accountId,
+        refresh_url: args.refreshUrl,
+        return_url: `${args.returnUrl}&account_id=${accountId}`,
+        type: "account_onboarding"
+      });
+
+      return {
+        success: true,
+        url: accountLink.url,
+        accountId,
+        error: null,
+        needsConnectSignup: false
+      };
+    } catch (err: any) {
+      const msg = err.message || "";
+      const isConnectNotEnabled = msg.includes("signed up for Connect") || msg.includes("Connect");
+      return {
+        success: false,
+        error: msg,
+        url: null,
+        accountId: null,
+        needsConnectSignup: isConnectNotEnabled
+      };
+    }
+  }
+});
+
+/**
+ * Checks the status of a connected Stripe Express bank account
+ */
+export const getConnectedAccountStatus = action({
+  args: {
+    accountId: v.string(),
+    customSecretKey: v.optional(v.string())
+  },
+  handler: async (_ctx, args) => {
+    const stripe = getStripeClient(args.customSecretKey);
+    if (!stripe || !args.accountId || !args.accountId.startsWith("acct_")) {
+      return { success: false, connected: false, bankName: null, error: "Invalid account or key" };
+    }
+
+    try {
+      const account = await stripe.accounts.retrieve(args.accountId);
+      const bank = account.external_accounts?.data?.[0] as any;
+      const bankName = bank ? `${bank.bank_name || 'Bank'} (•••• ${bank.last4 || '••••'})` : "Connected Checking Account";
+      const isComplete = account.charges_enabled && account.payouts_enabled;
+
+      return {
+        success: true,
+        connected: Boolean(isComplete || account.details_submitted),
+        bankName,
+        accountId: account.id,
+        chargesEnabled: account.charges_enabled,
+        payoutsEnabled: account.payouts_enabled,
+        error: null
+      };
+    } catch (err: any) {
+      return {
+        success: false,
+        connected: false,
+        bankName: null,
+        error: err.message
+      };
+    }
+  }
+});
+
+/**
+ * Verifies a completed Stripe Checkout session upon customer return redirect.
  */
 export const verifyCheckoutSession = action({
   args: {
@@ -149,36 +285,39 @@ export const verifyCheckoutSession = action({
       return {
         success: false,
         paid: false,
-        error: "Stripe Secret Key not configured"
+        error: "Stripe not configured",
+        amountTotal: 0,
+        customerEmail: null,
+        metadata: null
       };
     }
 
     try {
       const session = await stripe.checkout.sessions.retrieve(args.sessionId);
-      const isPaid = session.payment_status === "paid";
+      const isPaid = session.payment_status === "paid" || session.status === "complete";
 
       return {
         success: true,
         paid: isPaid,
-        status: session.status,
+        amountTotal: session.amount_total ? session.amount_total / 100 : 0,
         customerEmail: session.customer_details?.email,
-        paymentIntentId: typeof session.payment_intent === "string" ? session.payment_intent : undefined,
-        subscriptionId: typeof session.subscription === "string" ? session.subscription : undefined,
-        metadata: session.metadata,
-        error: null
+        metadata: session.metadata
       };
     } catch (err: any) {
       return {
         success: false,
         paid: false,
-        error: err.message || "Failed to verify Stripe Session"
+        error: err.message || "Failed to retrieve session",
+        amountTotal: 0,
+        customerEmail: null,
+        metadata: null
       };
     }
   }
 });
 
 /**
- * Creates a Stripe Checkout Session for Shop Platform Subscription ($49/mo).
+ * Creates a Stripe Checkout Session for the Shop Owner paying the WalkinApp Platform monthly fee.
  */
 export const createShopSubscriptionSession = action({
   args: {

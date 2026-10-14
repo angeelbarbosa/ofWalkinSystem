@@ -10,9 +10,13 @@ import {
   Eye,
   EyeOff,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  ExternalLink,
+  AlertCircle
 } from 'lucide-react';
 import type { ShopConfig } from '../../types';
+import { convexClient } from '../../utils/convexClient';
+import { api } from '../../../convex/_generated/api';
 
 interface ShopPayoutSettingsProps {
   config: ShopConfig;
@@ -39,6 +43,8 @@ export const ShopPayoutSettings: React.FC<ShopPayoutSettingsProps> = ({
   const [rentDueDay, setRentDueDay] = useState(config.defaultRentDueDay || 'Monday');
   const [isSaved, setIsSaved] = useState(false);
   const [isConnectingStripe, setIsConnectingStripe] = useState(false);
+  const [connectError, setConnectError] = useState<string | null>(null);
+  const [needsConnectSignup, setNeedsConnectSignup] = useState(false);
   const [showAdvancedGateway, setShowAdvancedGateway] = useState(Boolean(config.stripeSecretKey));
   const [isEditingBankName, setIsEditingBankName] = useState(false);
 
@@ -64,21 +70,57 @@ export const ShopPayoutSettings: React.FC<ShopPayoutSettingsProps> = ({
     setTimeout(() => setIsSaved(false), 2500);
   };
 
-  const handleConnectStripe = () => {
+  const handleConnectStripe = async () => {
     setIsConnectingStripe(true);
-    setTimeout(() => {
-      setPayoutStatus('connected');
-      if (!payoutBankName) {
-        setPayoutBankName('Linked Checking Account');
+    setConnectError(null);
+    setNeedsConnectSignup(false);
+
+    if (!convexClient) {
+      setConnectError('Cloud connection is initializing... Please refresh and try again.');
+      setIsConnectingStripe(false);
+      return;
+    }
+
+    try {
+      const origin = window.location.origin;
+      const currentShopSlug = new URLSearchParams(window.location.search).get('shop') || 'of';
+      const returnUrl = `${origin}/?shop=${currentShopSlug}&portal=admin&tab=payouts&connect=success`;
+      const refreshUrl = `${origin}/?shop=${currentShopSlug}&portal=admin&tab=payouts&connect=refresh`;
+
+      const res = await convexClient.action(api.stripe.createConnectAccountLink, {
+        shopSlug: currentShopSlug,
+        shopName: config.shopName || 'Barbershop',
+        existingAccountId: stripeAccountId || undefined,
+        returnUrl,
+        refreshUrl,
+        customSecretKey: stripeSecretKey || undefined
+      });
+
+      if (res.success && res.url) {
+        // Redirect browser straight to Stripe's secure bank linking page
+        window.location.assign(res.url);
+        return;
+      } else {
+        setConnectError(res.error || 'Failed to initialize Stripe bank onboarding.');
+        setNeedsConnectSignup(Boolean(res.needsConnectSignup));
+        setIsConnectingStripe(false);
+      }
+    } catch (err: any) {
+      console.error('Error starting Stripe Connect onboarding:', err);
+      const msg = err?.message || 'Error communicating with Stripe Connect.';
+      setConnectError(msg);
+      if (msg.includes('Connect') || msg.includes('signed up for Connect')) {
+        setNeedsConnectSignup(true);
       }
       setIsConnectingStripe(false);
-    }, 800);
+    }
   };
 
   const handleDisconnectBank = () => {
     setPayoutStatus('unlinked');
     setPayoutBankName('');
     setStripeAccountId('');
+    setConnectError(null);
   };
 
   return (
@@ -270,8 +312,67 @@ export const ShopPayoutSettings: React.FC<ShopPayoutSettingsProps> = ({
                 }}
               >
                 <CreditCard size={17} />
-                <span>{isConnectingStripe ? 'Connecting Bank...' : 'Connect Bank Account with Stripe'}</span>
+                <span>{isConnectingStripe ? 'Connecting to Stripe...' : 'Connect Bank Account with Stripe'}</span>
               </button>
+
+              {needsConnectSignup && (
+                <div style={{
+                  background: 'rgba(245, 158, 11, 0.12)',
+                  border: '1.5px solid rgba(245, 158, 11, 0.35)',
+                  borderRadius: 14,
+                  padding: '14px 16px',
+                  textAlign: 'left',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 8,
+                  maxWidth: 460
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#F59E0B', fontWeight: 800, fontSize: '0.86rem' }}>
+                    <AlertCircle size={16} />
+                    <span>One-Time Action: Enable Stripe Connect</span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+                    Your Stripe live account requires <strong>Connect</strong> to be enabled so you can direct-deposit rent into shop owners' bank accounts. Click below to activate it in 30 seconds:
+                  </p>
+                  <a
+                    href="https://dashboard.stripe.com/connect"
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      background: 'var(--accent-primary, #F59E0B)',
+                      color: '#000000',
+                      padding: '9px 16px',
+                      borderRadius: 10,
+                      fontWeight: 850,
+                      fontSize: '0.80rem',
+                      textDecoration: 'none',
+                      width: 'fit-content',
+                      marginTop: 2
+                    }}
+                  >
+                    <span>Open dashboard.stripe.com/connect</span>
+                    <ExternalLink size={14} />
+                  </a>
+                </div>
+              )}
+
+              {!needsConnectSignup && connectError && (
+                <div style={{
+                  background: 'rgba(239, 68, 68, 0.15)',
+                  border: '1px solid rgba(239, 68, 68, 0.35)',
+                  color: '#EF4444',
+                  borderRadius: 12,
+                  padding: '10px 14px',
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  maxWidth: 440
+                }}>
+                  {connectError}
+                </div>
+              )}
 
               <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
                 <ShieldCheck size={13} color="#10B981" /> 256-bit encrypted • Stripe Direct Deposit

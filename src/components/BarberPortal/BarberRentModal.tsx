@@ -82,6 +82,7 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
         isAutoPay: autoPayEnabled,
         successUrl: `${origin}/?shop=${currentShopSlug}&portal=barber&payment=success&session_id={CHECKOUT_SESSION_ID}&barber_id=${barber.id}`,
         cancelUrl: `${origin}/?shop=${currentShopSlug}&portal=barber&payment=cancel`,
+        stripeAccountId: config?.stripeAccountId || undefined,
         customSecretKey: config?.stripeSecretKey || undefined
       });
 

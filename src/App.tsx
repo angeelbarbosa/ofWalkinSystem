@@ -204,7 +204,40 @@ export function App() {
         window.history.replaceState({}, '', url.toString());
       });
     }
-  }, [barbers, config, activeShopSlug, payBoothRent, markShopSubscriptionPaid]);
+
+    // Handle Stripe Connect bank onboarding return callback
+    const connectStatus = url.searchParams.get('connect');
+    const connectAccountId = url.searchParams.get('account_id');
+
+    if (connectStatus === 'success' && connectAccountId && convexClient) {
+      convexClient.action(api.stripe.getConnectedAccountStatus, {
+        accountId: connectAccountId,
+        customSecretKey: config.stripeSecretKey
+      }).then(res => {
+        if (res.success && res.connected) {
+          saveConfig({
+            ...config,
+            stripeAccountId: connectAccountId,
+            payoutBankName: res.bankName || 'Connected Checking Account',
+            payoutStatus: 'connected',
+            stripeConnectActive: true
+          });
+          confetti({
+            particleCount: 85,
+            spread: 75,
+            origin: { y: 0.6 },
+            colors: ['#10B981', '#F59E0B', '#3B82F6', '#FFFFFF']
+          });
+        }
+      }).catch(err => {
+        console.warn('Stripe connect verify error:', err);
+      }).finally(() => {
+        url.searchParams.delete('connect');
+        url.searchParams.delete('account_id');
+        window.history.replaceState({}, '', url.toString());
+      });
+    }
+  }, [barbers, config, activeShopSlug, payBoothRent, markShopSubscriptionPaid, saveConfig]);
 
   // Reset auth when switching shops
   useEffect(() => {
