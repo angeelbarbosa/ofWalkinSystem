@@ -49,7 +49,26 @@ export const ShopPayoutSettings: React.FC<ShopPayoutSettingsProps> = ({
   const [showAdvancedGateway, setShowAdvancedGateway] = useState(Boolean(config.stripeSecretKey));
   const [isEditingBankName, setIsEditingBankName] = useState(false);
 
-  const isConnected = payoutStatus === 'connected';
+  const isConnected = payoutStatus === 'connected' || Boolean(config.stripeAccountId);
+
+  // Auto-sync live Stripe bank status on mount
+  React.useEffect(() => {
+    if (config.stripeAccountId && convexClient) {
+      convexClient.action(api.stripe.getConnectedAccountStatus, {
+        accountId: config.stripeAccountId,
+        customSecretKey: config.stripeSecretKey
+      }).then(res => {
+        if (res.success && res.connected) {
+          setPayoutStatus('connected');
+          if (res.bankName && !payoutBankName) {
+            setPayoutBankName(res.bankName);
+          }
+        }
+      }).catch(err => {
+        console.warn('Auto-sync connected account status error:', err);
+      });
+    }
+  }, [config.stripeAccountId]);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();

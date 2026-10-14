@@ -190,6 +190,7 @@ export const createConnectAccountLink = action({
         const account = await stripe.accounts.create({
           type: "express",
           country: "US",
+          business_type: "individual",
           capabilities: {
             transfers: { requested: true },
             card_payments: { requested: true }
