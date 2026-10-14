@@ -5,7 +5,6 @@ import {
   CreditCard, 
   ArrowRight, 
   Lock, 
-  ShieldCheck, 
   Sparkles, 
   Check, 
   Copy,
@@ -55,6 +54,30 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
   const [paidRecord, setPaidRecord] = useState<RentPaymentRecord | null>(existingRecord || null);
   const [isPayingNewCycle, setIsPayingNewCycle] = useState(false);
   const [copiedReceipt, setCopiedReceipt] = useState(false);
+
+  const getCycleLabel = (rec: RentPaymentRecord) => {
+    try {
+      const baseDate = new Date(rec.paidAt || rec.dueDate || Date.now());
+      const day = baseDate.getDay();
+      const diffToMonday = (day + 6) % 7;
+      const monday = new Date(baseDate);
+      monday.setDate(baseDate.getDate() - diffToMonday);
+      monday.setHours(0, 0, 0, 0);
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+
+      const formatMD = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const weeks = rec.weeksCovered || 1;
+      if (weeks > 1) {
+        const start = new Date(monday);
+        start.setDate(monday.getDate() - ((weeks - 1) * 7));
+        return `Cycle: ${formatMD(start)} – ${formatMD(sunday)} (${weeks} weeks paid)`;
+      }
+      return `Cycle: ${formatMD(monday)} – ${formatMD(sunday)}`;
+    } catch {
+      return rec.periodDescription || 'Weekly Booth Rent Cycle';
+    }
+  };
 
   const showPaymentForm = !paidRecord || isPayingNewCycle;
 
@@ -474,10 +497,10 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
             </div>
 
             <h3 style={{ fontSize: '1.35rem', fontWeight: 900, color: 'var(--text-primary)', marginBottom: 4 }}>
-              Booth Rent Verified!
+              Booth Rent Paid
             </h3>
-            <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginBottom: 18 }}>
-              Paid via Stripe and credited directly to the shop ledger for {paidRecord.barberName}.
+            <p style={{ fontSize: '0.88rem', fontWeight: 750, color: 'var(--text-secondary)', marginBottom: 18 }}>
+              {getCycleLabel(paidRecord)}
             </p>
 
             {/* Official Digital Receipt Card */}
@@ -547,13 +570,6 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
                   {new Date(paidRecord.paidAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
-
-              <div style={{ height: 1, background: 'var(--border-subtle)', margin: '4px 0' }} />
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--pastel-green, #10B981)', fontSize: '0.75rem', fontWeight: 800 }}>
-                <ShieldCheck size={14} />
-                <span>Shop Owner Ledger Confirmed</span>
-              </div>
             </div>
 
             {/* Receipt Modal Footer Actions */}
@@ -582,9 +598,9 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  color: 'var(--accent-primary, #F59E0B)',
-                  fontSize: '0.8rem',
-                  fontWeight: 750,
+                  color: 'var(--pastel-green, #10B981)',
+                  fontSize: '0.82rem',
+                  fontWeight: 800,
                   cursor: 'pointer',
                   padding: '6px'
                 }}
