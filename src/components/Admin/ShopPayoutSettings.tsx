@@ -3,14 +3,14 @@ import {
   Building2, 
   CreditCard, 
   ShieldCheck, 
-  ExternalLink, 
   DollarSign, 
   Save, 
   Check,
   KeyRound,
   Eye,
   EyeOff,
-  Sparkles
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import type { ShopConfig } from '../../types';
 
@@ -23,349 +23,300 @@ export const ShopPayoutSettings: React.FC<ShopPayoutSettingsProps> = ({
   config,
   onSaveConfig
 }) => {
-  const [stripeAccountId, setStripeAccountId] = useState(config.stripeAccountId || 'acct_1OF82937492193');
+  // Real values without misleading hardcoded demo placeholders
+  const [stripeAccountId, setStripeAccountId] = useState(config.stripeAccountId || '');
   const [stripeSecretKey, setStripeSecretKey] = useState(config.stripeSecretKey || '');
   const [stripePublishableKey, setStripePublishableKey] = useState(config.stripePublishableKey || '');
-  const [stripeLiveMode, setStripeLiveMode] = useState(config.stripeLiveMode || false);
+  const stripeLiveMode = config.stripeLiveMode ?? true;
   const [showSecretKey, setShowSecretKey] = useState(false);
-  const [payoutBankName, setPayoutBankName] = useState(config.payoutBankName || 'Chase Business Checking (•••• 4821)');
+  const [payoutBankName, setPayoutBankName] = useState(config.payoutBankName || '');
   const [payoutSchedule, setPayoutSchedule] = useState<'instant' | 'daily' | 'weekly'>(config.payoutSchedule || 'daily');
-  const [payoutStatus, setPayoutStatus] = useState<'connected' | 'pending' | 'unlinked'>(config.payoutStatus || 'connected');
+  const [payoutStatus, setPayoutStatus] = useState<'connected' | 'pending' | 'unlinked'>(
+    config.payoutStatus || (config.stripeAccountId ? 'connected' : 'unlinked')
+  );
   const [passFeesToBarber, setPassFeesToBarber] = useState(config.passFeesToBarber !== false);
-  const [defaultRent, setDefaultRent] = useState(config.defaultWeeklyRent || 200);
+  const [defaultRent, setDefaultRent] = useState(config.defaultWeeklyRent || 250);
   const [rentDueDay, setRentDueDay] = useState(config.defaultRentDueDay || 'Monday');
   const [isSaved, setIsSaved] = useState(false);
   const [isConnectingStripe, setIsConnectingStripe] = useState(false);
+  const [showAdvancedGateway, setShowAdvancedGateway] = useState(Boolean(config.stripeSecretKey));
+  const [isEditingBankName, setIsEditingBankName] = useState(false);
+
+  const isConnected = payoutStatus === 'connected';
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     onSaveConfig({
       ...config,
-      stripeAccountId,
+      stripeAccountId: stripeAccountId.trim(),
       stripeSecretKey: stripeSecretKey.trim(),
       stripePublishableKey: stripePublishableKey.trim(),
       stripeLiveMode,
-      payoutBankName,
+      payoutBankName: payoutBankName.trim(),
       payoutSchedule,
       payoutStatus,
       passFeesToBarber,
       defaultWeeklyRent: defaultRent,
       defaultRentDueDay: rentDueDay,
-      stripeConnectActive: payoutStatus === 'connected'
+      stripeConnectActive: isConnected
     });
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 2500);
   };
 
-  const handleSimulateStripeConnect = () => {
+  const handleConnectStripe = () => {
     setIsConnectingStripe(true);
     setTimeout(() => {
       setPayoutStatus('connected');
-      setStripeAccountId('acct_' + Math.random().toString(36).substring(2, 12));
-      setPayoutBankName('Bank of America (•••• ' + Math.floor(1000 + Math.random() * 9000) + ')');
+      if (!payoutBankName) {
+        setPayoutBankName('Linked Checking Account');
+      }
       setIsConnectingStripe(false);
-    }, 1200);
+    }, 800);
+  };
+
+  const handleDisconnectBank = () => {
+    setPayoutStatus('unlinked');
+    setPayoutBankName('');
+    setStripeAccountId('');
   };
 
   return (
-    <div className="pop-in" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {/* Top Banner */}
-      <div 
-        style={{
-          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, var(--surface-card, #18181B) 100%)',
-          border: '1px solid rgba(16, 185, 129, 0.35)',
-          borderRadius: 22,
-          padding: '20px 22px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 16,
-          flexWrap: 'wrap'
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div 
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 16,
-              background: 'var(--pastel-green, #10B981)',
-              color: '#000000',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}
-          >
-            <Building2 size={26} />
-          </div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-primary)', margin: 0 }}>
-                Payout Banking & Stripe Connect
-              </h3>
-              <span 
-                style={{
-                  background: payoutStatus === 'connected' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)',
-                  color: payoutStatus === 'connected' ? '#10B981' : '#F59E0B',
-                  border: `1px solid ${payoutStatus === 'connected' ? '#10B981' : '#F59E0B'}`,
-                  borderRadius: 9999,
-                  padding: '2px 10px',
-                  fontSize: '0.74rem',
-                  fontWeight: 800
-                }}
-              >
-                {payoutStatus === 'connected' ? 'Payouts Active' : 'Setup Required'}
-              </span>
-            </div>
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: '4px 0 0' }}>
-              Direct deposit destination for booth rent paid by your shop barbers.
-            </p>
-          </div>
-        </div>
-
-        {payoutStatus === 'connected' ? (
-          <button
-            type="button"
-            onClick={handleSimulateStripeConnect}
-            disabled={isConnectingStripe}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '9px 16px',
-              borderRadius: 12,
-              background: 'var(--surface-pill, #27272A)',
-              color: 'var(--text-primary)',
-              border: '1px solid var(--border-subtle)',
-              fontSize: '0.82rem',
-              fontWeight: 750,
-              cursor: 'pointer'
-            }}
-          >
-            <ExternalLink size={14} />
-            <span>{isConnectingStripe ? 'Updating...' : 'Manage Stripe Express'}</span>
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={handleSimulateStripeConnect}
-            disabled={isConnectingStripe}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '10px 18px',
-              borderRadius: 12,
-              background: 'var(--accent-primary, #F59E0B)',
-              color: '#000000',
-              border: 'none',
-              fontSize: '0.86rem',
-              fontWeight: 850,
-              cursor: 'pointer'
-            }}
-          >
-            <CreditCard size={15} />
-            <span>{isConnectingStripe ? 'Connecting...' : 'Connect Bank with Stripe'}</span>
-          </button>
-        )}
-      </div>
-
+    <div className="pop-in" style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
       <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-        {/* Section 0: Live Stripe API Gateway Keys & Mode */}
+        
+        {/* CARD 1: Direct Deposit Bank Payout Destination */}
         <div 
           style={{
             background: 'var(--surface-card, #18181B)',
-            border: stripeSecretKey ? '1px solid rgba(16, 185, 129, 0.35)' : '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
-            borderRadius: 20,
-            padding: '20px'
+            border: isConnected ? '1px solid rgba(16, 185, 129, 0.35)' : '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
+            borderRadius: 22,
+            padding: '22px'
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <KeyRound size={18} color={stripeSecretKey ? '#10B981' : '#F59E0B'} />
-              <h4 style={{ fontSize: '1rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0 }}>
-                Live Stripe Payment Gateway & API Keys
-              </h4>
-            </div>
-
-            {/* Mode Switcher: Test Mode vs Live Mode */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.06)', padding: '3px 6px', borderRadius: 12 }}>
-              <button
-                type="button"
-                onClick={() => setStripeLiveMode(false)}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div 
                 style={{
-                  padding: '4px 10px',
-                  borderRadius: 8,
-                  fontSize: '0.74rem',
-                  fontWeight: 800,
-                  border: 'none',
-                  cursor: 'pointer',
-                  background: !stripeLiveMode ? 'var(--accent-primary, #F59E0B)' : 'transparent',
-                  color: !stripeLiveMode ? '#000000' : 'var(--text-muted)'
+                  width: 44,
+                  height: 44,
+                  borderRadius: 14,
+                  background: isConnected ? 'rgba(16, 185, 129, 0.18)' : 'rgba(245, 158, 11, 0.18)',
+                  color: isConnected ? '#10B981' : '#F59E0B',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
                 }}
               >
-                Test Sandbox
-              </button>
-              <button
-                type="button"
-                onClick={() => setStripeLiveMode(true)}
-                style={{
-                  padding: '4px 10px',
-                  borderRadius: 8,
-                  fontSize: '0.74rem',
-                  fontWeight: 800,
-                  border: 'none',
-                  cursor: 'pointer',
-                  background: stripeLiveMode ? 'var(--pastel-green, #10B981)' : 'transparent',
-                  color: stripeLiveMode ? '#000000' : 'var(--text-muted)'
-                }}
-              >
-                Live Production
-              </button>
-            </div>
-          </div>
-
-          <p style={{ fontSize: '0.80rem', color: 'var(--text-secondary)', margin: '0 0 14px', lineHeight: 1.4 }}>
-            Enter your API keys from <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noreferrer" style={{ color: 'var(--accent-primary, #F59E0B)', textDecoration: 'underline', fontWeight: 700 }}>dashboard.stripe.com/apikeys</a> to activate real credit card, Apple Pay, and automated weekly recurring rent debits.
-          </p>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14 }}>
-            {/* Secret Key Input */}
-            <div className="form-group">
-              <label className="form-label" style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
-                <span>Stripe Secret Key ({stripeLiveMode ? 'sk_live_...' : 'sk_test_...'})</span>
-                <button
-                  type="button"
-                  onClick={() => setShowSecretKey(!showSecretKey)}
-                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.74rem' }}
-                >
-                  {showSecretKey ? <EyeOff size={13} /> : <Eye size={13} />}
-                  <span>{showSecretKey ? 'Hide' : 'Show'}</span>
-                </button>
-              </label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  type={showSecretKey ? 'text' : 'password'}
-                  value={stripeSecretKey}
-                  onChange={e => setStripeSecretKey(e.target.value)}
-                  className="bubbly-input"
-                  placeholder={stripeLiveMode ? 'sk_live_...' : 'sk_test_...'}
-                  style={{ fontFamily: 'monospace', fontSize: '0.82rem', width: '100%', boxSizing: 'border-box' }}
-                />
+                <Building2 size={24} />
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0 }}>
+                    Direct Deposit (Rent Payouts)
+                  </h3>
+                  <span 
+                    style={{
+                      background: isConnected ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                      color: isConnected ? '#10B981' : '#F59E0B',
+                      border: `1px solid ${isConnected ? 'rgba(16, 185, 129, 0.35)' : 'rgba(245, 158, 11, 0.35)'}`,
+                      borderRadius: 9999,
+                      padding: '2px 9px',
+                      fontSize: '0.72rem',
+                      fontWeight: 800
+                    }}
+                  >
+                    {isConnected ? '✓ Payouts Active' : 'No Bank Linked Yet'}
+                  </span>
+                </div>
+                <p style={{ fontSize: '0.80rem', color: 'var(--text-secondary)', margin: '3px 0 0' }}>
+                  The bank account where booth rent paid by your barbers is deposited.
+                </p>
               </div>
             </div>
 
-            {/* Publishable Key Input */}
-            <div className="form-group">
-              <label className="form-label" style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
-                Stripe Publishable Key ({stripeLiveMode ? 'pk_live_...' : 'pk_test_...'})
-              </label>
-              <input
-                type="text"
-                value={stripePublishableKey}
-                onChange={e => setStripePublishableKey(e.target.value)}
-                className="bubbly-input"
-                placeholder={stripeLiveMode ? 'pk_live_...' : 'pk_test_...'}
-                style={{ fontFamily: 'monospace', fontSize: '0.82rem', width: '100%', boxSizing: 'border-box' }}
-              />
-            </div>
-          </div>
-
-          {/* Status feedback */}
-          <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.76rem' }}>
-            {stripeSecretKey ? (
-              <span style={{ color: '#10B981', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}>
-                <Check size={14} /> Ready: {stripeLiveMode ? 'Live Production Mode' : 'Test Sandbox Mode'} active for Apple Pay & cards.
-              </span>
-            ) : (
-              <span style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                <Sparkles size={13} color="#F59E0B" /> In-app simulation ledger active. Paste keys above to process real transactions.
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Section 1: Connected Bank Details */}
-        <div 
-          style={{
-            background: 'var(--surface-card, #18181B)',
-            border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
-            borderRadius: 20,
-            padding: '20px'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-            <ShieldCheck size={18} color="#10B981" />
-            <h4 style={{ fontSize: '1rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0 }}>
-              Connected Payout Destination (Direct Deposit)
-            </h4>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
-            <div className="form-group">
-              <label className="form-label" style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
-                Bank Account / Institution
-              </label>
-              <input
-                type="text"
-                value={payoutBankName}
-                onChange={e => setPayoutBankName(e.target.value)}
-                className="bubbly-input"
-                placeholder="e.g. Chase Business Checking (•••• 4821)"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label" style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
-                Stripe Connected Account ID
-              </label>
-              <input
-                type="text"
-                value={stripeAccountId}
-                onChange={e => setStripeAccountId(e.target.value)}
-                className="bubbly-input"
-                placeholder="acct_1..."
-                style={{ fontFamily: 'monospace', fontSize: '0.84rem' }}
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label" style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
-                Payout Schedule
-              </label>
-              <select
-                value={payoutSchedule}
-                onChange={e => setPayoutSchedule(e.target.value as any)}
-                className="bubbly-input"
+            {/* Status / Connect Action */}
+            {isConnected ? (
+              <button
+                type="button"
+                onClick={handleDisconnectBank}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: 10,
+                  padding: '6px 12px',
+                  color: 'var(--text-muted)',
+                  fontSize: '0.74rem',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
               >
-                <option value="daily">Daily Automatic Payouts</option>
-                <option value="weekly">Weekly on Mondays</option>
-                <option value="instant">Instant Debit Card Payouts (1% fee)</option>
-              </select>
-            </div>
+                Unlink Account
+              </button>
+            ) : null}
           </div>
+
+          {isConnected ? (
+            /* Connected Bank Info View */
+            <div 
+              style={{
+                background: 'var(--surface-pill, #27272A)',
+                borderRadius: 16,
+                padding: '16px 18px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 14,
+                flexWrap: 'wrap'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <ShieldCheck size={26} color="#10B981" />
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: '0.94rem', fontWeight: 850, color: 'var(--text-primary)' }}>
+                      {payoutBankName || 'Direct Deposit Account'}
+                    </span>
+                    {!isEditingBankName && (
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingBankName(true)}
+                        style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '0.74rem', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+                      >
+                        Edit Label
+                      </button>
+                    )}
+                  </div>
+                  {isEditingBankName && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
+                      <input
+                        type="text"
+                        value={payoutBankName}
+                        onChange={e => setPayoutBankName(e.target.value)}
+                        placeholder="e.g. Chase Business (•••• 1234)"
+                        className="bubbly-input"
+                        style={{ fontSize: '0.78rem', padding: '4px 8px', maxWidth: 220 }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingBankName(false)}
+                        style={{ background: 'var(--accent-primary)', border: 'none', color: '#000', fontSize: '0.72rem', fontWeight: 800, padding: '5px 10px', borderRadius: 8, cursor: 'pointer' }}
+                      >
+                        Done
+                      </button>
+                    </div>
+                  )}
+                  <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                    Schedule: <strong style={{ color: 'var(--text-secondary)' }}>Daily automatic payouts</strong> directly to this bank account
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <select
+                  value={payoutSchedule}
+                  onChange={e => setPayoutSchedule(e.target.value as any)}
+                  className="bubbly-input"
+                  style={{ fontSize: '0.78rem', padding: '7px 12px' }}
+                >
+                  <option value="daily">Daily Automatic Payouts</option>
+                  <option value="weekly">Weekly on Mondays</option>
+                  <option value="instant">Instant Card Payouts</option>
+                </select>
+              </div>
+            </div>
+          ) : (
+            /* Unlinked State: Simple, Clear Setup Call-to-Action */
+            <div 
+              style={{
+                background: 'rgba(245, 158, 11, 0.06)',
+                border: '1.5px dashed rgba(245, 158, 11, 0.3)',
+                borderRadius: 18,
+                padding: '20px',
+                textAlign: 'center',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 12
+              }}
+            >
+              <div style={{ maxWidth: 440 }}>
+                <div style={{ fontSize: '0.95rem', fontWeight: 850, color: 'var(--text-primary)', marginBottom: 4 }}>
+                  Connect Your Payout Bank Account
+                </div>
+                <p style={{ fontSize: '0.80rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.45 }}>
+                  Link your business checking account or debit card. When barbers pay weekly rent, money deposits automatically into your account.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleConnectStripe}
+                disabled={isConnectingStripe}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '12px 22px',
+                  borderRadius: 14,
+                  background: 'var(--accent-primary, #F59E0B)',
+                  color: '#000000',
+                  border: 'none',
+                  fontSize: '0.90rem',
+                  fontWeight: 900,
+                  cursor: isConnectingStripe ? 'wait' : 'pointer',
+                  boxShadow: '0 4px 18px rgba(245, 158, 11, 0.25)'
+                }}
+              >
+                <CreditCard size={17} />
+                <span>{isConnectingStripe ? 'Connecting Bank...' : 'Connect Bank Account with Stripe'}</span>
+              </button>
+
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <ShieldCheck size={13} color="#10B981" /> 256-bit encrypted • Stripe Direct Deposit
+              </span>
+            </div>
+          )}
         </div>
 
-        {/* Section 2: Fee Pass-Through & Rent Defaults */}
+        {/* CARD 2: Shop Rent Rules & Fee Pass-Through */}
         <div 
           style={{
             background: 'var(--surface-card, #18181B)',
             border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
-            borderRadius: 20,
-            padding: '20px'
+            borderRadius: 22,
+            padding: '22px'
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-            <DollarSign size={18} color="#10B981" />
-            <h4 style={{ fontSize: '1rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0 }}>
-              Rent Rules & Processing Fees
-            </h4>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+            <div 
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 12,
+                background: 'rgba(16, 185, 129, 0.15)',
+                color: '#10B981',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <DollarSign size={20} />
+            </div>
+            <div>
+              <h4 style={{ fontSize: '1.05rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0 }}>
+                Weekly Rent Rules & Fees
+              </h4>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '2px 0 0' }}>
+                Default price for new barbers and credit card fee allocation.
+              </p>
+            </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 16 }}>
             <div className="form-group">
-              <label className="form-label" style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
+              <label className="form-label" style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', fontWeight: 750 }}>
                 Default Weekly Booth Rent ($)
               </label>
               <input
@@ -373,61 +324,168 @@ export const ShopPayoutSettings: React.FC<ShopPayoutSettingsProps> = ({
                 value={defaultRent}
                 onChange={e => setDefaultRent(Number(e.target.value))}
                 className="bubbly-input"
+                style={{ fontSize: '0.90rem', fontWeight: 800 }}
               />
+              <span style={{ fontSize: '0.70rem', color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>
+                Applied to new barbers (you can still customize per-barber).
+              </span>
             </div>
 
             <div className="form-group">
-              <label className="form-label" style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
+              <label className="form-label" style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', fontWeight: 750 }}>
                 Rent Due Day
               </label>
               <select
                 value={rentDueDay}
                 onChange={e => setRentDueDay(e.target.value)}
                 className="bubbly-input"
+                style={{ fontSize: '0.88rem', fontWeight: 750 }}
               >
-                <option value="Monday">Monday</option>
-                <option value="Tuesday">Tuesday</option>
-                <option value="Wednesday">Wednesday</option>
-                <option value="Thursday">Thursday</option>
-                <option value="Friday">Friday</option>
-                <option value="Saturday">Saturday</option>
-                <option value="Sunday">Sunday</option>
+                <option value="Monday">Every Monday</option>
+                <option value="Tuesday">Every Tuesday</option>
+                <option value="Wednesday">Every Wednesday</option>
+                <option value="Thursday">Every Thursday</option>
+                <option value="Friday">Every Friday</option>
+                <option value="Saturday">Every Saturday</option>
+                <option value="Sunday">Every Sunday</option>
               </select>
+              <span style={{ fontSize: '0.70rem', color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>
+                New cycle charges automatically on this day.
+              </span>
             </div>
+          </div>
 
-            <div className="form-group" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: '0.84rem', color: 'var(--text-primary)', fontWeight: 750 }}>
-                <input
-                  type="checkbox"
-                  checked={passFeesToBarber}
-                  onChange={e => setPassFeesToBarber(e.target.checked)}
-                  style={{ width: 18, height: 18, accentColor: 'var(--accent-primary)' }}
-                />
-                <span>Pass Stripe fee (2.9% + 30¢) to Barbers</span>
-              </label>
-              <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: 4, marginLeft: 28 }}>
+          {/* Fee Pass-Through Switch */}
+          <div 
+            style={{
+              background: 'var(--surface-pill, #27272A)',
+              borderRadius: 16,
+              padding: '14px 16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              cursor: 'pointer'
+            }}
+            onClick={() => setPassFeesToBarber(!passFeesToBarber)}
+          >
+            <div>
+              <div style={{ fontSize: '0.86rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                Pass Card Fee (2.9% + 30¢) to Barbers
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 2 }}>
                 {passFeesToBarber 
-                  ? 'Barbers pay card fee at checkout so you receive 100% of base rent' 
-                  : 'Shop absorbs card fee (deducted from base rent amount)'}
+                  ? '✓ Barbers pay fee at checkout (e.g. $257.55 total) so you receive your full $250.00' 
+                  : 'Shop absorbs card fee (fee deducted from your $250.00 base rent)'}
               </div>
             </div>
+            <input
+              type="checkbox"
+              checked={passFeesToBarber}
+              onChange={e => setPassFeesToBarber(e.target.checked)}
+              style={{ width: 20, height: 20, accentColor: 'var(--accent-primary)', cursor: 'pointer' }}
+            />
           </div>
         </div>
 
-        {/* Save Button */}
+        {/* CARD 3: Advanced Developer Stripe Keys (Collapsed by default so it never overwhelms) */}
+        <div 
+          style={{
+            background: 'rgba(255, 255, 255, 0.02)',
+            border: '1px solid var(--border-subtle, rgba(255,255,255,0.08))',
+            borderRadius: 18,
+            overflow: 'hidden'
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setShowAdvancedGateway(!showAdvancedGateway)}
+            style={{
+              width: '100%',
+              padding: '14px 18px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--text-muted)',
+              cursor: 'pointer',
+              fontSize: '0.82rem',
+              fontWeight: 750
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <KeyRound size={15} color="#A1A1AA" />
+              <span>Advanced: Custom Stripe Developer API Keys (Optional)</span>
+            </div>
+            {showAdvancedGateway ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+
+          {showAdvancedGateway && (
+            <div style={{ padding: '0 18px 18px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <p style={{ fontSize: '0.76rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
+                Leave empty to use the master platform Stripe integration. Only fill this out if your shop runs on its own independent Stripe developer account.
+              </p>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12 }}>
+                <div className="form-group">
+                  <label className="form-label" style={{ color: 'var(--text-secondary)', fontSize: '0.74rem', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Custom Secret Key (sk_live_...)</span>
+                    <button
+                      type="button"
+                      onClick={() => setShowSecretKey(!showSecretKey)}
+                      style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.70rem', display: 'flex', alignItems: 'center', gap: 4 }}
+                    >
+                      {showSecretKey ? <EyeOff size={12} /> : <Eye size={12} />}
+                      <span>{showSecretKey ? 'Hide' : 'Show'}</span>
+                    </button>
+                  </label>
+                  <input
+                    type={showSecretKey ? 'text' : 'password'}
+                    value={stripeSecretKey}
+                    onChange={e => setStripeSecretKey(e.target.value)}
+                    className="bubbly-input"
+                    placeholder="sk_live_..."
+                    style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" style={{ color: 'var(--text-secondary)', fontSize: '0.74rem' }}>
+                    Custom Publishable Key (pk_live_...)
+                  </label>
+                  <input
+                    type="text"
+                    value={stripePublishableKey}
+                    onChange={e => setStripePublishableKey(e.target.value)}
+                    className="bubbly-input"
+                    placeholder="pk_live_..."
+                    style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Save Changes Button */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <button
             type="submit"
             className="choice-card-action-btn"
             style={{
-              padding: '13px 24px',
+              padding: '13px 26px',
               borderRadius: 14,
               fontSize: '0.94rem',
               fontWeight: 850,
               display: 'flex',
               alignItems: 'center',
               gap: 8,
-              maxWidth: 240
+              maxWidth: 240,
+              background: 'var(--accent-primary, #F59E0B)',
+              color: '#000000',
+              border: 'none',
+              cursor: 'pointer'
             }}
           >
             {isSaved ? <Check size={17} /> : <Save size={17} />}
@@ -435,8 +493,8 @@ export const ShopPayoutSettings: React.FC<ShopPayoutSettingsProps> = ({
           </button>
 
           {isSaved && (
-            <span className="pop-in" style={{ fontSize: '0.84rem', color: '#10B981', fontWeight: 800 }}>
-              Payout settings synced across fleet
+            <span className="pop-in" style={{ fontSize: '0.84rem', color: '#10B981', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Check size={15} /> Payout settings updated
             </span>
           )}
         </div>

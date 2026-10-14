@@ -352,7 +352,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               boxSizing: 'border-box'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
               <div style={{
                 width: 22,
                 height: 22,
@@ -367,7 +367,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <MessageSquare size={13} />
               </div>
               <span style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
-                Support Chat
+                Support
               </span>
             </div>
 
@@ -384,8 +384,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   {unreadSupportCount}
                 </span>
               ) : (
-                <span style={{ fontSize: '0.76rem', fontWeight: 750, color: '#60A5FA', whiteSpace: 'nowrap' }}>
-                  Open Chat →
+                <span style={{ fontSize: '0.74rem', fontWeight: 750, color: '#60A5FA', whiteSpace: 'nowrap' }}>
+                  Chat →
                 </span>
               )}
             </div>
