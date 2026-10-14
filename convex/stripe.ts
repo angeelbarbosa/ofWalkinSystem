@@ -168,6 +168,7 @@ export const createConnectAccountLink = action({
     existingAccountId: v.optional(v.string()),
     returnUrl: v.string(),
     refreshUrl: v.string(),
+    ownerEmail: v.optional(v.string()),
     customSecretKey: v.optional(v.string())
   },
   handler: async (_ctx, args) => {
@@ -190,6 +191,7 @@ export const createConnectAccountLink = action({
         const account = await stripe.accounts.create({
           type: "express",
           country: "US",
+          email: args.ownerEmail || undefined,
           business_type: "individual",
           capabilities: {
             transfers: { requested: true },
@@ -252,6 +254,16 @@ export const getConnectedAccountStatus = action({
       const bankName = bank ? `${bank.bank_name || 'Bank'} (•••• ${bank.last4 || '••••'})` : "Connected Checking Account";
       const isComplete = account.charges_enabled && account.payouts_enabled;
 
+      let pendingBalance = 0;
+      let availableBalance = 0;
+      try {
+        const balance = await stripe.balance.retrieve({}, { stripeAccount: args.accountId });
+        pendingBalance = (balance.pending?.[0]?.amount || 0) / 100;
+        availableBalance = (balance.available?.[0]?.amount || 0) / 100;
+      } catch (balErr) {
+        // Balance retrieve is best-effort
+      }
+
       return {
         success: true,
         connected: Boolean(isComplete || account.details_submitted),
@@ -259,6 +271,9 @@ export const getConnectedAccountStatus = action({
         accountId: account.id,
         chargesEnabled: account.charges_enabled,
         payoutsEnabled: account.payouts_enabled,
+        pendingBalance,
+        availableBalance,
+        payoutSchedule: account.settings?.payouts?.schedule?.interval || 'daily',
         error: null
       };
     } catch (err: any) {
@@ -266,7 +281,41 @@ export const getConnectedAccountStatus = action({
         success: false,
         connected: false,
         bankName: null,
+        pendingBalance: 0,
+        availableBalance: 0,
         error: err.message
+      };
+    }
+  }
+});
+
+/**
+ * Creates a secure, single-use login link to the Stripe Express Dashboard
+ * so the shop owner can track their bank deposits, upcoming payouts, and account info.
+ */
+export const createExpressDashboardLink = action({
+  args: {
+    accountId: v.string(),
+    customSecretKey: v.optional(v.string())
+  },
+  handler: async (_ctx, args) => {
+    const stripe = getStripeClient(args.customSecretKey);
+    if (!stripe || !args.accountId || !args.accountId.startsWith("acct_")) {
+      return { success: false, url: null, error: "Invalid account or key" };
+    }
+
+    try {
+      const loginLink = await stripe.accounts.createLoginLink(args.accountId);
+      return {
+        success: true,
+        url: loginLink.url,
+        error: null
+      };
+    } catch (err: any) {
+      return {
+        success: false,
+        url: null,
+        error: err.message || "Failed to generate Stripe dashboard link"
       };
     }
   }

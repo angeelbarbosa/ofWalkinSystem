@@ -39,6 +39,9 @@ export const ShopPayoutSettings: React.FC<ShopPayoutSettingsProps> = ({
   const [payoutStatus, setPayoutStatus] = useState<'connected' | 'pending' | 'unlinked'>(
     config.payoutStatus || (config.stripeAccountId ? 'connected' : 'unlinked')
   );
+  const [pendingBalance, setPendingBalance] = useState<number | null>(null);
+  const [availableBalance, setAvailableBalance] = useState<number | null>(null);
+  const [isLoadingDashboard, setIsLoadingDashboard] = useState(false);
   const [passFeesToBarber, setPassFeesToBarber] = useState(config.passFeesToBarber !== false);
   const [defaultRent, setDefaultRent] = useState(config.defaultWeeklyRent || 250);
   const [rentDueDay, setRentDueDay] = useState(config.defaultRentDueDay || 'Monday');
@@ -51,17 +54,23 @@ export const ShopPayoutSettings: React.FC<ShopPayoutSettingsProps> = ({
 
   const isConnected = payoutStatus === 'connected' || Boolean(config.stripeAccountId);
 
-  // Auto-sync live Stripe bank status on mount
+  // Auto-sync live Stripe bank status and balances on mount
   React.useEffect(() => {
     if (config.stripeAccountId && convexClient) {
       convexClient.action(api.stripe.getConnectedAccountStatus, {
         accountId: config.stripeAccountId,
         customSecretKey: config.stripeSecretKey
-      }).then(res => {
+      }).then((res: any) => {
         if (res.success && res.connected) {
           setPayoutStatus('connected');
           if (res.bankName && !payoutBankName) {
             setPayoutBankName(res.bankName);
+          }
+          if (typeof res.pendingBalance === 'number') {
+            setPendingBalance(res.pendingBalance);
+          }
+          if (typeof res.availableBalance === 'number') {
+            setAvailableBalance(res.availableBalance);
           }
         }
       }).catch(err => {
@@ -69,6 +78,26 @@ export const ShopPayoutSettings: React.FC<ShopPayoutSettingsProps> = ({
       });
     }
   }, [config.stripeAccountId]);
+
+  const handleOpenStripeDashboard = async () => {
+    if (!config.stripeAccountId || !convexClient) return;
+    setIsLoadingDashboard(true);
+    try {
+      const res = await convexClient.action(api.stripe.createExpressDashboardLink, {
+        accountId: config.stripeAccountId,
+        customSecretKey: config.stripeSecretKey
+      });
+      if (res.success && res.url) {
+        window.open(res.url, '_blank');
+      } else {
+        alert(res.error || 'Could not open Stripe Express dashboard.');
+      }
+    } catch (err: any) {
+      alert(err?.message || 'Error opening Stripe Express dashboard');
+    } finally {
+      setIsLoadingDashboard(false);
+    }
+  };
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -220,74 +249,140 @@ export const ShopPayoutSettings: React.FC<ShopPayoutSettingsProps> = ({
           </div>
 
           {isConnected ? (
-            /* Connected Bank Info View */
-            <div 
-              style={{
-                background: 'var(--surface-pill, #27272A)',
-                borderRadius: 16,
-                padding: '16px 18px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 14,
-                flexWrap: 'wrap'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <ShieldCheck size={26} color="#10B981" />
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: '0.94rem', fontWeight: 850, color: 'var(--text-primary)' }}>
-                      {payoutBankName || 'Connected Direct Deposit Account'}
-                    </span>
-                    {!isEditingBankName && (
-                      <button
-                        type="button"
-                        onClick={() => setIsEditingBankName(true)}
-                        style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '0.74rem', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
-                      >
-                        Edit Label
-                      </button>
-                    )}
-                  </div>
-                  {isEditingBankName && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
-                      <input
-                        type="text"
-                        value={payoutBankName}
-                        onChange={e => setPayoutBankName(e.target.value)}
-                        placeholder="e.g. Chase Business (•••• 1234)"
-                        className="bubbly-input"
-                        style={{ fontSize: '0.78rem', padding: '4px 8px', maxWidth: 220 }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setIsEditingBankName(false)}
-                        style={{ background: 'var(--accent-primary)', border: 'none', color: '#000', fontSize: '0.72rem', fontWeight: 800, padding: '5px 10px', borderRadius: 8, cursor: 'pointer' }}
-                      >
-                        Done
-                      </button>
+            <>
+              {/* Connected Bank Info View */}
+              <div 
+                style={{
+                  background: 'var(--surface-pill, #27272A)',
+                  borderRadius: 16,
+                  padding: '16px 18px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 14,
+                  flexWrap: 'wrap'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <ShieldCheck size={26} color="#10B981" />
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: '0.94rem', fontWeight: 850, color: 'var(--text-primary)' }}>
+                        {payoutBankName || 'Connected Direct Deposit Account'}
+                      </span>
+                      {!isEditingBankName && (
+                        <button
+                          type="button"
+                          onClick={() => setIsEditingBankName(true)}
+                          style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '0.74rem', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+                        >
+                          Edit Label
+                        </button>
+                      )}
                     </div>
-                  )}
-                  <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                    Schedule: <strong style={{ color: 'var(--text-secondary)' }}>Daily automatic payouts</strong> directly to this bank account
+                    {isEditingBankName && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
+                        <input
+                          type="text"
+                          value={payoutBankName}
+                          onChange={e => setPayoutBankName(e.target.value)}
+                          placeholder="e.g. Chase Business (•••• 1234)"
+                          className="bubbly-input"
+                          style={{ fontSize: '0.78rem', padding: '4px 8px', maxWidth: 220 }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setIsEditingBankName(false)}
+                          style={{ background: 'var(--accent-primary)', border: 'none', color: '#000', fontSize: '0.72rem', fontWeight: 800, padding: '5px 10px', borderRadius: 8, cursor: 'pointer' }}
+                        >
+                          Done
+                        </button>
+                      </div>
+                    )}
+                    <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                      Schedule: <strong style={{ color: 'var(--text-secondary)' }}>Daily automatic payouts</strong> directly to this bank account
+                    </div>
                   </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <select
+                    value={payoutSchedule}
+                    onChange={e => setPayoutSchedule(e.target.value as any)}
+                    className="bubbly-input"
+                    style={{ fontSize: '0.78rem', padding: '7px 12px' }}
+                  >
+                    <option value="daily">Daily Automatic Payouts</option>
+                    <option value="weekly">Weekly on Mondays</option>
+                    <option value="instant">Instant Card Payouts</option>
+                  </select>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <select
-                  value={payoutSchedule}
-                  onChange={e => setPayoutSchedule(e.target.value as any)}
-                  className="bubbly-input"
-                  style={{ fontSize: '0.78rem', padding: '7px 12px' }}
+              {/* Live Balance & Stripe Express Portal Link */}
+              <div 
+                style={{
+                  marginTop: 12,
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  borderRadius: 14,
+                  border: '1px solid var(--border-subtle, rgba(255,255,255,0.08))',
+                  padding: '14px 18px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: 14
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                  <div>
+                    <div style={{ fontSize: '0.70rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800 }}>
+                      Pending Bank Deposit
+                    </div>
+                    <div style={{ fontSize: '1.30rem', fontWeight: 900, color: '#10B981', marginTop: 2 }}>
+                      {pendingBalance !== null ? `$${pendingBalance.toFixed(2)}` : '$--'}
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: 2 }}>
+                      Arrives via ACH directly in checking within 1–2 business days
+                    </div>
+                  </div>
+
+                  {availableBalance !== null && availableBalance > 0 && (
+                    <div>
+                      <div style={{ fontSize: '0.70rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800 }}>
+                        Available for Instant Payout
+                      </div>
+                      <div style={{ fontSize: '1.30rem', fontWeight: 900, color: 'var(--text-primary)', marginTop: 2 }}>
+                        ${availableBalance.toFixed(2)}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleOpenStripeDashboard}
+                  disabled={isLoadingDashboard}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    border: '1px solid var(--border-subtle, rgba(255,255,255,0.15))',
+                    color: 'var(--text-primary)',
+                    padding: '9px 16px',
+                    borderRadius: 12,
+                    fontSize: '0.80rem',
+                    fontWeight: 850,
+                    cursor: isLoadingDashboard ? 'wait' : 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
                 >
-                  <option value="daily">Daily Automatic Payouts</option>
-                  <option value="weekly">Weekly on Mondays</option>
-                  <option value="instant">Instant Card Payouts</option>
-                </select>
+                  <ExternalLink size={14} color="var(--accent-primary, #F59E0B)" />
+                  <span>{isLoadingDashboard ? 'Opening Portal...' : 'Open Stripe Express Dashboard'}</span>
+                </button>
               </div>
-            </div>
+            </>
           ) : (
             /* Unlinked State: Simple, Clear Setup Call-to-Action */
             <div 
