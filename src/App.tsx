@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Lock, ArrowLeft, Scissors, X } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import type { Barber, CheckInRecord, MainNavTab, SubscriptionPaymentMethod } from './types';
@@ -160,6 +160,9 @@ export function App() {
     }
   }, [currentTab, activeShopSlug]);
 
+  // Guard against duplicate invocations from rapid re-renders or strict mode
+  const processedPaymentsRef = useRef<Set<string>>(new Set());
+
   // Handle Stripe Checkout return callback (both booth rent and shop platform subscription)
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -168,41 +171,49 @@ export function App() {
     const sessionId = url.searchParams.get('session_id');
     const barberId = url.searchParams.get('barber_id');
 
-    if (paymentStatus === 'success' && sessionId && convexClient) {
-      convexClient.action(api.stripe.verifyCheckoutSession, {
-        sessionId,
-        customSecretKey: config.stripeSecretKey
-      }).then(res => {
-        if (res.success && res.paid) {
-          if (barberId) {
-            const b = barbers.find(item => item.id === barberId);
-            if (b) {
-              const weeks = Number(res.metadata?.weeksCovered || 1);
-              payBoothRent(b, 'stripe', true, weeks).then(() => {
-                confetti({
-                  particleCount: 80,
-                  spread: 70,
-                  origin: { y: 0.6 }
+    if (paymentStatus === 'success' && sessionId) {
+      if (processedPaymentsRef.current.has(sessionId)) {
+        return;
+      }
+      processedPaymentsRef.current.add(sessionId);
+
+      // Clean the query parameters immediately so subsequent re-renders cannot re-process
+      url.searchParams.delete('payment');
+      url.searchParams.delete('session_id');
+      url.searchParams.delete('barber_id');
+      window.history.replaceState({}, '', url.toString());
+
+      if (convexClient) {
+        convexClient.action(api.stripe.verifyCheckoutSession, {
+          sessionId,
+          customSecretKey: config.stripeSecretKey
+        }).then(res => {
+          if (res.success && res.paid) {
+            if (barberId) {
+              const b = barbers.find(item => item.id === barberId);
+              if (b) {
+                const weeks = Number(res.metadata?.weeksCovered || 1);
+                payBoothRent(b, 'stripe', true, weeks).then(() => {
+                  confetti({
+                    particleCount: 80,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                  });
                 });
+              }
+            } else if (res.metadata?.type === 'platform_subscription' && activeShopSlug) {
+              markShopSubscriptionPaid(activeShopSlug, 'stripe');
+              confetti({
+                particleCount: 80,
+                spread: 70,
+                origin: { y: 0.6 }
               });
             }
-          } else if (res.metadata?.type === 'platform_subscription' && activeShopSlug) {
-            markShopSubscriptionPaid(activeShopSlug, 'stripe');
-            confetti({
-              particleCount: 80,
-              spread: 70,
-              origin: { y: 0.6 }
-            });
           }
-        }
-      }).catch(err => {
-        console.warn('Stripe verify session error:', err);
-      }).finally(() => {
-        url.searchParams.delete('payment');
-        url.searchParams.delete('session_id');
-        url.searchParams.delete('barber_id');
-        window.history.replaceState({}, '', url.toString());
-      });
+        }).catch(err => {
+          console.warn('Stripe verify session error:', err);
+        });
+      }
     }
 
     // Handle Stripe Connect bank onboarding return callback
@@ -210,6 +221,10 @@ export function App() {
     const connectAccountId = url.searchParams.get('account_id');
 
     if (connectStatus === 'success' && connectAccountId) {
+      url.searchParams.delete('connect');
+      url.searchParams.delete('account_id');
+      window.history.replaceState({}, '', url.toString());
+
       // Immediately mark connected on successful return from Stripe
       saveConfig({
         ...config,
@@ -244,10 +259,6 @@ export function App() {
           console.warn('Stripe connect verify error:', err);
         });
       }
-
-      url.searchParams.delete('connect');
-      url.searchParams.delete('account_id');
-      window.history.replaceState({}, '', url.toString());
     }
   }, [barbers, config, activeShopSlug, payBoothRent, markShopSubscriptionPaid, saveConfig]);
 
