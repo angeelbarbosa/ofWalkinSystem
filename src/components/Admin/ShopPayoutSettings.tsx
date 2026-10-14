@@ -35,8 +35,11 @@ export const ShopPayoutSettings: React.FC<ShopPayoutSettingsProps> = ({
   const [showSecretKey, setShowSecretKey] = useState(false);
   const [payoutBankName, setPayoutBankName] = useState(config.payoutBankName || '');
   const [payoutSchedule, setPayoutSchedule] = useState<'instant' | 'daily' | 'weekly'>(config.payoutSchedule || 'daily');
+  
+  // The master shop (OF Supply & Lounge) uses the primary live Stripe gateway directly
+  const isMasterShop = !stripeAccountId && !stripeSecretKey;
   const [payoutStatus, setPayoutStatus] = useState<'connected' | 'pending' | 'unlinked'>(
-    config.payoutStatus || (config.stripeAccountId ? 'connected' : 'unlinked')
+    config.payoutStatus || (isMasterShop ? 'connected' : (config.stripeAccountId ? 'connected' : 'unlinked'))
   );
   const [passFeesToBarber, setPassFeesToBarber] = useState(config.passFeesToBarber !== false);
   const [defaultRent, setDefaultRent] = useState(config.defaultWeeklyRent || 250);
@@ -218,7 +221,7 @@ export const ShopPayoutSettings: React.FC<ShopPayoutSettingsProps> = ({
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ fontSize: '0.94rem', fontWeight: 850, color: 'var(--text-primary)' }}>
-                      {payoutBankName || 'Direct Deposit Account'}
+                      {payoutBankName || (isMasterShop ? 'WALKIN Live Stripe Account (Your Bank)' : 'Direct Deposit Account')}
                     </span>
                     {!isEditingBankName && (
                       <button
@@ -250,7 +253,9 @@ export const ShopPayoutSettings: React.FC<ShopPayoutSettingsProps> = ({
                     </div>
                   )}
                   <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                    Schedule: <strong style={{ color: 'var(--text-secondary)' }}>Daily automatic payouts</strong> directly to this bank account
+                    {isMasterShop 
+                      ? 'Barbershop rent deposits directly into your Stripe account balance and pays out automatically to your bank.' 
+                      : 'Schedule: Daily automatic payouts directly to this bank account'}
                   </div>
                 </div>
               </div>
