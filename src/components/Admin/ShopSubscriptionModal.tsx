@@ -52,58 +52,56 @@ export const ShopSubscriptionModal: React.FC<ShopSubscriptionModalProps> = ({
     setIsProcessing(true);
     setErrorMessage('');
 
-    // If Stripe is configured in Convex or config, launch real Stripe Checkout Session
-    const secretKey = shop.config?.stripeSecretKey;
-    if (convexClient && (shop.config?.stripePublishableKey || secretKey)) {
-      try {
-        const origin = window.location.origin;
-        const res = await convexClient.action(api.stripe.createShopSubscriptionSession, {
-          shopSlug: shop.slug,
-          shopName: shop.name,
-          ownerEmail: shop.ownerEmail || undefined,
-          monthlyPrice: baseFee,
-          feeAmount: processingFee,
-          successUrl: `${origin}/?shop=${shop.slug}&portal=admin&payment=success&session_id={CHECKOUT_SESSION_ID}`,
-          cancelUrl: `${origin}/?shop=${shop.slug}&portal=admin&payment=cancel`,
-          customSecretKey: secretKey
-        });
-
-        if (res.success && res.url) {
-          window.location.href = res.url;
-          return;
-        } else if (res.error) {
-          setErrorMessage(res.error);
-          setIsProcessing(false);
-          return;
-        }
-      } catch (err: any) {
-        console.warn('Stripe subscription session error, falling back:', err);
-      }
+    if (!convexClient) {
+      setErrorMessage('Payment service connecting... Please try again.');
+      setIsProcessing(false);
+      return;
     }
 
-    // Fallback: Instant Simulation
-    setTimeout(() => {
-      onPaySubscription('apple_pay');
+    try {
+      const origin = window.location.origin;
+      const res = await convexClient.action(api.stripe.createShopSubscriptionSession, {
+        shopSlug: shop.slug,
+        shopName: shop.name,
+        ownerEmail: shop.ownerEmail || undefined,
+        monthlyPrice: baseFee,
+        feeAmount: processingFee,
+        successUrl: `${origin}/?shop=${shop.slug}&portal=admin&payment=success&session_id={CHECKOUT_SESSION_ID}`,
+        cancelUrl: `${origin}/?shop=${shop.slug}&portal=admin&payment=cancel`,
+        customSecretKey: shop.config?.stripeSecretKey || undefined
+      });
+
+      if (res?.success && res?.url) {
+        window.location.assign(res.url);
+        return;
+      } else {
+        setErrorMessage(res?.error || 'Unable to launch Stripe checkout. Please try again.');
+        setIsProcessing(false);
+      }
+    } catch (err: any) {
+      console.error('Stripe subscription session error:', err);
+      setErrorMessage(err?.message || 'Error connecting to Stripe Checkout.');
       setIsProcessing(false);
+    }
+  };
 
-      const nextDate = new Date();
-      nextDate.setDate(nextDate.getDate() + 30);
-
-      setPaidReceipt({
-        invoiceNumber: 'INV-' + Math.floor(100000 + Math.random() * 900000),
-        paidAt: new Date().toISOString(),
-        totalPaid: totalAmount,
-        method: 'Stripe / Apple Pay',
-        nextBillingDate: nextDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-      });
-
-      confetti({
-        particleCount: 70,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#10B981', '#F59E0B', '#3B82F6', '#FFFFFF']
-      });
-    }, 1200);
+  const handleOfflineActivate = () => {
+    onPaySubscription('manual');
+    const nextDate = new Date();
+    nextDate.setDate(nextDate.getDate() + 30);
+    setPaidReceipt({
+      invoiceNumber: 'INV-' + Math.floor(100000 + Math.random() * 900000),
+      paidAt: new Date().toISOString(),
+      totalPaid: totalAmount,
+      method: 'Manual / Offline Payment',
+      nextBillingDate: nextDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    });
+    confetti({
+      particleCount: 70,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#10B981', '#F59E0B', '#3B82F6', '#FFFFFF']
+    });
   };
 
   const handleCopyInvoice = (inv: string) => {
@@ -298,6 +296,24 @@ export const ShopSubscriptionModal: React.FC<ShopSubscriptionModalProps> = ({
                     <ArrowRight size={17} />
                   </>
                 )}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleOfflineActivate}
+                disabled={isProcessing}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  cursor: isProcessing ? 'wait' : 'pointer',
+                  padding: '6px',
+                  textDecoration: 'underline'
+                }}
+              >
+                Record Manual / Offline Subscription Payment
               </button>
             </div>
           </div>

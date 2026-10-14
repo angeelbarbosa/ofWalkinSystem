@@ -62,55 +62,59 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
     setIsProcessing(true);
     setErrorMessage('');
 
-    // If Stripe is configured in Convex or config, launch official Stripe Checkout
-    const secretKey = config?.stripeSecretKey;
-    const hasLiveStripe = !!(convexClient && (config?.stripePublishableKey || secretKey));
-
-    if (hasLiveStripe && convexClient) {
-      try {
-        const origin = window.location.origin;
-        const currentShopSlug = new URLSearchParams(window.location.search).get('shop') || 'of';
-        const sessionRes = await convexClient.action(api.stripe.createRentCheckoutSession, {
-          shopSlug: currentShopSlug,
-          shopName: config?.shopName || 'Barbershop',
-          barberId: barber.id,
-          barberName: barber.name,
-          baseRentAmount: activeBaseRent,
-          feeAmount: processingFee,
-          weeksCovered: activePayWeeks,
-          isAutoPay: autoPayEnabled,
-          successUrl: `${origin}/?shop=${currentShopSlug}&portal=barber&payment=success&session_id={CHECKOUT_SESSION_ID}&barber_id=${barber.id}`,
-          cancelUrl: `${origin}/?shop=${currentShopSlug}&portal=barber&payment=cancel`,
-          customSecretKey: secretKey
-        });
-
-        if (sessionRes.success && sessionRes.url) {
-          window.location.href = sessionRes.url;
-          return;
-        } else if (sessionRes.error) {
-          setErrorMessage(sessionRes.error);
-          setIsProcessing(false);
-          return;
-        }
-      } catch (err: any) {
-        console.warn('Stripe checkout call error, falling back:', err);
-      }
+    if (!convexClient) {
+      setErrorMessage('Payment service is connecting... Please refresh and try again.');
+      setIsProcessing(false);
+      return;
     }
 
-    // Fallback: Instant In-App Ledger Simulator (Demo Mode)
-    setTimeout(async () => {
-      const record = await onPayRent(barber, 'apple_pay', true, activePayWeeks, activeBaseRent);
+    try {
+      const origin = window.location.origin;
+      const currentShopSlug = new URLSearchParams(window.location.search).get('shop') || 'of';
+      const sessionRes = await convexClient.action(api.stripe.createRentCheckoutSession, {
+        shopSlug: currentShopSlug,
+        shopName: config?.shopName || 'Barbershop',
+        barberId: barber.id,
+        barberName: barber.name,
+        baseRentAmount: activeBaseRent,
+        feeAmount: processingFee,
+        weeksCovered: activePayWeeks,
+        isAutoPay: autoPayEnabled,
+        successUrl: `${origin}/?shop=${currentShopSlug}&portal=barber&payment=success&session_id={CHECKOUT_SESSION_ID}&barber_id=${barber.id}`,
+        cancelUrl: `${origin}/?shop=${currentShopSlug}&portal=barber&payment=cancel`,
+        customSecretKey: config?.stripeSecretKey || undefined
+      });
+
+      if (sessionRes?.success && sessionRes?.url) {
+        // Redirect directly to Stripe Checkout
+        window.location.assign(sessionRes.url);
+        return;
+      } else {
+        setErrorMessage(sessionRes?.error || 'Unable to create Stripe checkout session. Please check your connection.');
+        setIsProcessing(false);
+      }
+    } catch (err: any) {
+      console.error('Stripe checkout call error:', err);
+      setErrorMessage(err?.message || 'Error connecting to Stripe Checkout.');
       setIsProcessing(false);
+    }
+  };
+
+  const handleOfflineRentPayment = async () => {
+    setIsProcessing(true);
+    try {
+      const record = await onPayRent(barber, 'manual', true, activePayWeeks, activeBaseRent);
       setPaidRecord(record);
       setIsPayingNewCycle(false);
-
       confetti({
         particleCount: 65,
         spread: 65,
         origin: { y: 0.6 },
         colors: ['#10B981', '#F59E0B', '#3B82F6', '#FFFFFF']
       });
-    }, 1200);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleCopyReceipt = (num: string) => {
@@ -355,11 +359,10 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
                 <Lock size={12} color="#10B981" />
                 <span>Direct shop account deposit • 256-bit encrypted via Stripe</span>
               </div>
-              {(config?.stripePublishableKey || config?.stripeSecretKey) ? (
-                <span style={{ fontSize: '0.72rem', color: '#10B981', fontWeight: 800 }}>
-                  ⚡ Live Stripe Checkout Active ({config?.stripeLiveMode ? 'Live Mode' : 'Test Sandbox'})
-                </span>
-              ) : null}
+              <span style={{ fontSize: '0.74rem', color: '#10B981', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 5 }}>
+                <Sparkles size={12} />
+                <span>⚡ Live Stripe Checkout Active • Apple Pay & Cards Enabled</span>
+              </span>
             </div>
 
             {errorMessage && (
@@ -409,6 +412,25 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
                     <ArrowRight size={17} />
                   </>
                 )}
+              </button>
+
+              {/* Optional Offline Cash / Manual Payment */}
+              <button
+                type="button"
+                onClick={handleOfflineRentPayment}
+                disabled={isProcessing}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  cursor: isProcessing ? 'wait' : 'pointer',
+                  padding: '6px',
+                  textDecoration: 'underline'
+                }}
+              >
+                Record Cash / Manual Offline Payment
               </button>
 
               {existingRecord && isPayingNewCycle && (
