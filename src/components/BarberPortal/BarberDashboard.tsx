@@ -356,7 +356,6 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
   };
 
   const handleCallClient = (record: CheckInRecord) => {
-    onUpdateStatus(record.id, 'called');
     if (record.clientPhone) {
       window.location.href = getSmsUrl(record.clientPhone, record.clientName);
     }
@@ -1250,11 +1249,6 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                     </div>
                     <a
                       href={getSmsUrl(record.clientPhone, record.clientName)}
-                      onClick={() => {
-                        if (record.status === 'waiting') {
-                          onUpdateStatus(record.id, 'called');
-                        }
-                      }}
                       style={{
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -1273,24 +1267,6 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                       <MessageSquare size={14} />
                       <span>Text Client</span>
                     </a>
-                  </div>
-                )}
-
-                {record.status === 'called' && (
-                  <div style={{
-                    background: 'rgba(245, 158, 11, 0.15)',
-                    border: '1px solid rgba(245, 158, 11, 0.3)',
-                    color: 'var(--accent-primary, #F59E0B)',
-                    padding: '6px 12px',
-                    borderRadius: 12,
-                    fontSize: '0.78rem',
-                    fontWeight: 750,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6
-                  }}>
-                    <Megaphone size={14} />
-                    <span>Called client • Ready to take seat</span>
                   </div>
                 )}
 
