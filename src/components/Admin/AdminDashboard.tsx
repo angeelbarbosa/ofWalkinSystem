@@ -462,16 +462,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               width: 34,
                               height: 34,
                               borderRadius: 10,
-                              background: 'var(--surface-pill)',
+                              background: barber.avatarColor || 'var(--surface-pill)',
                               color: 'var(--text-primary)',
                               border: '1px solid var(--border-subtle)',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              fontWeight: 800
+                              fontWeight: 800,
+                              overflow: 'hidden'
                             }}
                           >
-                            {barber.name.charAt(0)}
+                            {barber.avatar ? (
+                              <img
+                                src={barber.avatar}
+                                alt={barber.name}
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              />
+                            ) : (
+                              barber.name.charAt(0)
+                            )}
                           </div>
                           <div>
                             <div style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{barber.name}</div>

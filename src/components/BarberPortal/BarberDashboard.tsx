@@ -21,12 +21,14 @@ import {
   CornerUpLeft,
   Undo2,
   Receipt,
-  Calendar
+  Calendar,
+  Camera
 } from 'lucide-react';
 import type { Barber, CheckInRecord, ShopConfig, RentPaymentRecord } from '../../types';
 import { storage } from '../../utils/storage';
 import { BarberRentModal } from './BarberRentModal';
 import { ChangePasscodeModal } from './ChangePasscodeModal';
+import { ChangeBarberPhotoModal } from './ChangeBarberPhotoModal';
 import { BarberReceiptsHistoryModal } from './BarberReceiptsHistoryModal';
 import { ModalOverlay } from '../Shared/ModalOverlay';
 import { notificationManager, type ArrivalToastEventData } from '../../utils/notifications';
@@ -73,6 +75,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
   const [activeToast, setActiveToast] = useState<ArrivalToastEventData | null>(null);
   const [isRentModalOpen, setIsRentModalOpen] = useState(false);
   const [isPasscodeModalOpen, setIsPasscodeModalOpen] = useState(false);
+  const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
   const [isReceiptsHistoryOpen, setIsReceiptsHistoryOpen] = useState(false);
   const [walkInToClaim, setWalkInToClaim] = useState<CheckInRecord | null>(null);
   const [chairOccupiedWarning, setChairOccupiedWarning] = useState<{ attemptedClientName: string; actionType: 'in_chair' | 'take_walkin' } | null>(null);
@@ -198,6 +201,13 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
   const handleSaveNewPasscode = (newPasscode: string) => {
     if (onSaveBarbers) {
       const updated = barbers.map(b => b.id === assignedBarber.id ? { ...b, passcode: newPasscode } : b);
+      onSaveBarbers(updated);
+    }
+  };
+
+  const handleSavePhoto = (newAvatar: string, newAvatarColor: string) => {
+    if (onSaveBarbers) {
+      const updated = barbers.map(b => b.id === assignedBarber.id ? { ...b, avatar: newAvatar, avatarColor: newAvatarColor } : b);
       onSaveBarbers(updated);
     }
   };
@@ -590,24 +600,61 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
         {/* Top Info Row */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
-            <div
+            <button
+              type="button"
+              onClick={() => setIsPhotoModalOpen(true)}
               style={{
-                width: 44,
-                height: 44,
-                borderRadius: 15,
+                width: 48,
+                height: 48,
+                borderRadius: 16,
                 background: assignedBarber.avatarColor || 'var(--accent-primary, #F59E0B)',
                 color: '#000000',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '1.2rem',
+                fontSize: '1.25rem',
                 fontWeight: 900,
                 flexShrink: 0,
-                boxShadow: '0 4px 14px rgba(0,0,0,0.2)'
+                boxShadow: '0 4px 14px rgba(0,0,0,0.25)',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                position: 'relative',
+                transition: 'transform 0.15s ease'
               }}
+              title="Tap to change profile picture"
             >
-              {assignedBarber.name.charAt(0)}
-            </div>
+              <div style={{ width: '100%', height: '100%', borderRadius: 16, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {assignedBarber.avatar ? (
+                  <img
+                    src={assignedBarber.avatar}
+                    alt={assignedBarber.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  assignedBarber.name.charAt(0)
+                )}
+              </div>
+
+              {/* Camera icon badge */}
+              <div style={{
+                position: 'absolute',
+                bottom: -3,
+                right: -3,
+                width: 19,
+                height: 19,
+                borderRadius: '50%',
+                background: 'var(--surface-card, #27272A)',
+                border: '1.5px solid var(--border-subtle, rgba(255,255,255,0.25))',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--text-primary)',
+                boxShadow: '0 2px 5px rgba(0,0,0,0.5)'
+              }}>
+                <Camera size={10} />
+              </div>
+            </button>
             <div style={{ minWidth: 0, flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 <h2 style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-primary)', margin: 0, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -710,8 +757,8 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
           </div>
         </div>
 
-        {/* Action Buttons Row (Live Alerts, Passcode PIN & Rent Receipts) */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, width: '100%' }}>
+        {/* Action Buttons Row (Live Alerts, Passcode PIN, Photo & Rent Receipts) */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, width: '100%' }}>
           <button
             onClick={handleToggleAlerts}
             style={{
@@ -768,6 +815,30 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
           >
             <KeyRound size={13} style={{ color: 'var(--accent-primary)' }} />
             <span>My PIN</span>
+          </button>
+
+          {/* Change Photo Button */}
+          <button
+            onClick={() => setIsPhotoModalOpen(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 5,
+              padding: '10px 4px',
+              background: 'var(--surface-pill, #27272A)',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
+              borderRadius: 14,
+              fontSize: '0.76rem',
+              fontWeight: 750,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap'
+            }}
+            title="Change profile picture"
+          >
+            <Camera size={13} style={{ color: 'var(--accent-primary)' }} />
+            <span>Photo</span>
           </button>
 
           {/* Paid Rent Receipts Button */}
@@ -1773,6 +1844,15 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
           barber={assignedBarber}
           onSaveNewPasscode={handleSaveNewPasscode}
           onClose={() => setIsPasscodeModalOpen(false)}
+        />
+      )}
+
+      {/* Change Profile Photo Modal */}
+      {isPhotoModalOpen && (
+        <ChangeBarberPhotoModal
+          barber={assignedBarber}
+          onSavePhoto={handleSavePhoto}
+          onClose={() => setIsPhotoModalOpen(false)}
         />
       )}
 

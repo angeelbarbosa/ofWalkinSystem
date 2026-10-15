@@ -168,10 +168,19 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
                   justifyContent: 'center',
                   fontSize: '1.25rem',
                   fontWeight: 900,
-                  flexShrink: 0
+                  flexShrink: 0,
+                  overflow: 'hidden'
                 }}
               >
-                {barber.name.charAt(0)}
+                {barber.avatar ? (
+                  <img
+                    src={barber.avatar}
+                    alt={barber.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  barber.name.charAt(0)
+                )}
               </div>
               <div style={{ minWidth: 0 }}>
                 <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>

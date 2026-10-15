@@ -161,10 +161,19 @@ export const BarberLoginScreen: React.FC<BarberLoginScreenProps> = ({
                       justifyContent: 'center',
                       fontSize: '1.2rem',
                       fontWeight: 900,
-                      flexShrink: 0
+                      flexShrink: 0,
+                      overflow: 'hidden'
                     }}
                   >
-                    {barber.name.charAt(0)}
+                    {barber.avatar ? (
+                      <img
+                        src={barber.avatar}
+                        alt={barber.name}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      barber.name.charAt(0)
+                    )}
                   </div>
                   <div style={{ minWidth: 0 }}>
                     <h3 style={{ fontSize: '1.2rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -273,10 +282,19 @@ export const BarberLoginScreen: React.FC<BarberLoginScreenProps> = ({
                 fontSize: '1.45rem',
                 fontWeight: 900,
                 margin: '0 auto 10px',
-                boxShadow: '0 4px 14px rgba(0,0,0,0.2)'
+                boxShadow: '0 4px 14px rgba(0,0,0,0.2)',
+                overflow: 'hidden'
               }}
             >
-              {selectedBarber.name.charAt(0)}
+              {selectedBarber.avatar ? (
+                <img
+                  src={selectedBarber.avatar}
+                  alt={selectedBarber.name}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              ) : (
+                selectedBarber.name.charAt(0)
+              )}
             </div>
 
             <h3 style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--text-primary)', margin: '0 0 2px' }}>
