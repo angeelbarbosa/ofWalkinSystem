@@ -901,119 +901,170 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       )}
 
       {/* Sub-Tab 5: Subscription & Billing */}
-      {activeSubTab === 'subscription' && currentShop && (
-        <div className="admin-card slide-up" style={{ background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderRadius: '24px', padding: '24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14, marginBottom: 24 }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--accent-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Platform SaaS Billing
-                </span>
-                <span style={{
-                  padding: '2px 8px',
-                  borderRadius: 9999,
-                  fontSize: '0.72rem',
-                  fontWeight: 800,
-                  background: currentShop.subscriptionStatus === 'active' 
-                    ? 'rgba(16, 185, 129, 0.15)' 
-                    : currentShop.subscriptionStatus === 'past_due' 
-                    ? 'rgba(239, 68, 68, 0.15)' 
-                    : 'rgba(59, 130, 246, 0.15)',
-                  color: currentShop.subscriptionStatus === 'active' 
-                    ? 'var(--pastel-green, #10B981)' 
-                    : currentShop.subscriptionStatus === 'past_due' 
-                    ? 'var(--pastel-red, #EF4444)' 
-                    : 'var(--pastel-blue, #3B82F6)',
-                  border: '1px solid currentColor'
-                }}>
-                  {currentShop.subscriptionStatus ? currentShop.subscriptionStatus.toUpperCase() : 'ACTIVE'}
-                </span>
-              </div>
-              <h3 style={{ fontSize: '1.35rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0 }}>
-                {currentShop.name} License
-              </h3>
-              <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: '2px 0 0' }}>
-                Your dedicated walk-in kiosk, booth rent tracking, and barber management software
-              </p>
-            </div>
+      {/* Sub-Tab 5: Subscription & Billing */}
+      {activeSubTab === 'subscription' && currentShop && (() => {
+        const monthlyFee = currentShop.subscriptionMonthlyFee ?? currentShop.monthlyPlanPrice ?? 49;
+        const isComped = currentShop.subscriptionStatus === 'comped' || monthlyFee === 0;
 
-            <button
-              type="button"
-              onClick={() => setIsPaySubscriptionOpen(true)}
-              className="choice-card-action-btn"
-              style={{ width: 'auto', padding: '10px 20px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: 8 }}
-            >
-              <CreditCard size={16} />
-              <span>Pay Subscription</span>
-            </button>
-          </div>
-
-          {/* Pricing & Renewal Metric Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 24 }}>
-            <div style={{ background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', borderRadius: 18, padding: '16px' }}>
-              <span style={{ fontSize: '0.74rem', fontWeight: 750, color: 'var(--text-secondary)' }}>Base Subscription</span>
-              <div style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--text-primary)', marginTop: 4 }}>
-                ${(currentShop.subscriptionMonthlyFee ?? currentShop.monthlyPlanPrice ?? 49).toFixed(2)}
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}> / month</span>
-              </div>
-              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Billed monthly</span>
-            </div>
-
-            <div style={{ background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', borderRadius: 18, padding: '16px' }}>
-              <span style={{ fontSize: '0.74rem', fontWeight: 750, color: 'var(--text-secondary)' }}>Next Billing Renewal</span>
-              <div style={{ fontSize: '1.25rem', fontWeight: 850, color: 'var(--text-primary)', marginTop: 4 }}>
-                {currentShop.subscriptionNextBillingDate || 'Nov 1, 2026'}
-              </div>
-              <span style={{ fontSize: '0.7rem', color: currentShop.subscriptionStatus === 'past_due' ? 'var(--pastel-red)' : 'var(--pastel-green)' }}>
-                {currentShop.subscriptionStatus === 'past_due' ? 'Past Due - Please Renew' : 'Active Through Cycle'}
-              </span>
-            </div>
-
-            <div style={{ background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', borderRadius: 18, padding: '16px' }}>
-              <span style={{ fontSize: '0.74rem', fontWeight: 750, color: 'var(--text-secondary)' }}>Last Payment Method</span>
-              <div style={{ fontSize: '1.15rem', fontWeight: 850, color: 'var(--accent-primary)', marginTop: 4, textTransform: 'capitalize' }}>
-                {currentShop.subscriptionPaymentMethod === 'apple_pay' ? 'Apple Pay' : currentShop.subscriptionPaymentMethod === 'card' || currentShop.subscriptionPaymentMethod === 'stripe' ? 'Stripe Card' : currentShop.subscriptionPaymentMethod || 'Stripe'}
-              </div>
-              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                Paid on {currentShop.subscriptionLastPaidDate || 'Oct 1, 2026'}
-              </span>
-            </div>
-          </div>
-
-          {/* Stripe Fee Transparency Banner */}
-          <div style={{ background: 'var(--surface-pill)', border: '1px solid var(--border-subtle)', borderRadius: 18, padding: '18px', marginBottom: 20 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, color: 'var(--text-primary)', fontWeight: 800, fontSize: '0.92rem' }}>
-              <Lock size={15} color="var(--pastel-green)" />
-              <span>Stripe Processing Fee Transparency</span>
-            </div>
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
-              All online transactions are securely encrypted and processed directly via Stripe at standard network interchange rates (<strong>2.9% + 30¢</strong>). When paying your $49.00/mo subscription, the $1.72 fee is included in your checkout total ($50.72) with no hidden platform markups.
-            </p>
-          </div>
-
-          {/* Features Included List */}
-          <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: 20 }}>
-            <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 12px' }}>
-              What's Included In Your Shop License:
-            </h4>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 10 }}>
-              {[
-                'Unlimited Client Walk-In & Appointment Queue Check-Ins',
-                'Dedicated Barber Hubs with Personal PINs',
-                'Automated Weekly Booth Rent Collection & Ledgers',
-                'Live Multi-Device Cloud Sync (iPhone, iPad, Mac)',
-                'Direct In-App Platform Support Line to Platform HQ',
-                'Real-Time Live Queue Lobby Display & Mobile Alerts'
-              ].map((feat, idx) => (
-                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                  <Check size={14} style={{ color: 'var(--pastel-green)', flexShrink: 0 }} />
-                  <span>{feat}</span>
+        return (
+          <div className="admin-card slide-up" style={{ background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderRadius: '24px', padding: '24px' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14, marginBottom: 20 }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Shop Billing
+                  </span>
+                  <span style={{
+                    padding: '2px 8px',
+                    borderRadius: 9999,
+                    fontSize: '0.72rem',
+                    fontWeight: 800,
+                    background: currentShop.subscriptionStatus === 'active' 
+                      ? 'rgba(16, 185, 129, 0.15)' 
+                      : currentShop.subscriptionStatus === 'past_due' 
+                      ? 'rgba(239, 68, 68, 0.15)' 
+                      : 'rgba(59, 130, 246, 0.15)',
+                    color: currentShop.subscriptionStatus === 'active' 
+                      ? 'var(--pastel-green, #10B981)' 
+                      : currentShop.subscriptionStatus === 'past_due' 
+                      ? 'var(--pastel-red, #EF4444)' 
+                      : 'var(--pastel-blue, #3B82F6)',
+                    border: '1px solid currentColor'
+                  }}>
+                    {isComped ? 'COMPED' : currentShop.subscriptionStatus ? currentShop.subscriptionStatus.toUpperCase() : 'ACTIVE'}
+                  </span>
                 </div>
-              ))}
+                <h3 style={{ fontSize: '1.35rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0 }}>
+                  {currentShop.name} License
+                </h3>
+              </div>
+
+              {isComped ? (
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '8px 14px',
+                  borderRadius: 12,
+                  background: 'rgba(59, 130, 246, 0.12)',
+                  color: '#60A5FA',
+                  fontSize: '0.80rem',
+                  fontWeight: 750,
+                  border: '1px solid rgba(59, 130, 246, 0.25)'
+                }}>
+                  <Check size={14} />
+                  <span>Complimentary Access</span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsPaySubscriptionOpen(true)}
+                  className="choice-card-action-btn"
+                  style={{ width: 'auto', padding: '10px 20px', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: 8 }}
+                >
+                  <CreditCard size={16} />
+                  <span>{currentShop.subscriptionStatus === 'past_due' ? 'Renew Now' : 'Pay Subscription'}</span>
+                </button>
+              )}
+            </div>
+
+            {/* Unified Subscription Details Card */}
+            <div style={{
+              background: 'var(--surface-pill, #1C1C21)',
+              border: '1px solid var(--border-subtle, rgba(255,255,255,0.08))',
+              borderRadius: 20,
+              padding: '20px',
+              marginBottom: 16
+            }}>
+              {/* Top row: Rate + Status */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', borderBottom: '1px solid var(--border-subtle, rgba(255,255,255,0.08))', paddingBottom: 16, marginBottom: 16 }}>
+                <div>
+                  <div style={{ fontSize: '0.74rem', fontWeight: 750, color: 'var(--text-secondary)' }}>Current Plan Rate</div>
+                  <div style={{ fontSize: '1.6rem', fontWeight: 900, color: 'var(--text-primary)', marginTop: 2 }}>
+                    ${monthlyFee.toFixed(2)}
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}> / month</span>
+                  </div>
+                  <div style={{ fontSize: '0.70rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                    {isComped ? 'Platform fee waived by Admin' : 'Billed monthly via Stripe'}
+                  </div>
+                </div>
+
+                <div style={{ textAlign: 'right' }}>
+                  <span style={{
+                    fontSize: '0.75rem',
+                    fontWeight: 800,
+                    color: currentShop.subscriptionStatus === 'past_due' ? 'var(--pastel-red, #EF4444)' : 'var(--pastel-green, #10B981)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 5
+                  }}>
+                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'currentColor' }} />
+                    {currentShop.subscriptionStatus === 'past_due' ? 'Past Due' : 'Active Through Cycle'}
+                  </span>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 3 }}>
+                    Renews {currentShop.subscriptionNextBillingDate || 'Nov 1, 2026'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom row: Breakdown metrics in a clean grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14 }}>
+                <div>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Payment Method</span>
+                  <div style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: 3 }}>
+                    {currentShop.subscriptionPaymentMethod === 'apple_pay' ? 'Apple Pay' : currentShop.subscriptionPaymentMethod === 'card' || currentShop.subscriptionPaymentMethod === 'stripe' ? 'Stripe Card' : currentShop.subscriptionPaymentMethod || 'Stripe'}
+                  </div>
+                  <div style={{ fontSize: '0.70rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                    Paid on {currentShop.subscriptionLastPaidDate || 'Oct 1, 2026'}
+                  </div>
+                </div>
+
+                <div>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-secondary)' }}>License Type</span>
+                  <div style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: 3 }}>
+                    Full Multi-Barber Hub
+                  </div>
+                  <div style={{ fontSize: '0.70rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                    Live Cloud Sync & Kiosk
+                  </div>
+                </div>
+
+                <div>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Billing Inquiries</span>
+                  <div style={{ marginTop: 4 }}>
+                    <button
+                      type="button"
+                      onClick={() => setIsSupportOpen(true)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        padding: 0,
+                        color: 'var(--accent-primary, #60A5FA)',
+                        fontSize: '0.82rem',
+                        fontWeight: 750,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4
+                      }}
+                    >
+                      <MessageSquare size={13} />
+                      <span>Contact Platform Support</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Subtle Security & Processing Assurance */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: '0.74rem', color: 'var(--text-muted)', padding: '4px 0' }}>
+              <Lock size={12} color="#10B981" />
+              <span>Direct encrypted billing via Stripe</span>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Direct In-App Support Chat Drawer */}
       <SupportChatDrawer
