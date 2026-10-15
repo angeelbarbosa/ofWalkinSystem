@@ -538,7 +538,7 @@ export function useLiveSystem() {
     const weeklyRate = barber.weeklyRent || config.defaultWeeklyRent || 200;
     const baseAmount = customAmount !== undefined ? customAmount : weeklyRate * weeksCovered;
     const isZeroFeeMethod = method === 'manual';
-    const fee = isZeroFeeMethod ? 0 : (feeCovered ? Number(((baseAmount * 0.029) + 0.30).toFixed(2)) : 0);
+    const fee = isZeroFeeMethod ? 0 : (feeCovered ? Number(((baseAmount * 0.029) + (1.30 * weeksCovered)).toFixed(2)) : 0);
     const total = baseAmount + fee;
 
     const periodDesc = weeksCovered > 1

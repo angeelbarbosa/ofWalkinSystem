@@ -42,13 +42,13 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
 
   const activePayWeeks = Math.max(1, selectedWeeksToPay);
   const activeBaseRent = baseRent * activePayWeeks;
-  // Card/Apple Pay standard processing fee (2.9% + 30¢)
-  const processingFee = Number(((activeBaseRent * 0.029) + 0.30).toFixed(2));
+  // Card/Apple Pay processing fee (2.9% + 30¢) plus $1.00 platform support fee
+  const processingFee = Number(((activeBaseRent * 0.029) + (1.30 * activePayWeeks)).toFixed(2));
   const totalAmount = Number((activeBaseRent + processingFee).toFixed(2));
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [autoPayEnabled, setAutoPayEnabled] = useState(barber.autoPayEnabled ?? true);
+  const [autoPayEnabled, setAutoPayEnabled] = useState(false);
   const [paidRecord] = useState<RentPaymentRecord | null>(existingRecord || null);
   const [isPayingNewCycle, setIsPayingNewCycle] = useState(false);
   const [copiedReceipt, setCopiedReceipt] = useState(false);
@@ -284,10 +284,10 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.86rem', color: 'var(--text-secondary)', marginBottom: 12 }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <span>Card / Apple Pay Processing</span>
-                  <span style={{ fontSize: '0.68rem', background: 'var(--surface-card)', color: 'var(--text-muted)', padding: '1px 6px', borderRadius: 4, border: '1px solid var(--border-subtle)' }}>
-                    2.9% + 30¢
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span>Card & Support Fee</span>
+                  <span style={{ fontSize: '0.68rem', background: 'var(--surface-card, #27272A)', color: 'var(--text-muted)', padding: '2px 7px', borderRadius: 5, border: '1px solid var(--border-subtle)', fontWeight: 700 }}>
+                    2.9% + $1.30
                   </span>
                 </span>
                 <span style={{ fontWeight: 750, color: 'var(--text-primary)' }}>
@@ -314,48 +314,92 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
             {/* Auto-Pay Switcher */}
             <div 
               style={{
-                background: 'var(--surface-pill, #1C1C21)',
-                border: '1px solid var(--border-subtle, rgba(255,255,255,0.08))',
-                borderRadius: 14,
-                padding: '12px 14px',
+                background: autoPayEnabled ? 'rgba(16, 185, 129, 0.08)' : 'var(--surface-pill, #1C1C21)',
+                border: `1.5px solid ${autoPayEnabled ? '#10B981' : 'var(--border-subtle, rgba(255,255,255,0.08))'}`,
+                borderRadius: 16,
+                padding: '14px 16px',
                 marginBottom: 18,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                gap: 10,
-                cursor: 'pointer'
+                gap: 12,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: autoPayEnabled ? '0 0 16px rgba(16, 185, 129, 0.12)' : 'none'
               }}
               onClick={() => setAutoPayEnabled(!autoPayEnabled)}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 10,
-                  background: autoPayEnabled ? 'var(--pastel-green-bg)' : 'var(--surface-card)',
-                  color: autoPayEnabled ? 'var(--pastel-green)' : 'var(--text-muted)',
+                  width: 36,
+                  height: 36,
+                  borderRadius: 12,
+                  background: autoPayEnabled ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                  color: autoPayEnabled ? '#10B981' : 'var(--text-muted)',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center'
+                  justifyContent: 'center',
+                  transition: 'all 0.2s ease'
                 }}>
-                  <RefreshCw size={15} />
+                  <RefreshCw size={17} style={{ transform: autoPayEnabled ? 'rotate(180deg)' : 'none', transition: 'transform 0.4s ease' }} />
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.84rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                  <div style={{ fontSize: '0.86rem', fontWeight: 800, color: 'var(--text-primary)' }}>
                     Automatic Rent Renewal
                   </div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                    Auto-charge saved card every {barber.rentDueDay || 'Monday'}
+                  <div style={{ fontSize: '0.72rem', color: autoPayEnabled ? '#10B981' : 'var(--text-muted)', marginTop: 2, fontWeight: autoPayEnabled ? 600 : 500 }}>
+                    {autoPayEnabled 
+                      ? `Auto-charge saved card every ${barber.rentDueDay || 'Monday'}` 
+                      : 'One-time payment only (Auto-pay OFF)'}
                   </div>
                 </div>
               </div>
 
-              <input 
-                type="checkbox" 
-                checked={autoPayEnabled} 
-                onChange={(e) => setAutoPayEnabled(e.target.checked)}
-                style={{ width: 18, height: 18, accentColor: 'var(--accent-primary)', cursor: 'pointer' }} 
-              />
+              {/* High-Visibility ON / OFF Switch */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                <span style={{
+                  fontSize: '0.72rem',
+                  fontWeight: 900,
+                  letterSpacing: '0.04em',
+                  padding: '2px 7px',
+                  borderRadius: 6,
+                  background: autoPayEnabled ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.08)',
+                  color: autoPayEnabled ? '#10B981' : '#94A3B8',
+                  border: `1px solid ${autoPayEnabled ? '#10B981' : 'rgba(255, 255, 255, 0.12)'}`,
+                  transition: 'all 0.2s ease'
+                }}>
+                  {autoPayEnabled ? 'ON' : 'OFF'}
+                </span>
+
+                <div
+                  role="switch"
+                  aria-checked={autoPayEnabled}
+                  style={{
+                    width: 50,
+                    height: 28,
+                    borderRadius: 20,
+                    background: autoPayEnabled ? '#10B981' : '#2A2A34',
+                    border: `1.5px solid ${autoPayEnabled ? '#059669' : 'rgba(255, 255, 255, 0.18)'}`,
+                    position: 'relative',
+                    transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: autoPayEnabled ? '0 0 10px rgba(16, 185, 129, 0.4)' : 'inset 0 1px 3px rgba(0,0,0,0.5)'
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 22,
+                      height: 22,
+                      borderRadius: '50%',
+                      background: '#FFFFFF',
+                      position: 'absolute',
+                      top: 1.5,
+                      left: autoPayEnabled ? 23 : 2,
+                      transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.35)'
+                    }}
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Security Assurance */}

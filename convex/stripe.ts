@@ -59,6 +59,12 @@ export const createRentCheckoutSession = action({
         !args.customSecretKey
       );
 
+      // Platform takes $1.00 fee per week paid, deposited directly into the platform balance
+      const platformFeeCents = Math.min(
+        Math.round(100 * Math.max(1, args.weeksCovered)),
+        totalCents
+      );
+
       if (args.isAutoPay) {
         // Recurring Weekly Subscription
         const session = await stripe.checkout.sessions.create({
@@ -81,6 +87,7 @@ export const createRentCheckoutSession = action({
             }
           ],
           subscription_data: hasValidConnectDestination ? {
+            application_fee_percent: Number(((platformFeeCents / totalCents) * 100).toFixed(2)),
             transfer_data: {
               destination: args.stripeAccountId!
             }
@@ -122,6 +129,7 @@ export const createRentCheckoutSession = action({
             }
           ],
           payment_intent_data: hasValidConnectDestination ? {
+            application_fee_amount: platformFeeCents,
             transfer_data: {
               destination: args.stripeAccountId!
             }
