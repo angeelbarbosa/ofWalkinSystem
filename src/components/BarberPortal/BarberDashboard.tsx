@@ -756,8 +756,8 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
           </div>
         </div>
 
-        {/* Action Buttons Row (Live Alerts, Passcode PIN, Photo & Rent Receipts) */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, width: '100%' }}>
+        {/* Action Buttons Row (Live Alerts, Passcode PIN & Rent Receipts) */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, width: '100%' }}>
           <button
             onClick={handleToggleAlerts}
             style={{
@@ -814,30 +814,6 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
           >
             <KeyRound size={13} style={{ color: 'var(--accent-primary)' }} />
             <span>My PIN</span>
-          </button>
-
-          {/* Change Photo Button */}
-          <button
-            onClick={() => setIsPhotoModalOpen(true)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 5,
-              padding: '10px 4px',
-              background: 'var(--surface-pill, #27272A)',
-              color: 'var(--text-primary)',
-              border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
-              borderRadius: 14,
-              fontSize: '0.76rem',
-              fontWeight: 750,
-              cursor: 'pointer',
-              whiteSpace: 'nowrap'
-            }}
-            title="Change profile picture"
-          >
-            <Camera size={13} style={{ color: 'var(--accent-primary)' }} />
-            <span>Photo</span>
           </button>
 
           {/* Paid Rent Receipts Button */}
