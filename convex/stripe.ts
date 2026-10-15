@@ -90,7 +90,11 @@ export const createRentCheckoutSession = action({
             application_fee_percent: Number(((platformFeeCents / totalCents) * 100).toFixed(2)),
             transfer_data: {
               destination: args.stripeAccountId!
-            }
+            },
+            on_behalf_of: args.stripeAccountId!
+          } : undefined,
+          branding_settings: args.shopName ? {
+            display_name: args.shopName
           } : undefined,
           metadata: {
             shopSlug: args.shopSlug,
@@ -132,7 +136,11 @@ export const createRentCheckoutSession = action({
             application_fee_amount: platformFeeCents,
             transfer_data: {
               destination: args.stripeAccountId!
-            }
+            },
+            on_behalf_of: args.stripeAccountId!
+          } : undefined,
+          branding_settings: args.shopName ? {
+            display_name: args.shopName
           } : undefined,
           metadata: {
             shopSlug: args.shopSlug,
