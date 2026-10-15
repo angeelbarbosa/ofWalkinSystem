@@ -944,7 +944,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               style={{ width: 'auto', padding: '10px 20px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: 8 }}
             >
               <CreditCard size={16} />
-              <span>Pay with Stripe / Apple Pay</span>
+              <span>Pay Subscription</span>
             </button>
           </div>
 

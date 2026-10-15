@@ -6,10 +6,8 @@ import {
   ArrowRight, 
   Lock, 
   Shield, 
-  Sparkles, 
   Calendar,
   AlertCircle,
-  Smartphone,
   Copy,
   Check
 } from 'lucide-react';
@@ -137,32 +135,25 @@ export const ShopSubscriptionModal: React.FC<ShopSubscriptionModalProps> = ({
         {!paidReceipt ? (
           <div>
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
               <div
                 style={{
-                  width: 46,
-                  height: 46,
-                  borderRadius: 15,
+                  width: 44,
+                  height: 44,
+                  borderRadius: 14,
                   background: 'var(--accent-primary)',
                   color: 'var(--bg-main)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '1.15rem',
-                  fontWeight: 900,
                   flexShrink: 0
                 }}
               >
-                <Shield size={24} />
+                <Shield size={22} />
               </div>
-              <div style={{ minWidth: 0 }}>
-                <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Platform SaaS License
-                </span>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 850, color: 'var(--text-primary)', margin: '2px 0 0', lineHeight: 1.2 }}>
-                  {shop.name} Subscription
-                </h3>
-              </div>
+              <h3 style={{ fontSize: '1.20rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0, lineHeight: 1.2 }}>
+                {shop.name} Subscription
+              </h3>
             </div>
 
             {/* Status Alert Banner */}
@@ -170,18 +161,18 @@ export const ShopSubscriptionModal: React.FC<ShopSubscriptionModalProps> = ({
               <div style={{
                 background: 'rgba(239, 68, 68, 0.12)',
                 border: '1px solid rgba(239, 68, 68, 0.35)',
-                borderRadius: 14,
-                padding: '10px 14px',
-                marginBottom: 16,
+                borderRadius: 12,
+                padding: '8px 12px',
+                marginBottom: 14,
                 display: 'flex',
                 alignItems: 'center',
                 gap: 8,
                 color: 'var(--pastel-red, #EF4444)',
-                fontSize: '0.82rem',
-                fontWeight: 750
+                fontSize: '0.80rem',
+                fontWeight: 700
               }}>
-                <AlertCircle size={17} style={{ flexShrink: 0 }} />
-                <span>Subscription renewal is past due. Renew now to maintain uninterrupted kiosk access.</span>
+                <AlertCircle size={16} style={{ flexShrink: 0 }} />
+                <span>Subscription past due. Renew now to keep access active.</span>
               </div>
             )}
 
@@ -190,63 +181,52 @@ export const ShopSubscriptionModal: React.FC<ShopSubscriptionModalProps> = ({
               style={{
                 background: 'var(--surface-pill, #1C1C21)',
                 border: '1px solid var(--border-subtle, rgba(255,255,255,0.1))',
-                borderRadius: 18,
+                borderRadius: 16,
                 padding: '16px 18px',
-                marginBottom: 18
+                marginBottom: 14
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.86rem', color: 'var(--text-secondary)', marginBottom: 8 }}>
-                <span>Monthly Software Access:</span>
-                <span style={{ fontWeight: 750, color: 'var(--text-primary)' }}>${baseFee.toFixed(2)} / mo</span>
+                <span>Monthly Plan</span>
+                <span style={{ fontWeight: 750, color: 'var(--text-primary)' }}>${baseFee.toFixed(2)}</span>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.86rem', color: 'var(--text-secondary)', marginBottom: 12 }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <span>Stripe Processing Fee</span>
-                  <span style={{ fontSize: '0.68rem', background: 'var(--surface-card)', color: 'var(--text-muted)', padding: '1px 6px', borderRadius: 4, border: '1px solid var(--border-subtle)' }}>
-                    2.9% + 30¢
-                  </span>
-                </span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.86rem', color: 'var(--text-secondary)', marginBottom: 10 }}>
+                <span>Processing Fee</span>
                 <span style={{ fontWeight: 750, color: 'var(--text-primary)' }}>${processingFee.toFixed(2)}</span>
               </div>
 
-              <div style={{ height: 1, background: 'var(--border-subtle, rgba(255,255,255,0.1))', margin: '8px 0 12px' }} />
+              <div style={{ height: 1, background: 'var(--border-subtle, rgba(255,255,255,0.1))', margin: '8px 0 10px' }} />
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <span style={{ fontSize: '0.95rem', fontWeight: 850, color: 'var(--text-primary)' }}>Total Due Today:</span>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--pastel-green, #10B981)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                    <Sparkles size={11} />
-                    <span>Includes Kiosk, Booth Rent & Live Queue</span>
-                  </div>
-                </div>
-                <span style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--text-primary)' }}>
+                <span style={{ fontSize: '0.95rem', fontWeight: 850, color: 'var(--text-primary)' }}>Total Due</span>
+                <span style={{ fontSize: '1.45rem', fontWeight: 900, color: 'var(--text-primary)' }}>
                   ${totalAmount.toFixed(2)}
                 </span>
               </div>
             </div>
 
-            {/* Auto-Renewal Notice */}
+            {/* Renewal Note */}
             <div style={{
               background: 'var(--surface-pill, #1C1C21)',
               border: '1px solid var(--border-subtle, rgba(255,255,255,0.08))',
-              borderRadius: 14,
-              padding: '12px 14px',
-              marginBottom: 18,
+              borderRadius: 12,
+              padding: '10px 14px',
+              marginBottom: 14,
               display: 'flex',
               alignItems: 'center',
-              gap: 10
+              gap: 8
             }}>
-              <Calendar size={18} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-                Recurring monthly subscription billed to your card on file every 30 days via Stripe. Cancel anytime from Shop Admin.
+              <Calendar size={15} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                Billed monthly • Cancel anytime
               </div>
             </div>
 
             {/* Security Assurance */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.76rem', color: 'var(--text-muted)', marginBottom: 18, justifyContent: 'center' }}>
-              <Lock size={12} color="#10B981" />
-              <span>Direct encrypted checkout powered by Stripe Billing</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: 14, justifyContent: 'center' }}>
+              <Lock size={11} color="#10B981" />
+              <span>Encrypted via Stripe</span>
             </div>
 
             {errorMessage && (
@@ -288,11 +268,10 @@ export const ShopSubscriptionModal: React.FC<ShopSubscriptionModalProps> = ({
                 }}
               >
                 {isProcessing ? (
-                  <span>Processing Stripe Subscription...</span>
+                  <span>Processing...</span>
                 ) : (
                   <>
-                    <Smartphone size={18} />
-                    <span>Subscribe with Apple Pay / Card • ${totalAmount.toFixed(2)}/mo</span>
+                    <span>Pay ${totalAmount.toFixed(2)}</span>
                     <ArrowRight size={17} />
                   </>
                 )}
@@ -313,7 +292,7 @@ export const ShopSubscriptionModal: React.FC<ShopSubscriptionModalProps> = ({
                   textDecoration: 'underline'
                 }}
               >
-                Record Manual / Offline Subscription Payment
+                Record offline payment
               </button>
             </div>
           </div>

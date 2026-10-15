@@ -8,7 +8,6 @@ import {
   Sparkles, 
   Check, 
   Copy,
-  Smartphone,
   RefreshCw,
   AlertTriangle
 } from 'lucide-react';
@@ -377,16 +376,10 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
               />
             </div>
 
-            {/* Live Gateway Status & Security Assurance */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, marginBottom: 14 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.76rem', color: 'var(--text-muted)' }}>
-                <Lock size={12} color="#10B981" />
-                <span>Direct shop account deposit • 256-bit encrypted via Stripe</span>
-              </div>
-              <span style={{ fontSize: '0.74rem', color: '#10B981', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 5 }}>
-                <Sparkles size={12} />
-                <span>⚡ Live Stripe Checkout Active • Apple Pay & Cards Enabled</span>
-              </span>
+            {/* Security Assurance */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: 14 }}>
+              <Lock size={11} color="#10B981" />
+              <span>Direct shop deposit • Encrypted via Stripe</span>
             </div>
 
             {errorMessage && (
@@ -428,11 +421,10 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
                 }}
               >
                 {isProcessing ? (
-                  <span>Processing Stripe Payment...</span>
+                  <span>Processing...</span>
                 ) : (
                   <>
-                    <Smartphone size={18} />
-                    <span>Pay with Apple Pay / Card • ${totalAmount.toFixed(2)}</span>
+                    <span>Pay ${totalAmount.toFixed(2)}</span>
                     <ArrowRight size={17} />
                   </>
                 )}
@@ -454,7 +446,7 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
                   textDecoration: 'underline'
                 }}
               >
-                Record Cash / Manual Offline Payment
+                Record offline payment
               </button>
 
               {existingRecord && isPayingNewCycle && (
