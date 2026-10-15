@@ -11,7 +11,6 @@ import {
   RefreshCw,
   AlertTriangle
 } from 'lucide-react';
-import confetti from 'canvas-confetti';
 import type { Barber, RentPaymentRecord, ShopConfig } from '../../types';
 import { ModalOverlay } from '../Shared/ModalOverlay';
 import { convexClient } from '../../utils/convexClient';
@@ -29,7 +28,7 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
   barber,
   config,
   existingRecord,
-  onPayRent,
+  onPayRent: _onPayRent,
   onClose
 }) => {
   const baseRent = barber.weeklyRent || barber.rentAmount || 200;
@@ -50,7 +49,7 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [autoPayEnabled, setAutoPayEnabled] = useState(barber.autoPayEnabled ?? true);
-  const [paidRecord, setPaidRecord] = useState<RentPaymentRecord | null>(existingRecord || null);
+  const [paidRecord] = useState<RentPaymentRecord | null>(existingRecord || null);
   const [isPayingNewCycle, setIsPayingNewCycle] = useState(false);
   const [copiedReceipt, setCopiedReceipt] = useState(false);
 
@@ -119,23 +118,6 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
     } catch (err: any) {
       console.error('Stripe checkout call error:', err);
       setErrorMessage(err?.message || 'Error connecting to Stripe Checkout.');
-      setIsProcessing(false);
-    }
-  };
-
-  const handleOfflineRentPayment = async () => {
-    setIsProcessing(true);
-    try {
-      const record = await onPayRent(barber, 'manual', true, activePayWeeks, activeBaseRent);
-      setPaidRecord(record);
-      setIsPayingNewCycle(false);
-      confetti({
-        particleCount: 65,
-        spread: 65,
-        origin: { y: 0.6 },
-        colors: ['#10B981', '#F59E0B', '#3B82F6', '#FFFFFF']
-      });
-    } finally {
       setIsProcessing(false);
     }
   };
@@ -428,25 +410,6 @@ export const BarberRentModal: React.FC<BarberRentModalProps> = ({
                     <ArrowRight size={17} />
                   </>
                 )}
-              </button>
-
-              {/* Optional Offline Cash / Manual Payment */}
-              <button
-                type="button"
-                onClick={handleOfflineRentPayment}
-                disabled={isProcessing}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'var(--text-muted)',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  cursor: isProcessing ? 'wait' : 'pointer',
-                  padding: '6px',
-                  textDecoration: 'underline'
-                }}
-              >
-                Record offline payment
               </button>
 
               {existingRecord && isPayingNewCycle && (

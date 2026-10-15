@@ -11,7 +11,6 @@ import {
   Copy,
   Check
 } from 'lucide-react';
-import confetti from 'canvas-confetti';
 import type { Shop, SubscriptionPaymentMethod } from '../../types';
 import { ModalOverlay } from '../Shared/ModalOverlay';
 import { convexClient } from '../../utils/convexClient';
@@ -25,7 +24,7 @@ interface ShopSubscriptionModalProps {
 
 export const ShopSubscriptionModal: React.FC<ShopSubscriptionModalProps> = ({
   shop,
-  onPaySubscription,
+  onPaySubscription: _onPaySubscription,
   onClose
 }) => {
   const baseFee = shop.subscriptionMonthlyFee ?? shop.monthlyPlanPrice ?? 49;
@@ -38,7 +37,7 @@ export const ShopSubscriptionModal: React.FC<ShopSubscriptionModalProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [copiedInvoice, setCopiedInvoice] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [paidReceipt, setPaidReceipt] = useState<{
+  const [paidReceipt] = useState<{
     invoiceNumber: string;
     paidAt: string;
     totalPaid: number;
@@ -81,25 +80,6 @@ export const ShopSubscriptionModal: React.FC<ShopSubscriptionModalProps> = ({
       setErrorMessage(err?.message || 'Error connecting to Stripe Checkout.');
       setIsProcessing(false);
     }
-  };
-
-  const handleOfflineActivate = () => {
-    onPaySubscription('manual');
-    const nextDate = new Date();
-    nextDate.setDate(nextDate.getDate() + 30);
-    setPaidReceipt({
-      invoiceNumber: 'INV-' + Math.floor(100000 + Math.random() * 900000),
-      paidAt: new Date().toISOString(),
-      totalPaid: totalAmount,
-      method: 'Manual / Offline Payment',
-      nextBillingDate: nextDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-    });
-    confetti({
-      particleCount: 70,
-      spread: 70,
-      origin: { y: 0.6 },
-      colors: ['#10B981', '#F59E0B', '#3B82F6', '#FFFFFF']
-    });
   };
 
   const handleCopyInvoice = (inv: string) => {
@@ -275,24 +255,6 @@ export const ShopSubscriptionModal: React.FC<ShopSubscriptionModalProps> = ({
                     <ArrowRight size={17} />
                   </>
                 )}
-              </button>
-
-              <button
-                type="button"
-                onClick={handleOfflineActivate}
-                disabled={isProcessing}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'var(--text-muted)',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  cursor: isProcessing ? 'wait' : 'pointer',
-                  padding: '6px',
-                  textDecoration: 'underline'
-                }}
-              >
-                Record offline payment
               </button>
             </div>
           </div>
